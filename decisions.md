@@ -965,7 +965,7 @@ Append-only record of engineering decisions.
 - Files: README.md, decisions.md, flow.md, handoff.md, tests/frameworks/test_flow.py, src/arctrellis/frameworks/, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py
 
 ### D-094: Compose same-file static router paths without replacing local facts
-- Date / phase / commit: 2026-10-08, Phase 1.9B, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9B, ee5b1d626a142a410ab5f9e01a201bae8faa511c
 - Context: Green committed1.9A permits bounded APIRouter prefix/include_router and Express Router use mounting.
 - Decision: Add composition_models.py, composition_extraction.py and composition.py with immutable prefix/mount observations, explicit mount outcomes and a deterministic HTTP join helper. Capture these during indexing; extend FrameworkFlowResult with router observations/outcomes and local/effective endpoint access. Retain local entities. Create effective endpoints only for changed static paths; mounting app MODULE owns mounted effective endpoints. Prefix-only effective endpoints remain in router module and describe router configuration, not public deployment. Distinct mount sites retain distinct identities. Reuse handlers/pre-handler proof, retain confidence and multiple Evidence records for route, constructor/prefix and mount.
 - Why: Fourteen test-first composition contracts failed with missing result/API fields or absent effective endpoints. Core already supports Evidence tuples; no core redesign or dependencies are needed. Required same-file subset is defensible using existing constructor witnesses.
@@ -975,7 +975,7 @@ Append-only record of engineering decisions.
 - Supersedes: D-081 (router composition deferral only), D-090 (composition deferral after its completed gate only)
 
 ### D-095: Reject unsafe composition boundaries and use actual graph APIs
-- Date / phase / commit: 2026-10-08, Phase 1.9B, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9B, ee5b1d626a142a410ab5f9e01a201bae8faa511c
 - Context: Initial integration exposed graph API/type defects, and review found that normalizing every adapter input could fabricate a plausible effective path.
 - Decision: Use keyword-only CodeGraph incoming/outgoing kind filters, explicit union annotations for heterogeneous router validation and distinct prefix/mount local variables. Add missing derived mount counts. Keep the mandated HTTP join helper boundary normalization, but reject FastAPI nonempty trailing-slash prefixes and decline effective composition for double-leading-slash local routes. Preserve local endpoints. Restrict FastAPI mounts to preceding declarations as a conservative static subset, without claiming framework-version lifecycle emulation.
 - Why: Initial 14-test implementation run had eight errors; incoming passed a positional kind, then the incorrect kinds keyword, and three new tests also passed positional outgoing filters. Strict mypy first found five errors, then one; corrected APIs and annotations now pass. Two new regression methods failed three assertions because invalid /users/ or /api/ prefixes and //x local routes generated effective GET /api/users/x. Official https://fastapi.tiangolo.com/reference/apirouter/ documents prefix trailing-slash rejection; published current include internals also show that assuming one universal route-copy lifecycle would be incorrect. The generic helper contract remains independently tested.
@@ -987,7 +987,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/frameworks/test_composition.py test_fastapi_include_composes_both_prefixes, test_fastapi_invalid_trailing_prefix_does_not_fabricate_effective_path, test_multiple_leading_route_slashes_are_not_normalized_into_effective_facts, test_fastapi_mount_only_includes_routes_registered_before_include.
 
 ### D-096: Publish a reproducible local flow smoke and explicit composition limits
-- Date / phase / commit: 2026-10-08, Phase 1.9B, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9B, ee5b1d626a142a410ab5f9e01a201bae8faa511c
 - Context: Composed framework flows require a repeatable mixed fixture, actual proof output and documentation understandable independently of this session.
 - Decision: Add tests/frameworks/flow_smoke.py using synthetic source strings and the existing static pipeline. Print measured local/effective/pre-handler/edge counts, deterministic rerun, full FastAPI dependency/handler/callee proof and seven negative cases. Update README and real flow call order for completed pre-handler/composition stages, bounded source order, unchanged-path behavior, same-file ownership, confidence inheritance and multi-site provenance.
 - Why: The smoke observed three routes, three local endpoints, two effective endpoints, three resolved pre-handlers, zero unresolved/ambiguous pre-handlers, five APPLIES_MIDDLEWARE and five EXPOSES edges. Repeated snapshots were equal. Fake framework receivers, custom Depends, ordinary app.use function, dynamic prefix and dynamic middleware factory cases were all rejected. Full suite at this step ran371 tests OK/skipped7;76 framework tests and all quality/isolation gates passed before the smoke addition.
@@ -996,7 +996,7 @@ Append-only record of engineering decisions.
 - Files: tests/frameworks/flow_smoke.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-097: Finalize the framework-flow quality gate and bounded continuation state
-- Date / phase / commit: 2026-10-09, Phase 1.9B, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 1.9B, ee5b1d626a142a410ab5f9e01a201bae8faa511c
 - Context: Completed framework-flow semantics need verified quality, local-only audits and a complete handoff before stopping.
 - Decision: Record the final gate and rewrite all twelve handoff sections with actual implementation, proof, commands, corrected failures and deliberate omissions. Share the owned-coordinate containment helper in frameworks/models.py between pre-handler/router/index validation without changing its behavior. Confirm no dependency/config/core changes, native isolation, source-free resolution, authorship, forbidden-file and attribution boundaries. Commit locally, finalize only new reference fields separately, then stop.
 - Why: Final suite ran371 tests OK/skipped7;76 framework tests passed. Ruff lint and97-file format check passed; strict mypy55 source files, compileall, pip check and2 architecture tests passed.20 pre-handler and24 composition tests passed separately. Mixed smoke measured3 routes/3 local/2 effective/3 resolved pre-handlers/5 middleware/5 EXPOSES with equal reruns and seven rejected negatives. Public pipeline imports passed. Git identity matches required author/committer; remotes and forbidden tracked files are absent. Source audit found only fixed native grammar imports/loading in parsing; pyproject diff empty. Attribution search no-match exit1 is expected.

@@ -3,8 +3,8 @@
 ## 1. Current Phase
 
 Phase 1.9: middleware/pre-handler semantics (1.9A) and static router composition (1.9B).
-Implementation and required verification are complete. Local composition commit/reference
-finalization is the final session step. Phase 2.0 has not started.
+Status: complete. Implementation and required verification are complete.
+Phase 2.0 has not started.
 
 ## 2. Work Completed
 
@@ -120,9 +120,11 @@ are deliberately omitted without emulating framework-version lifecycle differenc
 
 ## 9. Unfinished Work
 
-No required implementation remains in Phase 1.9A/B. Final local commit reference fields and clean-tree
-audit are the remaining session-finalization step when this implementation handoff is committed.
-Optional cross-file router variables and recursive composition remain intentionally deferred.
+No required implementation remains in Phase 1.9A/B. Optional cross-file router variables
+and recursive composition remain intentionally deferred. Implementation commits:
+94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9 (pre-handlers),
+ee5b1d626a142a410ab5f9e01a201bae8faa511c (composition). Current decision/table references
+are finalized in the separate documentation commit.
 
 ## 10. Next Subphase
 
