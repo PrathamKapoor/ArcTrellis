@@ -12,11 +12,11 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.4, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.5, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Import/call/inheritance resolution,
 routes, middleware, tests and database semantics are not implemented. There is no
-repository-wide indexing, GitHub cloning, persistence, BM25/vector retrieval,
+GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
 
 Current capabilities:
@@ -400,3 +400,28 @@ future work.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.
+
+## Repository semantic indexing
+
+```python
+from arctrellis.indexing import index_repository
+index = index_repository("path/to/local/repository")
+print(index.is_complete, index.complete_file_count, index.partial_file_count, index.failed_file_count)
+```
+
+The synchronous in-memory index processes supported files in inventory order.
+COMPLETE/PARTIAL/FAILED outcomes are explicit; unsupported files remain inventory-only.
+Typed source failures do not discard other files. Discovery failures and conflicting
+graph identities abort. Failure summaries retain bounded stage/type text rather than
+exception objects, traceback or source-derived error text.
+
+Every successfully or partially analyzed file contributes a parentless FILE, its
+MODULE, existing lexical entities/edges and one PROVEN FILE DEFINES MODULE relationship
+with file_module_membership evidence. FILE UUID5 identity uses language/relative path,
+remaining stable across content edits; declaration/proof identity remains revision-based.
+Repository identity is deliberately deferred; no REPOSITORY node is invented.
+
+Only semantic graph records, inventory and diagnostic counts survive per-file analysis.
+ParsedSource, full source bytes and syntax trees are released after each helper returns.
+Summary records are immutable; CodeGraph retains its existing mutable API, so completed
+results should be treated as snapshots. This is not persistent indexing.

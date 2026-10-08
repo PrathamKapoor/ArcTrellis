@@ -561,3 +561,21 @@ Append-only record of engineering decisions.
 - Alternatives considered: Repository-wide merging begins Phase 1.5 and is explicitly unauthorized here; claiming real symlink coverage despite privilege skips would be false.
 - Consequences: Stop after Phase 1.4; preserve native/race, encoding, conservative omission and identity limitations. No dependencies, remotes, publication or stable-layer changes are needed.
 - Files: tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-055: Index supported source files with explicit outcomes and bounded ownership
+- Date / phase / commit: 2026-10-08, Phase 1.5, uncommitted
+- Context: Single-file semantics are verified; repository analysis needs explicit completeness without retaining all syntax/source bytes.
+- Decision: Add indexing FileIndexStatus, FileIndexResult, RepositoryIndexResult and index_repository. Process inventory order synchronously; per-file helper releases ParsedSource after returning summary/semantic graph. Record typed source/extraction failures as FAILED with bounded stage/type text, never exception objects or source-derived exception messages. Discovery failures and graph collisions abort.
+- Why: Baseline ran 236 tests, OK (skipped=7). The user requires best-effort file analysis and explicit fatal invariants. Indexing tests ran 10 tests OK; full suite ran 246 tests OK (skipped=7). Mixed smoke: five complete supported files, zero partial/failed, 17 entities, 12 relationships; excluded node_modules and unsupported README stay outside the graph.
+- Alternatives considered: Fail-fast per source loses unaffected files; silent skips misstate completeness; retaining syntax trees increases repository memory; concurrency/index persistence exceeds scope.
+- Consequences: Summary records are frozen but the owned CodeGraph retains its existing mutable API. COMPLETE has no recovery, PARTIAL follows extraction.partial (including structural omissions), FAILED adds no graph records. Unsupported files stay inventory-only.
+- Files: src/arctrellis/indexing/__init__.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/errors.py, tests/indexing/__init__.py, tests/indexing/test_repository.py, README.md, decisions.md, flow.md
+
+### D-056: Add path-based FILE identities and proven file-to-module membership
+- Date / phase / commit: 2026-10-08, Phase 1.5, uncommitted
+- Context: A merged graph needs source-file structural roots without inventing repository identity.
+- Decision: Use UUID5/NAMESPACE_URL with compact versioned JSON for FILE language/path identity, independent of byte positions. FILE nodes are parentless, location-free and retain analyzed size_bytes. Add one PROVEN/1.0 FILE DEFINES MODULE edge with file_module_membership evidence from module root coordinates; merge existing lexical records through CodeGraph APIs.
+- Why: FILE identity remains path-stable across source edits while existing declaration identity is revision-deterministic. Module evidence already exists; a repository root identity remains undefined.
+- Alternatives considered: Absolute-root IDs depend on clone location; a constant repository ID collides; random IDs break reproducibility; modifying module.parent_id would break ExtractionResult semantics.
+- Consequences: Graph membership connects FILE to the existing parentless MODULE without changing semantic records. IDs remain non-namespaced across repositories. File summary counts include FILE and its membership edge.
+- Files: src/arctrellis/indexing/ids.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/models.py, tests/indexing/test_repository.py, README.md, decisions.md, flow.md

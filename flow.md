@@ -478,6 +478,37 @@ if an insertion invariant fails. Identity is versioned, revision-deterministic a
 not repository-namespaced. Assembly uses existing graph insertion/sorting costs;
 it introduces no concurrency, persistence or alternate traversal behavior.
 
+## 13. Repository semantic indexing
+
+Input: an existing local root and positive source-byte limit.
+
+```text
+index_repository()                       src/arctrellis/indexing/repository.py; validate limit and orchestrate
+ ├─ scan_repository()                    ingestion/discovery.py; trustworthy ordered inventory or abort
+ └─ for each supported file             sequential inventory order; unsupported files remain inventory-only
+     ├─ _analyze_file()                  own one source/tree only for this helper's lifetime
+     │   ├─ parse_discovered_file()      parsing/parser.py; bounded safe current bytes and normalized syntax
+     │   ├─ extract_entities()          extraction/__init__.py; canonical language dispatch
+     │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
+     │   ├─ _file_entity()               create path-based FILE with analyzed byte size
+     │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
+     │   └─ _membership()               PROVEN FILE DEFINES MODULE with root evidence
+     │       └─ _stable_id()             versioned canonical JSON/UUID5 proof identities
+     ├─ CodeGraph.add_entity()           graph/graph.py; merge canonical endpoints first
+     ├─ CodeGraph.add_relationship()     graph/graph.py; retain immutable evidence
+     └─ FileIndexResult()                indexing/models.py; explicit COMPLETE/PARTIAL/FAILED summary
+RepositoryIndexResult()                  indexing/models.py; validate ordered outcomes and graph counts
+```
+
+Output: inventory, merged in-memory graph and frozen per-file summaries. FILE identity
+uses path/language, not declaration positions; no repository entity is invented.
+Counts include FILE and membership edges. ParsedSource, bytes, trees, exceptions and
+tracebacks are not retained. Typed source/parsing/extraction failures return bounded
+stage/type summaries and continue; discovery failures abort without inventory, and
+assembly/collision violations raise chained RepositoryIndexInvariantError. Partial
+semantic survivors enter the graph and make is_complete false. Owned CodeGraph remains
+mutable by its existing contract; consumers should treat completed results as snapshots.
+
 ## Changes in this session (Phase 0.1)
 
 | Area | Change | Files | Commit | Decision |
@@ -579,3 +610,11 @@ it introduces no concurrency, persistence or alternate traversal behavior.
 | Verification invocation | Use graph test package context after the standalone relative-import invocation failed. | decisions.md, flow.md, handoff.md | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-053 |
 | Security proof and handoff | Strengthen top-level non-execution fixture and record final regression, graph evidence and bounded continuation. | tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-054 |
 | Commit traceability | Finalize local feature references separately without rewriting history or embedding a self-referential hash. | decisions.md, flow.md, handoff.md | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-004, D-054 |
+
+## Changes in this session (Phase 1.5)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Repository contracts | Add mixed-language, outcome, memory, collision and structural proof tests before implementation. | tests/indexing/__init__.py, tests/indexing/test_repository.py | uncommitted | D-055, D-056 |
+| Repository pipeline | Add ordered per-file analysis, structural membership, fatal collision handling and explicit summaries without syntax retention. | src/arctrellis/indexing/__init__.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/errors.py, src/arctrellis/indexing/ids.py | uncommitted | D-055, D-056 |
+| Documentation | Describe repository outcomes, ownership lifecycle and structural identity. | README.md, decisions.md, flow.md | uncommitted | D-055, D-056 |
