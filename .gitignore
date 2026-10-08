@@ -1,0 +1,26 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+# Local credentials
+.env
+.env.*
+!.env.example
+# Excluded project material
+paper/
+research/
+*.tex

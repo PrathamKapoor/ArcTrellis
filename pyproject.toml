@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arctrellis"
+version = "0.1.0"
+description = "Evidence-first repository intelligence: prove how your codebase works."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
