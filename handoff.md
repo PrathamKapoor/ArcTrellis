@@ -72,8 +72,11 @@ build-only setuptools==84.0.0. Existing editable installation exposes ingestion.
 No formatter, linter, type checker, CI or license file is configured/present.
 Expected work is linear in visited entries plus file/skip sorting; not benchmarked.
 
-Implementation commit: uncommitted. Reference finalization follows D-004 in a
-separate documentation commit without rewriting history.
+Implementation commit: d02524700240e8a37b15f01e7138b7dbb3a70e8a,
+feat(ingestion): add safe repository discovery. The required author and committer
+were verified; git status --short was empty after this commit. Reference
+finalization follows D-004 in a separate documentation commit without rewriting
+history; obtain that finalization commit's hash from git log.
 
 ## 5. Decisions Made
 
@@ -132,6 +135,12 @@ Observed commands/results from the repository root:
 - Staged-content attribution search: no matches, exit one (normal no-match status).
 - git diff -- src/arctrellis/core src/arctrellis/graph tests/core tests/graph pyproject.toml .gitignore:
   empty; Phase 0 implementation, tests, dependencies and configuration unchanged.
+- git var GIT_AUTHOR_IDENT and git var GIT_COMMITTER_IDENT: both required identities.
+- git commit -m "feat(ingestion): add safe repository discovery": created d025247
+  with twelve intended paths. No signing configuration override was supplied.
+- git rev-parse HEAD: d02524700240e8a37b15f01e7138b7dbb3a70e8a.
+- git log -1 --format='%h %an <%ae> | %cn <%ce> | %s': required author and committer.
+- git status --short after implementation commit: empty, clean working tree.
 
 Rule 10 review: required documents were read first; meaningful changes have
 decisions and session rows; no package change occurred; D-016 records the verified
@@ -156,7 +165,7 @@ Not tested: other operating systems/Python versions, fresh distribution installs
 large-repository benchmarks, hostile concurrent mutations or later parser reads.
 No formatter/linter/type checker ran because none is configured. No external
 publication or remote operation occurred. Commit and staged audit results are
-finalized after the implementation commit under D-004.
+recorded above; commit references are finalized under D-004.
 
 ## 8. Known Issues / Risks
 
@@ -173,7 +182,8 @@ inventory syntax into stricter SourceLocation paths.
 ## 9. Unfinished Work
 
 No Phase 1.0 functionality remains unfinished. Platform coverage expansion and
-licensing/CI choices are future work. Commit-reference finalization follows D-004.
+licensing/CI choices are future work. Commit references name the implementation
+commit under D-004; finalization does not need to embed its own hash.
 No parsing or repository acquisition was begun.
 
 ## 10. Next Subphase

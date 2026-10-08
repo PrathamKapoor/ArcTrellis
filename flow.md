@@ -281,11 +281,12 @@ Expected work is O(visited entries) plus sorting the file and skip records.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Test contracts | Add synthetic discovery and immutable inventory tests before implementation. | tests/ingestion/__init__.py, tests/ingestion/test_models.py, tests/ingestion/test_discovery.py | uncommitted | D-011, D-012, D-013, D-014 |
-| Editing recovery | Retry an atomic patch after checking the real Markdown context; rejected attempt changed nothing. | decisions.md, flow.md | uncommitted | D-015 |
-| Inventory | Add validated immutable portable file/skip records, supported subsets and deterministic counts. | src/arctrellis/ingestion/models.py | uncommitted | D-011 |
-| Discovery and errors | Add metadata-only traversal, pruning, language detection, link guards, root checks and explicit incomplete-scan errors. | src/arctrellis/ingestion/discovery.py, src/arctrellis/ingestion/errors.py | uncommitted | D-012, D-013 |
-| Public API | Export intentional ingestion models, scanner, defaults and errors. | src/arctrellis/ingestion/__init__.py | uncommitted | D-011, D-012, D-013 |
-| Windows identity | Use os.lstat for both queued and refreshed directory identities instead of comparing zero DirEntry fields. | src/arctrellis/ingestion/discovery.py, tests/ingestion/test_discovery.py | uncommitted | D-016 |
-| Safety verification | Add real link/junction fixtures, explicit platform skips and simulated link/nonregular classification, metadata, enumeration and replacement failures. | tests/ingestion/test_safety.py | uncommitted | D-012, D-013, D-014 |
-| Documentation | Describe current discovery semantics, security boundary, call order and session continuity. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-011, D-012, D-013, D-014 |
+| Test contracts | Add synthetic discovery and immutable inventory tests before implementation. | tests/ingestion/__init__.py, tests/ingestion/test_models.py, tests/ingestion/test_discovery.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-011, D-012, D-013, D-014 |
+| Editing recovery | Retry an atomic patch after checking the real Markdown context; rejected attempt changed nothing. | decisions.md, flow.md | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-015 |
+| Inventory | Add validated immutable portable file/skip records, supported subsets and deterministic counts. | src/arctrellis/ingestion/models.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-011 |
+| Discovery and errors | Add metadata-only traversal, pruning, language detection, link guards, root checks and explicit incomplete-scan errors. | src/arctrellis/ingestion/discovery.py, src/arctrellis/ingestion/errors.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-012, D-013 |
+| Public API | Export intentional ingestion models, scanner, defaults and errors. | src/arctrellis/ingestion/__init__.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-011, D-012, D-013 |
+| Windows identity | Use os.lstat for both queued and refreshed directory identities instead of comparing zero DirEntry fields. | src/arctrellis/ingestion/discovery.py, tests/ingestion/test_discovery.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-016 |
+| Safety verification | Add real link/junction fixtures, explicit platform skips and simulated link/nonregular classification, metadata, enumeration and replacement failures. | tests/ingestion/test_safety.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-012, D-013, D-014 |
+| Documentation | Describe current discovery semantics, security boundary, call order and session continuity. | README.md, decisions.md, flow.md, handoff.md | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-011, D-012, D-013, D-014 |
+| Commit traceability | Finalize the implementation references and verified handoff in a separate documentation commit. | decisions.md, flow.md, handoff.md | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-004, D-014 |
