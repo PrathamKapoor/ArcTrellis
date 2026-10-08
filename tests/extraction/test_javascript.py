@@ -171,13 +171,17 @@ class JavaScriptExtractionTests(unittest.TestCase):
     def test_pipeline_no_execution_and_no_extractor_reads(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
+            marker = root / 'executed.txt'
+            source = ('require("fs").writeFileSync(' + json.dumps(str(marker)) + ', "executed"); '
+                      'function create() { throw new Error("do not execute"); }')
             for path in ('a.js', 'b.ts', 'c.tsx'):
-                (root / path).write_text('function create() { throw new Error("do not execute"); }', encoding='utf-8')
+                (root / path).write_text(source, encoding='utf-8')
             for file in scan_repository(root).supported_files:
                 p = parse_discovered_file(root, file)
                 with patch('builtins.open', side_effect=AssertionError('no extraction I/O')):
                     r = extraction.extract_entities(p)
                 self.assertEqual(r.entities[1].name, 'create')
+                self.assertFalse(marker.exists())
 
 
 class JavaScriptImportTests(unittest.TestCase):

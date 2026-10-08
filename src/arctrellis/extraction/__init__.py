@@ -1,4 +1,4 @@
-"""Canonical semantic entities from normalized source, without graph inference."""
+"""Canonical semantic entities and proven lexical graphs from normalized source."""
 
 from .errors import (ExtractionError, SemanticExtractionError, SourceDecodingError,
                      UnsupportedExtractionLanguageError)
@@ -6,6 +6,7 @@ from .ids import make_entity_id
 from .models import ExtractionResult
 from .python import extract_python_entities
 from .javascript import extract_javascript_entities, extract_typescript_entities
+from .lexical import build_lexical_graph
 from arctrellis.ingestion import Language
 from arctrellis.parsing import ParsedSource
 
@@ -24,4 +25,5 @@ def extract_entities(parsed_source: ParsedSource) -> ExtractionResult:
 
 __all__ = ["ExtractionError", "ExtractionResult", "SemanticExtractionError", "SourceDecodingError",
            "UnsupportedExtractionLanguageError", "extract_python_entities", "make_entity_id",
-           "extract_javascript_entities", "extract_typescript_entities", "extract_entities"]
+           "extract_javascript_entities", "extract_typescript_entities", "extract_entities",
+           "build_lexical_graph"]

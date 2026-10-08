@@ -525,3 +525,39 @@ Append-only record of engineering decisions.
 - Alternatives considered: Continuing with an unverified feature risks propagating semantic mistakes; publishing is explicitly prohibited.
 - Consequences: Existing platform skips, native parser resource limits and revision/repository identity limitations remain. Only single-file lexical assembly may follow.
 - Files: README.md, decisions.md, flow.md, handoff.md
+
+### D-051: Assemble single-file lexical graphs with proven DEFINES evidence
+- Date / phase / commit: 2026-10-08, Phase 1.4, uncommitted
+- Context: All v1 language extractors passed the Phase 1.3 gate and local commit/reference finalization; canonical parent IDs can now prove lexical ownership.
+- Decision: Add build_lexical_graph under extraction, consuming one validated ExtractionResult and returning a fresh CodeGraph. Insert every entity first; generate exactly one parent-to-child DEFINES edge per non-module entity, Confidence.PROVEN and score 1.0. Embed child declaration SourceLocation and six exact coordinates under lexical_parentage.
+- Why: This boundary transforms extraction output without introducing repository indexing policy or changing graph storage/traversal semantics. Parent IDs explicitly establish lexical ownership; endpoint insertion first respects existing graph integrity.
+- Alternatives considered: Emitting CONTAINS too duplicates the fact; IMPORTS would confuse import sites with resolved dependencies; mutating a caller graph introduces merge policy; a new vague analysis package is unnecessary.
+- Consequences: Imports receive DEFINES only. The module has no fabricated repository parent. Partial extraction can supply proven surviving edges; callers retain ExtractionResult.partial because CodeGraph does not carry file-level status. No resolution, calls or framework inference exists.
+- Files: src/arctrellis/extraction/lexical.py, src/arctrellis/extraction/__init__.py, tests/extraction/test_lexical.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-052: Give lexical relationships and proof records versioned deterministic IDs
+- Date / phase / commit: 2026-10-08, Phase 1.4, uncommitted
+- Context: Source-derived graph edges and evidence must reproduce without random IDs, while producer invariant violations must fail before returning a graph.
+- Decision: Use UUID5/NAMESPACE_URL over compact JSON. Evidence key includes its version marker, lexical_parentage, parent/child IDs, child file/inclusive lines and ordered six-coordinate metadata. Relationship key includes its own marker, DEFINES, parent/child IDs and evidence ID. Revalidate ExtractionResult before assembly; chain invalid result data as SemanticExtractionError.
+- Why: This matches the existing entity identity strategy without changing it. The test-first public builder assertion failed before implementation; proof tests verify UUID5, repeatable snapshots and changed source identity.
+- Alternatives considered: Random IDs/hash break reproducibility; entity-only evidence keys discard exact span context; silent parent skipping creates false partial graphs; external graph storage exceeds scope.
+- Consequences: IDs inherit revision/repository namespace limits from entity IDs. Child snippets/source contents are not copied into Evidence; locations and exact spans point to evidence already owned by callers. CodeGraph remains mutable with its existing insertion costs. Decoding exception documentation now describes both language policies.
+- Files: src/arctrellis/extraction/lexical.py, src/arctrellis/extraction/__init__.py, src/arctrellis/extraction/errors.py, tests/extraction/test_lexical.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-053: Supply package context for standalone graph regression discovery
+- Date / phase / commit: 2026-10-08, Phase 1.4, uncommitted
+- Context: The standalone graph invocation failed imports even though the complete suite was green.
+- Decision: Run graph discovery with -s tests/graph -t . so relative fixture imports retain their package context; change no graph/test semantics.
+- Why: The first command failed three imports with ImportError: attempted relative import with no known parent package. The corrected command ran 56 tests, OK.
+- Alternatives considered: Rewriting existing relative imports is unnecessary; hiding the failed command loses honest verification history.
+- Consequences: Use the explicit top-level directory for standalone graph discovery. This was an invocation error, not a production defect.
+- Files: decisions.md, flow.md, handoff.md
+
+### D-054: Finalize multilingual proof verification and bounded session handoff
+- Date / phase / commit: 2026-10-08, Phase 1.4, uncommitted
+- Context: Both authorized phases need checked final state, regression evidence and a clear stop before repository-wide indexing.
+- Decision: Record actual multilingual graph/proof smoke, independent review, full regression/skip reasons and local identity audits. Strengthen the existing JS/TS pipeline fixture with a top-level marker-writing source statement whose marker must remain absent. Rewrite all twelve handoff sections and finalize local hashes under D-004.
+- Why: JS/TS suite ran 29 tests, lexical suite 11, all extraction 71, graph 56 and complete suite 236, OK (skipped=7). The marker fixture passes without execution. The graph smoke verified service.ts::Service DEFINES service.ts::Service.create with service.ts lines 1..1, lexical_parentage, PROVEN/1.0. Independent lexical review found no critical or important findings.
+- Alternatives considered: Repository-wide merging begins Phase 1.5 and is explicitly unauthorized here; claiming real symlink coverage despite privilege skips would be false.
+- Consequences: Stop after Phase 1.4; preserve native/race, encoding, conservative omission and identity limitations. No dependencies, remotes, publication or stable-layer changes are needed.
+- Files: tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md

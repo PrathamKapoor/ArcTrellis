@@ -10,7 +10,7 @@ class UnsupportedExtractionLanguageError(ExtractionError):
 
 
 class SourceDecodingError(ExtractionError):
-    """Owned source bytes cannot be decoded using their Python encoding."""
+    """Owned source bytes cannot be decoded using the language's encoding policy."""
 
 
 class SemanticExtractionError(ExtractionError):

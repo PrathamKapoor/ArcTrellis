@@ -26,7 +26,9 @@ from arctrellis.extraction import ...      src/arctrellis/extraction/__init__.py
  ├─ import .models                        src/arctrellis/extraction/models.py; immutable local ownership
  ├─ import .ids                           src/arctrellis/extraction/ids.py; reproducible identity
  ├─ import .errors                        src/arctrellis/extraction/errors.py; caller-facing failures
- └─ import .python                        src/arctrellis/extraction/python.py; normalized semantic transformation
+ ├─ import .python                        src/arctrellis/extraction/python.py; normalized Python semantics
+ ├─ import .javascript                    src/arctrellis/extraction/javascript.py; shared normalized JS/TS semantics
+ └─ import .lexical                       src/arctrellis/extraction/lexical.py; proven single-file graph assembly
 ```
 
 Output: importable domain, graph, ingestion, parsing and extraction APIs. Installation failures propagate from pip.
@@ -100,9 +102,11 @@ python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__in
      ├─ parse_source()                    exercise grammar recovery, isolation and normalized models
      ├─ scan_repository()                 obtain real DiscoveredFile fixtures
      └─ parse_discovered_file()           verify content reads, limits and non-execution
- └─ extraction test methods               tests/extraction/test_ids.py, test_models.py, test_python.py, test_imports.py
+ └─ extraction test methods               tests/extraction/test_ids.py, test_models.py, test_python.py, test_imports.py, test_javascript.py, test_lexical.py
      ├─ parse_source()                    supply normalized syntax fixtures, not native objects
      ├─ extract_python_entities()         verify lexical entities, identity, encoding and conservative recovery
+     ├─ extract_entities()               dispatch JS/TS/TSX canonical semantics without execution
+     ├─ build_lexical_graph()             verify parent edges, exact proof and existing shortest_path
      └─ scan_repository()/parse_discovered_file() verify the real local pipeline and non-execution
 ```
 
@@ -441,6 +445,39 @@ bindings begin at the identifier, excluding the variable keyword. Module strings
 retain source spelling and quoted literals; no escapes, imports or require calls
 are evaluated/resolved. No relationships or automatic repository-wide pass exists.
 
+## 12. Evidence-backed single-file lexical graph assembly
+
+Input: one ExtractionResult, including optional partial status; no source reads occur.
+
+```text
+build_lexical_graph()                     src/arctrellis/extraction/lexical.py; create a fresh single-file graph
+ ├─ ExtractionResult()                   extraction/models.py; reject corrupted ownership/spans before assembly
+ ├─ CodeGraph()                          graph/graph.py; allocate independent graph storage
+ ├─ CodeGraph.add_entity()               graph/graph.py; insert all endpoints before relationships
+ └─ for each non-module child           source order; parent_id proves represented lexical ownership
+     ├─ CodeGraph.get_entity()           graph/graph.py; require the child's actual canonical parent
+     ├─ _lexical_relationship()          extraction/lexical.py; construct exactly one DEFINES record
+     │   ├─ _entity_span()               extraction/models.py; retrieve exact child coordinates
+     │   ├─ _span_metadata()             extraction/source.py; retain proof coordinates as strings
+     │   ├─ _proof_id()                  compact JSON/UUID5; deterministic evidence and relationship identity
+     │   ├─ Evidence()                   core/models.py; child declaration lines, method lexical_parentage
+     │   └─ Relationship()               core/models.py; parent -> DEFINES -> child, PROVEN, score 1.0
+     └─ CodeGraph.add_relationship()     graph/graph.py; preserve proof and enforce endpoint integrity
+```
+
+Output: a new CodeGraph containing every canonical entity and one lexical edge per
+non-module entity. The MODULE has no fabricated repository parent. Imports are
+declaration sites and receive DEFINES, never resolved IMPORTS. No CONTAINS duplication,
+CALLS or INHERITS edges exist. Partial extraction produces proven edges only for its
+surviving entities; callers keep result.partial separately. GraphPath/adjacency retain
+the original immutable Relationship/Evidence records. No repository merge occurs.
+
+Wrong input type raises TypeError; corrupted result invariants raise chained
+SemanticExtractionError before graph construction. Existing graph errors propagate
+if an insertion invariant fails. Identity is versioned, revision-deterministic and
+not repository-namespaced. Assembly uses existing graph insertion/sorting costs;
+it introduces no concurrency, persistence or alternate traversal behavior.
+
 ## Changes in this session (Phase 0.1)
 
 | Area | Change | Files | Commit | Decision |
@@ -523,7 +560,6 @@ are evaluated/resolved. No relationships or automatic repository-wide pass exist
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
 | Contracts | Add normalized JS/TS declaration, binding, import, recovery and pipeline tests before implementation. | tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-044 |
-
 | JS/TS semantics | Add common normalized declaration traversal, strict decoding, signatures, decorators and exports without changing Python. | src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/__init__.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-044, D-045 |
 | Import sites | Record ES bindings/type-only/side-effect imports and conservative static require sites, retaining literal spelling. | src/arctrellis/extraction/es_imports.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-045 |
 | Flow and capability documentation | Describe actual JS/TS transformation, omissions and unresolved import spelling. | README.md, decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-044, D-045 |
@@ -532,3 +568,14 @@ are evaluated/resolved. No relationships or automatic repository-wide pass exist
 | Decision-history correction | Restore historical entry boundaries from HEAD after an uncommitted insertion error. | decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-048 |
 | Scope correction | Require direct class-body membership before class method extraction, excluding embedded object methods. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-049 |
 | Phase gate and handoff | Record passing regressions, reviewed corrections and local-only continuation; finalize references separately. | README.md, decisions.md, flow.md, handoff.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-050, D-004 |
+
+## Changes in this session (Phase 1.4)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Lexical graph contracts | Add entity/edge cardinality, proof, identity, traversal, partial and multilingual pipeline tests before implementation. | tests/extraction/test_lexical.py | uncommitted | D-051 |
+| Graph assembly | Insert all entities, then proven lexical DEFINES edges with exact child evidence and deterministic identities. | src/arctrellis/extraction/lexical.py, src/arctrellis/extraction/__init__.py | uncommitted | D-051, D-052 |
+| Boundary documentation | Describe graph proof ownership, partial-result status, native isolation and the shared decoding exception policy. | README.md, decisions.md, flow.md, src/arctrellis/extraction/errors.py | uncommitted | D-051, D-052 |
+| Verification invocation | Use graph test package context after the standalone relative-import invocation failed. | decisions.md, flow.md, handoff.md | uncommitted | D-053 |
+| Security proof and handoff | Strengthen top-level non-execution fixture and record final regression, graph evidence and bounded continuation. | tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-054 |
+| Commit traceability | Finalize local feature references separately without rewriting history or embedding a self-referential hash. | decisions.md, flow.md, handoff.md | uncommitted | D-004, D-054 |

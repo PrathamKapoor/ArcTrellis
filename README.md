@@ -12,9 +12,9 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.3, Python/JavaScript/TypeScript semantic entity extraction
-from normalized syntax. Declarations and import sites become canonical CodeEntity values.
-Import/call/inheritance resolution,
+Early implementation: Phase 1.4, Python/JavaScript/TypeScript semantic entities and
+evidence-backed lexical graph assembly from normalized syntax. Declarations and
+import sites become canonical CodeEntity values. Import/call/inheritance resolution,
 routes, middleware, tests and database semantics are not implemented. There is no
 repository-wide indexing, GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
@@ -38,6 +38,7 @@ Current capabilities:
 - Python/JavaScript/TypeScript MODULE/CLASS/FUNCTION/METHOD/IMPORT extraction with lexical ownership.
 - Revision-deterministic IDs, exact locations, signatures and retained decorators.
 - Explicit partial results that conservatively omit malformed semantic declarations.
+- Single-file lexical graphs with proven DEFINES relationships and exact declaration evidence.
 
 Planned capabilities: repository acquisition and indexing; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
@@ -322,8 +323,10 @@ Discovery reads metadata; parsing reads bytes; extraction interprets normalized
 syntax and those already-owned bytes. Extraction never imports target modules,
 executes source, installs target dependencies, runs target tests or performs file
 reads. It imports no native parser types and outputs only canonical entities.
-It does not create relationships, populate a graph, resolve dependencies or process
-an entire repository. Traversal is iterative; final entity ordering adds sorting cost.
+Entity extraction does not create relationships, resolve dependencies or process
+an entire repository. A separate builder creates lexical edges from validated parent
+IDs. Both operations perform no target execution or filesystem reads. Traversal is
+iterative; final entity ordering adds sorting cost.
 
 ## JavaScript and TypeScript semantic entity extraction
 
@@ -365,6 +368,35 @@ false outer parent. No VARIABLES, EXPORTS, JSX entities or framework classificat
 are invented. Strict UTF-8 decoding raises SourceDecodingError on invalid bytes.
 Recovery suppresses affected declarations/scopes and marks partial; unaffected
 siblings survive. Existing revision-deterministic ID/coordinate contracts apply.
+
+## Evidence-backed lexical graph assembly
+
+```python
+from arctrellis.extraction import extract_entities, build_lexical_graph
+result = extract_entities(parsed)
+graph = build_lexical_graph(result)
+# Existing graph.shortest_path() returns relationships with their Evidence intact.
+```
+
+The builder accepts one ExtractionResult and creates a fresh CodeGraph. All entities
+are inserted first. Every non-module entity receives exactly one parent -> child
+DEFINES relationship, Confidence.PROVEN and confidence_score=1.0. Evidence points
+to the child's inclusive declaration SourceLocation and preserves all six exact
+syntax coordinates with analysis_method=lexical_parentage.
+
+The module has no fabricated repository parent. Imports receive lexical DEFINES,
+not IMPORTS: they are unresolved declaration sites, not resolved dependencies.
+No duplicate CONTAINS, CALLS or INHERITS relationships are emitted. A partial
+extraction can still prove the surviving entities' lexical ownership; the caller
+retains result.partial separately, as the graph makes no file-completeness claim.
+
+Evidence and relationship IDs use distinct versioned compact JSON keys and UUID5/
+NAMESPACE_URL, including parent/child identity and exact child proof coordinates.
+They reproduce equal input but are not edit-stable or repository-namespaced.
+The builder revalidates result invariants, failing explicitly with chained
+SemanticExtractionError for corrupted producer output. Graph storage/query
+semantics are unchanged. Repository-wide assembly and semantic resolution remain
+future work.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.
