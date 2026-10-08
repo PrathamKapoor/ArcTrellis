@@ -46,7 +46,9 @@ def resolve_imports(index: RepositoryIndexResult) -> ImportResolutionResult:
     graph = CodeGraph()
     decisions = []
     try:
-        RepositoryIndexResult(index.inventory, index.graph, index.file_results, index.call_sites)
+        RepositoryIndexResult(
+            index.inventory, index.graph, index.file_results, index.call_sites, index.route_observations
+        )
         for entity in index.graph.entities():
             graph.add_entity(entity)
         for edge in index.graph.relationships():

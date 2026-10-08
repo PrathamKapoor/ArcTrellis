@@ -31,7 +31,7 @@ from arctrellis.extraction import ...      src/arctrellis/extraction/__init__.py
  └─ import .lexical                       src/arctrellis/extraction/lexical.py; proven single-file graph assembly
 ```
 
-Output: importable domain, graph, ingestion, parsing and extraction APIs. Installation failures propagate from pip.
+Output: importable domain, graph, ingestion, parsing, extraction, indexing, resolution, calls and framework APIs. Installation failures propagate from pip.
 There is no service process, API or persistence.
 
 ## 2. Source locations and entities
@@ -490,6 +490,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
      │   ├─ parse_discovered_file()      parsing/parser.py; bounded safe current bytes and normalized syntax
      │   ├─ extract_entities()          extraction/__init__.py; canonical language dispatch
      │   ├─ extract_call_sites()        calls/extraction.py; retain body-owned observations before releasing syntax
+     │   ├─ extract_framework_observations() frameworks/extraction.py; retain route/provenance syntax before release
      │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
      │   ├─ _file_entity()               create path-based FILE with analyzed byte size
      │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
@@ -502,7 +503,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
  └─ RepositoryIndexResult()              indexing/models.py; validate ordered outcomes and graph counts
 ```
 
-Output: inventory, merged in-memory graph, frozen per-file summaries and a source-ordered CallSite tuple. FILE identity
+Output: inventory, merged in-memory graph, frozen per-file summaries, source-ordered CallSite and HttpRouteObservation tuples. FILE identity
 uses path/language, not declaration positions; no repository entity is invented.
 Counts include FILE and membership edges. ParsedSource, bytes, trees, exceptions and
 tracebacks are not retained. Typed source/parsing/extraction failures return bounded
@@ -601,6 +602,28 @@ CallResolutionInvariantError. Duplicate import bindings are ambiguity witnesses,
 selected callable targets. Local runtime imports avoid initialization cycles; they
 load only ArcTrellis result types, never target modules. Assignment/parameter shadowing
 and runtime dispatch are not modeled, so no CALLS edge is PROVEN.
+
+## 18. Static framework route observations and endpoint resolution
+
+Input: ParsedSource with its existing ExtractionResult during indexing; retained observations plus matching import/call snapshots during resolution.
+
+```text
+extract_framework_observations()           src/arctrellis/frameworks/extraction.py
+ ├─ _bindings()                           require unique canonical framework imports and preceding constructors
+ │   └─ _writes()                         reject module rebinding/context captures and shadowed require
+ ├─ _python_routes() / _express_routes()   inspect direct decorators/registrations without execution
+ └─ _observe()                            retain static path/methods, handler syntax and exact spans
+resolve_http_endpoints()                   src/arctrellis/frameworks/resolution.py
+ ├─ _validate_snapshots()                 reject stale inputs before adding graph facts
+ ├─ framework import decision/inventory   reject known internal framework-name collisions, even failed files
+ ├─ _HandlerIndex()                       index direct functions/import bindings/declaration spans once
+ ├─ _handler()                            match canonical decorated declarations or indexed Express references
+ ├─ _endpoint()                           one API_ENDPOINT per static HTTP method
+ └─ _relationship()                       preserve registration-site Evidence for DEFINES and EXPOSES
+     └─ CodeGraph.add_relationship()       retain immutable proof in the independent graph
+```
+
+Observations separate syntax from target selection. Constructor/import provenance rejects unrelated .get/.route receivers and visible contradictory writes. Decorator arguments use framework-specific path/rule keywords; splats and invalid duplicates remain unsupported. Express one-argument get is a settings accessor. Direct module handler visibility is retained separately from handler syntax; explicit rebinding or block-only targets stay unresolved. Unsupported paths/methods create a decision but no endpoint. A valid static registration with an unknown/ambiguous handler retains its endpoint and DEFINES proof, with no EXPOSES edge. Wildcard/conditional imports and class import shadows cannot establish receiver provenance. Exact decorated declaration spans prevent same-name nested handler collisions. Python decorator association is PROVEN/1.0; Express local/import-assisted references remain LIKELY/0.85 or 0.75. No middleware, route mounting/prefix composition or framework CALLS are added. Typed extraction errors become explicit FAILED file outcomes; inconsistent snapshots raise FrameworkResolutionInvariantError. Resolution reads retained semantic records only; inputs remain unchanged.
 
 ## Changes in this session (Phase 0.1)
 
@@ -750,3 +773,18 @@ and runtime dispatch are not modeled, so no CALLS edge is PROVEN.
 | Static block scope | Exclude class-owned static-block bindings from ordinary method lookup. | src/arctrellis/calls/resolution.py, tests/calls/test_resolution.py, README.md | e074bbb87e6c242536017d1b4186645b69aa12cb | D-077 |
 | Optional punctuation | Exclude normalized comment/type spans from optional invocation detection. | src/arctrellis/calls/extraction.py, tests/calls/test_extraction.py | e074bbb87e6c242536017d1b4186645b69aa12cb | D-078 |
 | Verification and handoff | Record final gates, smoke evidence, intentional limits and twelve-section continuation state. | README.md, decisions.md, flow.md, handoff.md | e074bbb87e6c242536017d1b4186645b69aa12cb | D-079 |
+
+## Changes in this session (Phase 1.8)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Route contracts | Add immutable observations, provenance, IDs, errors and test-first public contracts. | src/arctrellis/frameworks/, tests/frameworks/ | uncommitted | D-080 |
+| Framework syntax | Require constructor/import provenance and preserve conservative static registration syntax. | src/arctrellis/frameworks/extraction.py, tests/frameworks/test_endpoints.py | uncommitted | D-081 |
+| Index integration | Retain lightweight route observations/counts during the existing parse lifetime. | src/arctrellis/indexing/, src/arctrellis/resolution/imports.py, src/arctrellis/calls/resolution.py | uncommitted | D-082 |
+| Endpoint graphs | Resolve handlers and add deterministic registration-backed DEFINES/EXPOSES in an independent graph. | src/arctrellis/frameworks/resolution.py, tests/frameworks/test_endpoints.py | uncommitted | D-083 |
+| Provenance corrections | Reject shadowed constructors, invalid argument shapes, out-of-scope handlers and stale decorator coordinates. | src/arctrellis/frameworks/, src/arctrellis/indexing/models.py, tests/frameworks/ | uncommitted | D-084 |
+| Engineering contracts | Add mixed fixtures, memory/failure/import-order/proof tests and retain strict annotations/formatting. | tests/frameworks/fixtures.py, tests/frameworks/test_contracts.py, src/arctrellis/frameworks/ | uncommitted | D-085 |
+| Framework identity | Defer known internal modules that shadow framework package names. | src/arctrellis/frameworks/resolution.py, tests/frameworks/test_endpoints.py | uncommitted | D-086 |
+| Scope/provenance review | Restrict direct imports, reject wildcard/class/require shadows, and match complete decorated wrapper spans. | src/arctrellis/frameworks/extraction.py, tests/frameworks/test_endpoints.py | uncommitted | D-087 |
+| Public documentation and smoke | Explain supported HTTP patterns/limits and provide a repeatable evidence-backed mixed trace command. | README.md, tests/frameworks/smoke.py, decisions.md, flow.md | uncommitted | D-088 |
+| Final verification and handoff | Record real gates, negative subcases, skips, local audits and twelve-section continuation state. | tests/frameworks/test_endpoints.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-089 |

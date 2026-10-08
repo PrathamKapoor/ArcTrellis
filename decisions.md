@@ -822,3 +822,102 @@ Append-only record of engineering decisions.
 - Alternatives considered: Proceeding into frameworks exceeds this phase; claiming full dispatch/export semantics or other operating systems would overstate evidence; rewriting history for self-referential hashes is unnecessary.
 - Consequences: No runtime dependencies, parser/core/graph redesign, source execution, remote or publication is introduced. Snapshot graphs remain mutable by existing contract; IDs are not edit-stable or repository-namespaced. The next authorized phase may investigate framework entry points.
 - Files: README.md, decisions.md, flow.md, handoff.md
+
+### D-080: Separate static route observations from endpoint resolution
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: The authorized initial HTTP adapter layer must retain evidence and avoid fabricated framework semantics.
+- Decision: Create frameworks models, IDs, errors and public contract tests. Retain frozen framework constructor provenance and route syntax without source bytes or a selected handler target. Use versioned canonical JSON and UUID5; preserve unsupported static-path/method observations explicitly.
+- Why: The initial public test failed with ModuleNotFoundError: arctrellis.frameworks. Observations are not graph facts; runtime framework packages are unnecessary.
+- Alternatives considered: Combining syntax recognition with handler selection hides uncertainty; anonymous synthetic handlers and native nodes violate existing boundaries.
+- Consequences: IDs remain revision-deterministic and not repository-namespaced; only FastAPI, Flask and Express are supported.
+- Files: src/arctrellis/frameworks/models.py, src/arctrellis/frameworks/ids.py, src/arctrellis/frameworks/errors.py, src/arctrellis/frameworks/__init__.py, tests/frameworks/__init__.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+
+### D-081: Require simple constructor provenance and literal route declarations
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: The authorized initial HTTP adapter layer must retain evidence and avoid fabricated framework semantics.
+- Decision: Use canonical import metadata plus a unique preceding module-level constructor assignment. Reject duplicate/rebound import and instance names. Recognize Python decorators and direct module-level Express registrations; use only unescaped single quoted or double quoted slash-prefixed paths. Flask route defaults to GET and literal method collections create separate methods; router paths remain local.
+- Why: Normalized samples verified assignment/call/decorator/keyword_argument fields and Express variable_declarator/member_expression/arguments. Target code is never evaluated.
+- Alternatives considered: Name-only .get/.route matching produces false positives; evaluating strings, application factories or mounted prefixes exceeds static scope.
+- Consequences: FastAPI api_route, Flask convenience decorators, Blueprint/prefix/mount composition and non-module Express registrations are deferred. Inline Express callbacks remain unresolved; only the final argument is the handler, never an earlier middleware argument.
+- Files: src/arctrellis/frameworks/extraction.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+
+### D-082: Capture route observations during the existing per-file parse lifetime
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: The authorized initial HTTP adapter layer must retain evidence and avoid fabricated framework semantics.
+- Decision: Extend indexing with final default route observation tuple/count fields. Extract observations after calls before releasing ParsedSource; typed framework extraction failure is FAILED with zero semantic observations. Preserve extended fields during import/call snapshot validation.
+- Why: One source read supplies entities, calls and framework syntax; persistent results retain no parse trees or source bytes. Existing positional APIs and pre-resolution graph counts remain compatible.
+- Alternatives considered: A resolution-time reread can analyze a different revision; retaining ParsedSource grows repository memory; duplicating observations per file adds storage.
+- Consequences: Route counts are observations, not endpoint counts. Unsupported patterns do not mark a syntactically complete file partial.
+- Files: src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/resolution/imports.py, src/arctrellis/calls/resolution.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+
+### D-083: Assemble endpoint graphs with registration evidence and explicit handler uncertainty
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: The authorized initial HTTP adapter layer must retain evidence and avoid fabricated framework semantics.
+- Decision: Add resolve_http_endpoints(index, imports, calls) returning a new graph. API_ENDPOINT names are METHOD path, qualified names path::http:METHOD:path@start_byte, parent MODULE. Each static method receives a separate deterministic entity and PROVEN/1.0 MODULE DEFINES edge. Python exact decorated-handler EXPOSES is PROVEN/1.0; Express unique local/import-assisted handler EXPOSES is LIKELY/0.85 or 0.75. Unresolved/ambiguous handlers retain endpoints but no EXPOSES.
+- Why: The user requires endpoint-to-handler-to-CALLS traces and distinct proof for each registration site. Resolution uses existing import decisions and semantic records without source reads or import reruns.
+- Alternatives considered: Guessing ambiguous handlers, creating middleware/CALLS edges, default callable imports or runtime framework introspection is out of scope.
+- Consequences: Duplicate registrations remain distinct; graph snapshots stay mutable by existing contract. Handler counts count observations, while multiple-method observations produce multiple endpoints/EXPOSES edges.
+- Files: src/arctrellis/frameworks/resolution.py, src/arctrellis/frameworks/__init__.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+
+### D-084: Reject uncovered provenance, argument and snapshot false positives
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: Independent review reproduced unsupported framework registration and handler associations in the initial adapter.
+- Decision: Reject module-shadowed require, Python with/except/pattern captures, invalid/duplicate framework-specific path arguments and argument splats. Express get with one argument is a settings accessor, not a registration; obvious non-callable argument literals cannot establish a route. Retain handler syntax with a support flag when explicit writes or block-only declarations prevent a direct module binding. Require decorator containment in its handler declaration and binding point containment/order, in addition to byte containment. Preserve supported declarations and direct exports without implementing full alias/dataflow or middleware classification.
+- Why: Focused regression run failed ten assertions across require/context writes, decorator arguments, Express settings/numeric arguments and handler reassignment. Block-only function/arrow tests failed both subcases. Normalized probes verified as_pattern alias, named_expression name and case_pattern shapes. After corrections the framework suite ran 27 tests OK.
+- Alternatives considered: Ignoring these statically visible contradictions creates false endpoints; complete environment/dataflow or middleware models exceed scope; guessing an unrelated same-name declaration cannot support PROVEN EXPOSES.
+- Consequences: Receivers with potential module writes are omitted; unsafe handler bindings keep a static endpoint but no EXPOSES. Malformed/invalid static registration arguments remain unsupported. Conservative omissions may reduce recall. No existing call-resolution shadowing contract is changed.
+- Files: src/arctrellis/frameworks/extraction.py, src/arctrellis/frameworks/models.py, src/arctrellis/frameworks/ids.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/indexing/models.py, tests/frameworks/test_endpoints.py, tests/frameworks/test_contracts.py, decisions.md, flow.md
+- Symptom: Initial probes produced endpoint_count=1 for fake/invalid registrations, resolved a rebound or block-only handler, and accepted unrelated decorator targets or binding points on line 999.
+- Root cause: The initial write pass omitted context/pattern/require shadowing; argument recognition accepted any first literal; handler lookup used structural parentage without direct module visibility; retained coordinates omitted decorator association/binding point constraints.
+- Regression test: tests/frameworks/test_endpoints.py test_shadowed_require_and_python_context_bindings_are_rejected, test_invalid_argument_shapes_and_express_settings_getter_are_not_routes, test_explicit_module_handler_rebinding_is_not_selected, test_block_only_handler_is_not_visible_at_module_registration; tests/frameworks/test_contracts.py test_decorator_cannot_be_redirected_to_unrelated_declaration.
+
+### D-085: Harden framework contracts and preserve the strict quality gate
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: New adapters need independent model, lifetime, import-order, proof and mixed-pipeline checks plus existing lint/types.
+- Decision: Add a reusable synthetic HTTP fixture and observation/snapshot/security tests. Check all public package import orders in fresh interpreters, bounded failure summaries, no retained bytes/trees, source-free resolution, deterministic reruns and existing endpoint-to-handler-to-CALLS paths. Use explicit SyntaxNode work-item lists, method tuple annotations and distinct typed local variables; format Python with the existing Ruff configuration. Retry a failed atomic patch using inspected formatted contexts.
+- Why: Framework contracts ran 27 tests OK. Initial Ruff reported 50 errors (two autofixable); formatting reduced remaining issues to fixture line lengths and an unused import. Initial mypy reported nine annotation/inference errors, then three mixed name/list errors after adding visibility checks. No broad suppressions or dependency/configuration changes are needed. One atomic patch failed with Failed to find expected lines in tests/frameworks/test_contracts.py; inspection confirmed no changes from that attempt.
+- Alternatives considered: Weakening strict typing/lint hides defects; full syntax snapshots are brittle; retaining target framework packages or executing target code violates the security boundary.
+- Consequences: Source/tests follow the existing gate; test subprocesses import ArcTrellis only. Framework models retain immutable scalar/tuple/span values. Other operating systems and runtime framework behavior are not claimed verified.
+- Files: src/arctrellis/frameworks/extraction.py, src/arctrellis/frameworks/resolution.py, tests/frameworks/fixtures.py, tests/frameworks/test_contracts.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+
+### D-086: Do not certify repository modules that shadow framework package names
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: A repository can define its own fastapi.py while using the same constructor import spelling as the supported external framework.
+- Decision: Use existing import decisions to reject internally resolved or ambiguous constructor dependencies as UNSUPPORTED. Also reject canonical root/src module or package-init framework-name paths present in inventory, including failed files with no module entity. No endpoint is created from that provenance. Ordinary unresolved external framework-name imports remain supported as source-level package identity evidence.
+- Why: The failing regression produced endpoint_count=1 and PROVEN association for a local fake fastapi.py defining FastAPI. Source spelling alone cannot defend runtime package identity when an indexed internal collision is visible.
+- Alternatives considered: Executing/importing packages violates the boundary; treating a shadow module as the framework produces a false claim; recursively analyzing framework implementation or arbitrary sys.path exceeds scope.
+- Consequences: Vendored/custom wrappers named after frameworks are explicitly unsupported. External package installation/runtime identity remains unverified; provenance means static canonical import plus constructor syntax. Inventory and existing resolution records are used without filesystem reads.
+- Files: src/arctrellis/frameworks/resolution.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+- Symptom: A fake internal fastapi.py yielded one supported endpoint instead of zero.
+- Root cause: Framework recognition validated canonical import metadata but did not consult internal import resolution or failed-file inventory collisions.
+- Regression test: tests/frameworks/test_endpoints.py test_internal_module_named_like_framework_does_not_prove_runtime_framework.
+
+### D-087: Close direct-import and decorated-scope provenance gaps
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: Follow-up review found additional simple import/write contradictions and an indexing abort for a valid nested same-name declaration.
+- Decision: Require constructor imports in direct module statements, decline module wildcard provenance, and include canonical class import bindings in receiver shadow checks. Detect shadowed require for imported Express handler references too. Reject all duplicate Python keyword arguments. Match decorated handlers by name plus exact start/end declaration span rather than name/end alone. Pre-index direct statement ranges and class import bindings; avoid per-route repository scans.
+- Why: Three focused tests failed six assertions for wildcard/conditional/class imports, duplicate options and imported require handlers. A valid decorated h ending in nested h raised ValueError: decorated handler declaration must contain the route decorator in both function and method fixtures. The nested declaration shares its enclosing declaration end but not start; containment validation correctly exposed the wrong dictionary selection.
+- Alternatives considered: Resolving wildcard exports or full control-flow environments adds unrequested infrastructure; accepting invalid duplicate arguments fabricates runtime registrations; catching the ValueError as a normal file failure hides the verified valid-source association defect.
+- Consequences: Provenance is restricted to direct imports/constructors; no complete runtime symbol model is claimed. Exact decorated wrapper identity prevents nested same-name overwrites. Existing extraction/call/import semantics remain unchanged.
+- Files: src/arctrellis/frameworks/extraction.py, tests/frameworks/test_endpoints.py, decisions.md, flow.md
+- Symptom: Contradictory import/keyword inputs emitted endpoints or EXPOSES; valid nested same-name decorated scopes aborted repository indexing with the ValueError above.
+- Root cause: Initial constructor lookup used semantic MODULE ownership for conditional imports, class imports and wildcard/require shadowing were not included, and decorated handler lookup keyed only name/end, allowing a nested declaration to overwrite its enclosing handler.
+- Regression test: tests/frameworks/test_endpoints.py test_wildcard_conditional_import_and_class_import_shadows_are_not_framework_provenance, test_duplicate_option_keywords_do_not_prove_route_registration, test_shadowed_require_does_not_resolve_express_imported_handler, test_final_nested_same_name_does_not_replace_decorated_handler.
+
+### D-088: Document the verified static HTTP subset and reproducible trace smoke
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: The adapter layer needs accurate public usage, source lifetime, confidence and uncertainty documentation for engineers continuing the project.
+- Decision: Update README current capabilities, supported patterns, naming/parentage, static literal restrictions, handler uncertainty and security limitations. Update the existing indexing flow and framework flow with actual call names/order. Add a local tests.frameworks.smoke command using the shared synthetic repository and original CodeGraph shortest_path; print counts, deterministic rerun and exact proof. Do not begin middleware semantics.
+- Why: The smoke ran four complete supported files, six observations, seven endpoints, four resolved-handler observations, one unresolved, one ambiguous and five EXPOSES edges, with deterministic=True. Verified trace: POST /payments EXPOSES create_payment at fastapi_app.py:5, fastapi_decorated_handler/PROVEN/1.0; create_payment CALLS validate_payment at line 7, python_lexical_call_resolution/LIKELY/0.85. The final independent review reran original reproductions and 32 framework tests, finding no remaining confirmed critical/important defect in the agreed scope.
+- Alternatives considered: Broad framework claims or runtime guarantees exceed evidence; retaining anonymous handlers or middleware edges invents semantics; an unrepeatable inline-only smoke makes future checks harder.
+- Consequences: The README distinguishes observation counts from expanded endpoints. Constructors/decorators/framework packages are never executed/imported, and endpoint resolution reads only retained records. IDs preserve existing revision/repository limits; mounted paths, runtime mutation and omitted framework patterns remain explicit.
+- Files: README.md, tests/frameworks/smoke.py, decisions.md, flow.md
+
+### D-089: Finalize the verified HTTP adapter gate and bounded handoff
+- Date / phase / commit: 2026-10-08, Phase 1.8, uncommitted
+- Context: Completed framework semantics must leave reproducible evidence, honest limitations and local continuation state before stopping.
+- Decision: Rewrite all twelve handoff sections with actual command results, corrected regressions, supported semantics and deliberate omissions. Extend negative subcases for failed internal framework-name files and Python named/pattern captures. Verify unchanged dependencies, public imports, source isolation/security searches, identities, forbidden/attribution audits and clean local commit finalization. Finalize only current commit-reference fields under D-004/D-067; stop before Phase 1.9.
+- Why: Full suite ran 327 tests OK with seven existing platform skips; framework suite ran 32 tests OK. Ruff lint and 88-file formatting passed, strict mypy checked 49 source files with no issues, compileall exited zero and pip check found no broken requirements. Public API and two architecture tests passed. Mixed smoke measured six observations, seven endpoints, four resolved/one unresolved/one ambiguous handler records and five EXPOSES edges, with equal reruns. Source searches found native imports and fixed grammar loading only in parsing. pyproject.toml has no diff.
+- Alternatives considered: Claiming runtime framework validity/full coverage or other operating systems exceeds verification; continuing into middleware violates scope; historical prose/global marker replacement and history rewriting are prohibited.
+- Consequences: Six symlink tests remain skipped for Windows privilege and one FIFO test for absent os.mkfifo; junction tests pass. Dynamic/mounted framework paths, middleware and runtime binding behavior remain deferred. Frozen result shells own mutable graphs; completed snapshots must not be mutated. No dependency, remote or publication is introduced.
+- Files: tests/frameworks/test_endpoints.py, README.md, decisions.md, flow.md, handoff.md

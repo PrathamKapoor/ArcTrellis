@@ -12,11 +12,12 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.7 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.8 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
-internal import-resolution and conservative static call graph subsets are implemented. Inheritance resolution,
-routes, middleware, tests and database semantics are not implemented. There is no
+internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
+and Express adapters identify HTTP endpoints with handler evidence. Inheritance resolution,
+middleware, test classification and database semantics are not implemented. There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
 
@@ -45,6 +46,8 @@ Current capabilities:
 - Conservative internal module imports with explicit unresolved/ambiguous decisions and LIKELY evidence.
 - Static body-owned call-site observations, explicit unresolved/ambiguous decisions and site evidence.
 - Conservative lexical, direct same-class and import-assisted CALLS with LIKELY confidence.
+- Static FastAPI/Flask/Express route observations with explicit handler uncertainty.
+- API_ENDPOINT entities, registration proof and endpoint-to-handler EXPOSES traces.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
 Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
@@ -303,7 +306,7 @@ qualified name, without guessing a Python package root. Classes/functions use
 is METHOD, including definitions inside class control flow and decorated descriptors.
 A nested function inside a method is FUNCTION. Async definitions retain `is_async`.
 Variables, lambdas and referenced external names are not extracted. Names beginning
-with `test_` remain ordinary functions; route decorators do not create endpoints.
+with `test_` remain ordinary functions; entity extraction alone does not create endpoints.
 
 `CodeEntity.signature` is an optional final field preserving existing positional
 constructor arguments. Classes, functions and methods retain exact multiline
@@ -446,7 +449,7 @@ with file_module_membership evidence. FILE UUID5 identity uses language/relative
 remaining stable across content edits; declaration/proof identity remains revision-based.
 Repository identity is deliberately deferred; no REPOSITORY node is invented.
 
-Only semantic graph records, inventory, diagnostic counts and lightweight CallSite observations survive per-file analysis.
+Only semantic graph records, inventory, diagnostic counts, lightweight CallSite values and HTTP route observations survive per-file analysis.
 ParsedSource, full source bytes and syntax trees are released after each helper returns.
 Summary records are immutable; CodeGraph retains its existing mutable API, so completed
 results should be treated as snapshots. This is not persistent indexing.
@@ -551,3 +554,97 @@ Call resolution revalidates snapshot identity/proof consistency and never reopen
 sources, reruns imports, executes target code or mutates input graphs. Indexing's
 existing source/resource/stable-tree limitations remain. Existing graph paths retain
 CALLS Evidence; traversal does not elevate static confidence to runtime proof.
+
+## Static HTTP framework endpoints
+
+```python
+from arctrellis.calls import resolve_calls
+from arctrellis.frameworks import resolve_http_endpoints
+from arctrellis.indexing import index_repository
+from arctrellis.resolution import resolve_imports
+
+index = index_repository("path/to/local/repository")
+imports = resolve_imports(index)
+calls = resolve_calls(index, imports)
+http = resolve_http_endpoints(index, imports, calls)
+print(http.observation_count, http.endpoint_count, http.resolved_handler_count)
+```
+
+`extract_framework_observations(parsed_source, extraction_result)` records syntax
+while indexing already owns the parse tree. `index.route_observations` is a frozen,
+hashable observation tuple ordered by relative path/start byte/end byte/ID; file
+summaries expose `route_observation_count`. These values retain constructor/import
+provenance, handler references and owned coordinates, without source bytes or trees.
+No entity extraction is repeated. Typed extraction failures discard that file's
+semantic observations and remain explicit FAILED outcomes; partial files retain
+only unaffected declarations. Unsupported route syntax does not change file
+completeness, which describes parsing/extraction rather than framework coverage.
+
+Supported initial adapters:
+
+- **FastAPI:** direct module `from fastapi import FastAPI/APIRouter` bindings,
+  including constructor aliases, followed by simple instance assignments. Direct
+  get/post/put/patch/delete/options/head decorators associate represented functions
+  or class methods, including async handlers. APIRouter paths are explicitly local;
+  constructor prefixes and include_router mounting are not composed.
+- **Flask:** direct module Flask constructor imports/aliases and app assignments,
+  with `@app.route` using a static literal path and optional literal list/tuple/set
+  of methods. The adapter default is GET. Explicit methods are normalized/deduplicated;
+  implicit HEAD/OPTIONS are never expanded. Convenience verb decorators and Blueprint
+  composition are outside this adapter.
+- **Express:** direct default ES import or simple CommonJS require of "express",
+  followed by a simple module-level app or express.Router initialization. Direct
+  module registrations support get/post/put/patch/delete/options/head. One-argument
+  app.get is a settings accessor, not a registration. Only the final argument is
+  the handler reference; earlier arguments are counted without middleware classification.
+
+Supported paths are slash-prefixed, unescaped single/double quoted strings.
+Interpolation, escaped strings, concatenation, templates and variables are not
+interpreted. Invalid duplicate/path arguments and Python argument splats remain
+unsupported. Constructors, imports and receivers must have direct static provenance;
+visible reassignment, context/pattern captures, wildcard imports, shadowed require
+and known internal framework-name modules cannot prove an endpoint. This establishes
+source-level canonical package/constructor provenance, not installed package identity
+or a guarantee of actual runtime registration. Arbitrary runtime mutation remains
+outside the analysis model.
+
+Resolution records distinguish RESOLVED, UNRESOLVED, AMBIGUOUS and UNSUPPORTED.
+Each static HTTP method creates an API_ENDPOINT named `POST /payments`, with qualified
+name `path::http:POST:/payments@start_byte` and parent MODULE. Duplicate registration
+sites remain distinct. Dynamic/unsupported path or methods create no endpoint;
+a proven static registration with an unresolved/ambiguous handler retains its endpoint
+and DEFINES evidence, with **no EXPOSES edge**. Handler counts refer to observations;
+a multi-method observation expands into several endpoints and edges.
+
+MODULE -> DEFINES -> API_ENDPOINT is PROVEN/1.0 with registration evidence.
+API_ENDPOINT -> EXPOSES -> handler points in the direction needed for tracing:
+Python decorator association is PROVEN/1.0; unique Express module handlers are
+LIKELY/0.85 and import-assisted handlers LIKELY/0.75. Express imported references
+reuse existing module decisions and require a directly exported FUNCTION for named,
+aliased, namespace or require-member lookup. Type-only, default-callable and general
+CommonJS export assignment/re-export semantics are not resolved. Explicit handler
+rebinding and block-only local declarations stay unresolved. Anonymous inline callbacks
+have no canonical handler entity and are never fabricated.
+
+Every new edge retains the registration/decorator SourceLocation and all six exact
+coordinates. Evidence methods distinguish route declarations and handler associations.
+Endpoint/proof/observation IDs use versioned canonical JSON and UUID5; they reproduce
+identical input but are not edit-stable or repository-namespaced. Existing graph paths
+can follow endpoint -> EXPOSES -> handler -> CALLS -> callee with both proofs intact.
+
+Resolution copies the completed call graph, preserves all prior evidence and validates
+matching snapshots. It performs no source reads, framework imports, constructor or
+decorator execution, Node invocation, dependency installation or environment evaluation.
+No framework CALLS or APPLIES_MIDDLEWARE relationships are added.
+
+Deferred: api_route, module-namespace constructor imports, application factories,
+nested/conditional Express registration, router mounting/prefix composition,
+Flask Blueprints, Express app.use and route chains, middleware semantics, dynamic
+routes, runtime introspection and frameworks beyond these three adapters.
+
+Local reproducible verification:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/frameworks -t . -v
+.venv\Scripts\python.exe -m tests.frameworks.smoke
+```

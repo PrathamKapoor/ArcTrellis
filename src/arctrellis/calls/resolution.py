@@ -158,7 +158,9 @@ def resolve_calls(index: RepositoryIndexResult, imports: ImportResolutionResult)
     if not isinstance(index, RepositoryIndexResult) or not isinstance(imports, ImportResolutionResult):
         raise TypeError("call resolution requires repository and import result snapshots")
     try:
-        RepositoryIndexResult(index.inventory, index.graph, index.file_results, index.call_sites)
+        RepositoryIndexResult(
+            index.inventory, index.graph, index.file_results, index.call_sites, index.route_observations
+        )
         ImportResolutionResult(imports.graph, imports.resolutions)
         entities = {e.id: e for e in index.graph.entities()}
         if imports.graph.entities() != index.graph.entities():

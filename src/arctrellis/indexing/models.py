@@ -6,6 +6,7 @@ from enum import StrEnum
 from arctrellis.calls.models import CallSite, _site_order
 from arctrellis.core import EntityKind
 from arctrellis.extraction.models import _entity_span
+from arctrellis.frameworks.models import HttpRouteObservation, _route_order
 from arctrellis.graph import CodeGraph
 from arctrellis.ingestion import DiscoveredFile, Language, RepositoryInventory
 
@@ -27,18 +28,25 @@ class FileIndexResult:
     error_type: str | None = None
     error_message: str | None = None
     call_site_count: int = 0
+    route_observation_count: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.language, Language) or not isinstance(self.status, FileIndexStatus):
             raise TypeError("language/status must be canonical enums")
         DiscoveredFile(self.path, 0, self.language)
-        for count in (self.entity_count, self.relationship_count, self.diagnostic_count, self.call_site_count):
+        for count in (
+            self.entity_count,
+            self.relationship_count,
+            self.diagnostic_count,
+            self.call_site_count,
+            self.route_observation_count,
+        ):
             if type(count) is not int:
                 raise TypeError("counts must be non-boolean integers")
             if count < 0:
                 raise ValueError("counts must be nonnegative")
         if self.status is FileIndexStatus.FAILED:
-            if self.entity_count or self.relationship_count or self.call_site_count:
+            if self.entity_count or self.relationship_count or self.call_site_count or self.route_observation_count:
                 raise ValueError("failed files cannot contribute graph records")
             for text in (self.error_type, self.error_message):
                 if not isinstance(text, str):
@@ -65,6 +73,7 @@ class RepositoryIndexResult:
     graph: CodeGraph
     file_results: tuple[FileIndexResult, ...]
     call_sites: tuple[CallSite, ...] = ()
+    route_observations: tuple[HttpRouteObservation, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.inventory, RepositoryInventory) or not isinstance(self.graph, CodeGraph):
@@ -115,6 +124,54 @@ class RepositoryIndexResult:
             counts[site.path] = counts.get(site.path, 0) + 1
         if any(counts.get(f.path, 0) != f.call_site_count for f in self.file_results):
             raise ValueError("call site counts must match per-file summaries")
+        if not isinstance(self.route_observations, tuple) or any(
+            not isinstance(r, HttpRouteObservation) for r in self.route_observations
+        ):
+            raise TypeError("route observations must be an immutable canonical tuple")
+        if self.route_observations != tuple(sorted(self.route_observations, key=_route_order)) or len(
+            {r.id for r in self.route_observations}
+        ) != len(self.route_observations):
+            raise ValueError("route observations must be ordered with unique IDs")
+        route_counts: dict[str, int] = {}
+        for route in self.route_observations:
+            module = entities.get(route.owner_module_id)
+            summary = summaries.get(route.path)
+            witness = entities.get(route.binding.import_entity_id)
+            if (
+                module is None
+                or module.kind is not EntityKind.MODULE
+                or module.location is None
+                or module.location.file_path != route.path
+                or module.language != route.language.value
+                or summary is None
+                or summary.status is FileIndexStatus.FAILED
+                or summary.language is not route.language
+                or witness is None
+                or witness.kind is not EntityKind.IMPORT
+                or witness.parent_id != module.id
+            ):
+                raise ValueError("route observation requires an analyzed module and import witness")
+            span = _entity_span(module)
+            if (
+                route.span.start_byte < span.start_byte
+                or route.span.end_byte > span.end_byte
+                or route.binding.span.start_byte < span.start_byte
+                or route.binding.span.end_byte > span.end_byte
+                or (route.binding.span.start_line, route.binding.span.start_column)
+                < (span.start_line, span.start_column)
+                or (route.binding.span.end_line, route.binding.span.end_column) > (span.end_line, span.end_column)
+                or (route.span.start_line, route.span.start_column) < (span.start_line, span.start_column)
+                or (route.span.end_line, route.span.end_column) > (span.end_line, span.end_column)
+                or _entity_span(witness).end_byte > route.binding.span.start_byte
+            ):
+                raise ValueError("route coordinates/provenance must fit the canonical module")
+            route_counts[route.path] = route_counts.get(route.path, 0) + 1
+        if any(route_counts.get(f.path, 0) != f.route_observation_count for f in self.file_results):
+            raise ValueError("route observation counts must match file summaries")
+
+    @property
+    def route_observation_count(self) -> int:
+        return len(self.route_observations)
 
     @property
     def call_site_count(self) -> int:

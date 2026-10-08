@@ -2,151 +2,155 @@
 
 ## 1. Current Phase
 
-Phase 1 — Repository Understanding. Subphase 1.7 — Static call-site extraction and conservative call resolution.
-Objective: retain body-owned invocation observations during indexing and infer evidence-backed CALLS only for unique static candidates.
-Status: complete. Phase 1.8 was not started.
+Phase 1 — Repository Understanding. Subphase 1.8 — Framework semantic adapters and HTTP entry-point extraction.
+Objective: recognize static FastAPI/Flask/Express route syntax and produce evidence-backed API_ENDPOINT/EXPOSES.
+Status: complete implementation and verification. Phase 1.9 is not started.
 
 ## 2. Work Completed
 
-- Added arctrellis.calls with immutable CallSite, CalleeKind, resolution records/status/result, typed errors and public extraction/resolution APIs.
-- Calls are observations, not CodeEntity values. UUID5/versioned canonical JSON includes language, relative path, owner, callee kind/parts and byte endpoints.
-- Body-aware iterative extraction matches existing declaration IDs through lexical parent/name/end and covering coordinates, rather than treating span containment as execution ownership.
-- Functions, methods, arrow/function-expression bodies and executable module statements retain static NAME/non-computed member calls. Nested scopes switch owners.
-- Decorators/defaults/annotations/bases, class execution, anonymous/object callable bodies, optional/computed/dynamic invocations and constructor invocation are omitted. Ordinary constructor arguments, destructuring defaults/keys and JSX expression children may contain independent calls.
-- Repository indexing retains only lightweight CallSite tuples and per-file counts, never ParsedSource/source bytes/trees. Failed files contribute none; partial files retain safe surviving scopes.
-- Resolution indexes functions/methods/import bindings once, uses existing import decisions, and returns a new graph. Nearest represented bindings block farther names; class namespaces are not enclosing method closures.
-- Lexical FUNCTION and direct same-class self/cls/this METHOD matches are LIKELY/0.85. Imported function/module-member matches are LIKELY/0.75. No CALLS is PROVEN.
-- Duplicate callable/binding witnesses are ambiguous; unknown targets unresolved; neither creates an edge. Separate sites retain separate relationship/evidence IDs.
-- Evidence identifies the actual invocation and all six syntax coordinates. Existing shortest_path preserves CALLS proof along a -> b -> c.
-- Corrected verified import initialization, escaped spelling, namespace visibility, omitted executable arguments/patterns, optional punctuation and snapshot-validation defects with failing regressions first.
+- Added arctrellis.frameworks: frozen FrameworkBinding/HttpRouteObservation, handler decisions/status/result, deterministic IDs, typed errors, observation extraction and endpoint resolution.
+- Constructor provenance uses direct canonical imports and unique preceding module-level assignments; receivers with visible writes, wildcard imports, class import shadows or shadowed require are not certified.
+- FastAPI FastAPI/APIRouter from-import aliases and seven direct method decorators support ordinary/async functions and represented methods. Exact decorated wrapper matching prevents nested same-name handler collisions.
+- Flask Flask aliases and route decorators support GET by default or static list/tuple/set methods; no implicit HEAD/OPTIONS expansion.
+- Express default ES/CommonJS imports and simple app/Router bindings support seven direct module-level method registrations. One-argument get is a settings accessor; final argument is the handler. Earlier argument count is retained without middleware classification.
+- Unescaped slash-prefixed quoted paths only. Dynamic paths, invalid duplicate/splat arguments and known internal framework-name collisions are unsupported. Router paths are local, never composed with prefixes/mounts.
+- Indexing retains lightweight observations/counts while ParsedSource is already live; no full source/trees escape. Typed framework extraction failures are explicit FAILED outcomes with zero calls/routes; safe partial siblings survive.
+- Resolution copies the completed call graph and preserves all previous proof. Same-module Express handlers and explicit exported imported functions use unique candidates; type-only/default callable/anonymous handlers stay unresolved.
+- One API_ENDPOINT per static HTTP method; duplicate sites remain distinct. MODULE DEFINES endpoint is PROVEN/1.0. Python endpoint EXPOSES decorated handler is PROVEN/1.0; Express local/imported association is LIKELY/0.85 or 0.75.
+- Unsupported declarations create no endpoint. A valid static declaration with unknown/ambiguous handler still creates its endpoint but no EXPOSES. No middleware or framework-generated CALLS edges are added.
+- Existing shortest_path retains EXPOSES/CALLS proof in FastAPI and Express endpoint-to-callee traces. Full reruns reproduce observations, entities, decisions, relationships and evidence.
 
 ## 3. Files Changed
 
-- src/arctrellis/calls/__init__.py — deliberate public APIs and errors.
-- src/arctrellis/calls/models.py — immutable observations/decisions, derived resolution counts.
-- src/arctrellis/calls/ids.py — validated revision-deterministic UUID5 identity and proof keys.
-- src/arctrellis/calls/errors.py — extraction/resolution boundary failures.
-- src/arctrellis/calls/extraction.py — normalized body-only iterative invocation extraction.
-- src/arctrellis/calls/resolution.py — indexed lexical/method/import matching and exact CALLS evidence.
-- src/arctrellis/indexing/models.py — final default call tuple/count fields and owner/count/span validation.
-- src/arctrellis/indexing/repository.py — extract calls during the existing per-file parse lifetime.
-- src/arctrellis/resolution/imports.py — preserve call observations when revalidating the repository snapshot.
-- tests/calls/__init__.py — package-aware test discovery.
-- tests/calls/fixtures.py — six-file mixed-language integration fixture.
-- tests/calls/test_models.py — immutability, coordinates, identity and canonical input contracts.
-- tests/calls/test_extraction.py — ownership, omissions, recovery, deep traversal and grammar boundary regressions.
-- tests/calls/test_indexing.py — counts, memory, public import order and non-execution contracts.
-- tests/calls/test_resolution.py — all resolution families, uncertainty, proof, traversal and deterministic integration.
-- README.md — current static call subset, public usage, confidence and limitations.
-- decisions.md — D-068 through D-079.
-- flow.md — extended indexing lifecycle, call extraction/resolution and current session changes.
-- handoff.md — current verified continuation state.
+- src/arctrellis/frameworks/__init__.py — deliberate public models/errors/extraction/resolution API.
+- src/arctrellis/frameworks/models.py — immutable syntax/provenance and explicit handler outcomes; containment validation.
+- src/arctrellis/frameworks/ids.py — versioned canonical JSON/UUID5 observation/proof identity.
+- src/arctrellis/frameworks/errors.py — explicit extraction and resolution invariant failures.
+- src/arctrellis/frameworks/extraction.py — normalized static constructor/route recognition and conservative visibility guards.
+- src/arctrellis/frameworks/resolution.py — snapshot/proof validation, indexed handler matching and endpoint graph assembly.
+- src/arctrellis/indexing/models.py — final default route tuple/count fields and owner/import/coordinate/count validation.
+- src/arctrellis/indexing/repository.py — extract observations before releasing each parse tree; bounded typed failure handling.
+- src/arctrellis/resolution/imports.py — preserve observations when revalidating repository snapshots.
+- src/arctrellis/calls/resolution.py — preserve observations during call snapshot validation; call behavior unchanged.
+- tests/frameworks/__init__.py — package-aware discovery.
+- tests/frameworks/test_endpoints.py — adapter coverage, false positives, uncertainty, recovery and regression cases.
+- tests/frameworks/test_contracts.py — model/snapshot/memory/failure/import-order/determinism/trace contracts.
+- tests/frameworks/fixtures.py — synthetic four-file mixed HTTP repository.
+- tests/frameworks/smoke.py — reproducible static endpoint counts and evidence trace.
+- README.md — supported framework patterns, public usage, confidence and security/coverage limitations.
+- decisions.md — D-080 through D-089; historical prefix preserved.
+- flow.md — extended indexing lifetime, observation/resolution call flow and session table.
+- handoff.md — verified continuation state in twelve sections.
 
 ## 4. Current Architecture / State
 
-scan_repository -> parse_discovered_file -> extract_entities -> extract_call_sites -> lexical/file graph assembly -> RepositoryIndexResult.
-resolve_imports(index) -> ImportResolutionResult; resolve_calls(index, imports) -> CallResolutionResult.
-Graphs retain PROVEN/1.0 DEFINES, LIKELY/0.90 IMPORTS and LIKELY/0.85 or 0.75 CALLS.
-Call resolution uses retained semantic values only, verifies matching snapshots/import proof, and never reads source again.
-File/module identities and entity/relationship counts remain compatible. Call-site counts are separate from graph edges.
-Frozen summary shells own mutable CodeGraph instances; consumers must treat completed results as snapshots.
-Repository identity/persistence remains deferred; IDs are not repository-namespaced or edit-stable.
+scan_repository -> parse_discovered_file -> extract_entities -> extract_call_sites -> extract_framework_observations -> lexical/file graph assembly -> RepositoryIndexResult.
+resolve_imports(index) -> ImportResolutionResult; resolve_calls(index, imports) -> CallResolutionResult;
+resolve_http_endpoints(index, imports, calls) -> FrameworkAnalysisResult.
+RepositoryIndexResult retains graph, inventory, summaries, immutable calls and immutable route observations.
+Framework analysis returns a new graph with API_ENDPOINT entities and DEFINES/EXPOSES; existing DEFINES/IMPORTS/CALLS remain unchanged.
+Handler counts count observations; methods may expand one observation into several endpoints/EXPOSES edges.
+No source rereads, target runtime execution, framework installation or persistence.
+IDs remain revision-deterministic, not edit-stable or repository-namespaced. Owned CodeGraph snapshots remain mutable by existing API.
 
 ## 5. Decisions Made
 
-- D-068 — observations and versioned call identity separate from targets.
-- D-069 — body-only normalized execution ownership and conservative omissions.
-- D-070 — lightweight repository observations/counts without syntax retention.
-- D-071 — indexed conservative resolution, uncertainty and confidence-specific site evidence.
-- D-072 — eliminate eager snapshot-import cycles; verify fresh public import orders.
-- D-073 — omit unsupported escaped identifier spellings without aborting indexing.
-- D-074 — respect Python class visibility and executable binding/constructor argument boundaries.
-- D-075 — revalidate coordinate containment and import decision/proof consistency.
-- D-076 — canonical ID validation and integrated depth/security/determinism hardening.
-- D-077 — exclude ECMAScript static-block locals from method lookup.
-- D-078 — distinguish optional punctuation from comments/type literals.
-- D-079 — verified handoff and bounded stop before frameworks.
+- D-080 — immutable route observations and provenance separate from endpoint/handler resolution.
+- D-081 — simple framework constructors and static direct route syntax; explicit conservative omissions.
+- D-082 — route observations/counts within the existing per-file parse lifetime.
+- D-083 — endpoint naming, module ownership, deterministic registration proof and confidence-specific EXPOSES.
+- D-084 — correct receiver writes, invalid arguments, module visibility and decorator/point containment.
+- D-085 — model/lifetime/import-order/proof tests, explicit types and unchanged quality tooling.
+- D-086 — internal framework-name collisions do not prove the external framework.
+- D-087 — direct/wildcard/class/require import guards and exact decorated scope identity.
+- D-088 — accurate public subset documentation and repeatable HTTP trace smoke.
+- D-089 — actual final gate, audits, negative subcases and bounded handoff.
 
 ## 6. Requirements and Constraints
 
-Local only: no remotes, push, uploads, GitHub APIs or publication.
-Every commit must use PrathamKapoor <prathamkapoor027@gmail.com> as author and committer; verify identity before each commit.
+Local only: no remote changes, push, GitHub APIs, uploads or publication.
+Every author/committer must be PrathamKapoor <prathamkapoor027@gmail.com>; verify before each commit; never global identity changes.
 No attribution trailers, paper/, research/ or .tex commits.
-No target code execution/import/require/Node/dependencies/scripts/hooks/tests/config evaluation.
-No new runtime dependencies or parser pin changes; pyproject.toml is unchanged.
-No inheritance, constructor targets, callbacks, higher-order dispatch, full dataflow or framework semantics.
-Keep decisions append-only; finalize only new commit fields/table cells, never descriptive occurrences of uncommitted.
-Keep strict mypy and Ruff rules unchanged.
+Target repositories are untrusted: never execute/import/require their source, run Node, install dependencies, run scripts/hooks/tests or evaluate constructors/decorators/config/environment.
+No new runtime dependencies or changed parser/tool pins. pyproject.toml is unchanged.
+No middleware, APPLIES_MIDDLEWARE, mounted/prefix route composition, broader frameworks or future retrieval/storage/infrastructure.
+Keep decisions append-only; finalize only new commit fields/table cells, never historical prose.
+Keep strict mypy and existing Ruff rules without broad suppressions.
 
 ## 7. Testing and Verification
 
-Verified environment: C:/Projects/ArcTrellis, Python 3.13.14, required Git identity, no remotes.
-Commands run with .venv/Scripts/python.exe:
+Verified environment: C:/Projects/ArcTrellis; Python 3.13.14; required Git identity; no remotes; clean initial tree.
+Ruff 0.16.10 and mypy 2.4.0 were checked directly.
+Commands use .venv/Scripts/python.exe:
 
-- -m unittest discover -s tests/calls -t . -v — 34 tests OK.
-- -m unittest discover -s tests -q — 295 tests OK, skipped=7; baseline was 261 OK/skipped=7.
+- -m unittest discover -s tests/frameworks -t . -v — 32 tests OK; subsequent package-aware -q rerun also passed.
+- -m unittest discover -s tests -q — 327 tests OK, skipped=7; baseline 295 OK/skipped=7.
+- -m unittest discover -s tests -v with skip/result filtering — 327 OK/skipped=7 and actual reasons confirmed.
 - -m ruff check src tests — All checks passed.
-- -m ruff format --check src tests — 77 files already formatted.
-- -m mypy src/arctrellis — Success, no issues in 43 source files.
+- -m ruff format --check src tests — 88 files already formatted.
+- -m mypy src/arctrellis — Success, no issues in 49 source files.
 - -m compileall -q src — exit 0.
 - -m pip check — No broken requirements found.
 - -m unittest tests.test_architecture -v — 2 tests OK; native imports remain parsing-only.
-- -c public calls/indexing/resolution imports — public APIs OK; fresh import-order regression also passed.
-- stdin temporary mixed_sources pipeline — supported6/complete6/partial0/failed0; call_sites6/resolved4/unresolved1/ambiguous1/CALLS4; deterministic rerun true.
+- -c public framework model/extraction/resolution imports — framework public API OK; fresh import-order tests also passed.
+- -m tests.frameworks.smoke — supported4/complete4/partial0/failed0; observations6/endpoints7/resolved-handler4/unresolved1/ambiguous1/unsupported0/EXPOSES5; deterministic=True.
+- Selected fake/rebinding/internal-name tests — 3 tests OK, including failed internal-name file and named/pattern capture subcases.
 
-Real smoke proof: service.py::create CALLS util.py::validate, service.py:5-5,
-python_imported_symbol_call_resolution, LIKELY, 0.75.
-Also service.py::create CALLS service.py::helper at line 6 with python_lexical_call_resolution/0.85,
-service.ts::submit CALLS util.ts::audit, and app.js::run CALLS helper.js::sanitize.
+Real trace: POST /payments EXPOSES create_payment at fastapi_app.py:5-5,
+fastapi_decorated_handler, PROVEN/1.0, bytes81..103/columns0..22;
+create_payment CALLS validate_payment at line7-7,
+python_lexical_call_resolution, LIKELY/0.85, bytes138..156/columns4..22.
 
-Source searches found native imports only in parsing; execution-mechanism search found only the existing fixed installed-grammar loader.
-git diff -- pyproject.toml returned no changes. Staged forbidden-file audit found zero prohibited paths among 19 files; staged diff check passed. Author and committer were verified with git var as the required identity. Attribution audit found no prohibited matches. Normal git diff --check passed (Git warned about expected LF-to-CRLF normalization).
+Initial expected failure: ModuleNotFoundError for the absent framework package.
+Reproduced/fixed defects: shadowed require, context/wildcard/class/conditional imports,
+invalid/duplicate decorator arguments, Express settings getter/numeric arguments,
+explicit handler rebinding/block-only targets, unrelated decorator association/point containment,
+and valid nested same-name handler ValueError. All are covered by persistent regressions.
+Initial strict typing errors were explicit list/tuple/local inference issues, fixed without suppression.
+Initial lint errors were formatting/import/line issues, fixed using Ruff and exact fixture-string splits.
+Two atomic patch attempts failed on already-formatted contexts and changed no files; inspected contexts were used to retry.
 
-Initial expected test failures: missing calls package/API/counts. Verified regression failures: circular public import,
-escaped callee ValueError, class namespace/static-block false edges, omitted arguments/patterns, optional comment omission,
-out-of-owner coordinates, stale import proof and noncanonical helper AttributeError; all corrected and regression-tested.
-Initial lint reported formatting/import/line issues; formatter/autofix and exact fixture-string splits corrected them.
-Initial strict typing reported one missing list annotation; corrected explicitly without suppression.
-
-Seven existing platform skips: six symlink tests require Windows link privilege (WinError 1314), FIFO test requires unavailable os.mkfifo.
-Junction tests passed. Other operating systems, real hostile filesystem races, runtime call behavior, and exhaustive language semantics were not tested.
+Source search found execution/native mechanisms only in parsing's fixed installed-grammar loader;
+no target execution mechanism was introduced. git diff -- pyproject.toml is empty; normal diff check passed.
+Six symlink tests skipped for Windows WinError1314; one FIFO test for absent os.mkfifo. Junction tests passed.
+Other operating systems, real hostile filesystem races, installed framework runtime validity and exhaustive dynamic semantics were not tested.
 
 ## 8. Known Issues / Risks
 
 Confirmed unresolved implementation defects: none found in the bounded reviews/gates.
-Confirmed limitations: assignment/parameter shadowing and runtime rebinding/export semantics are not modeled;
-self/cls/this conventions and static candidates remain heuristics. No complete call graph is claimed.
-Class/static-block environments without represented execution scopes may remain unresolved.
-Possible risks: unfamiliar dynamic/configured repositories can differ from static candidates; existing filesystem race/native resource limitations remain.
-Graphs are mutable snapshot objects; unauthorized caller mutation can stale summaries, detected at supported validation boundaries.
+Confirmed limitations: no final mounted router/Blueprint paths; no dynamic paths, middleware, runtime mutation or complete framework coverage.
+Constructor provenance is source-level canonical import/assignment evidence, not verification of installed runtime package identity.
+Express static handler inference remains LIKELY; general export/re-export, arbitrary assignment/dataflow and callback identity are not modeled.
+Possible risks: unfamiliar runtime/configured repositories may behave differently; existing native resource and filesystem race limits remain.
+Frozen summaries own mutable graphs; caller mutation can invalidate snapshot summaries, checked at supported resolver boundaries.
 
 ## 9. Unfinished Work
 
-No required Phase 1.7 implementation remains. Intentional omissions are not unresolved defects.
-Feature commit e074bbb87e6c242536017d1b4186645b69aa12cb exists locally; its decision/table references are finalized without history rewrite.
+No required Phase 1.8 implementation remains. Local implementation/reference finalization follows the verified gate.
+Intentional omissions are not unresolved defects. Phase 1.9 was not started.
 
 ## 10. Next Subphase
 
-Phase 1.8 — Framework semantic adapters and HTTP entry-point extraction.
-Do not begin it without the next authorized session. Likely initial candidates: FastAPI, Flask and Express.
+Phase 1.9 — Middleware semantics and framework flow enrichment, only in a later authorized session.
+Potential work includes statically defensible dependencies/hooks/Express middleware, APPLIES_MIDDLEWARE and router mount/prefix composition.
 
 ## 11. Critical Context
 
-CALLS source is actual MODULE/FUNCTION/METHOD owner; target is a unique eligible FUNCTION/METHOD.
-Evidence points to invocation, not target declaration. No PROVEN CALLS; lexical/method 0.85, imported 0.75.
-Imports must already be resolved and match preserved proof. Type-only/default callable imports do not resolve calls.
-Python unaliased dotted module bindings and longer member chains remain unresolved.
-Nearest import/function binding collisions remain ambiguous; candidate witness IDs may identify IMPORT bindings.
-Class parentage is structural ownership, not a promise that class namespaces are closures.
-Local feature commit: e074bbb87e6c242536017d1b4186645b69aa12cb (feat(calls): add conservative evidence-backed static call analysis).
-Preserve parser pins: tree-sitter 0.25.2 and the existing compatible grammar versions.
-The existing normalized parser, core graph traversal and ingestion safety behavior were not redesigned.
+EXPOSES direction is endpoint -> handler; CALLS remains actual caller -> callable.
+DEFINES endpoint proof is registration-site PROVEN/1.0.
+FastAPI/Flask decorator association is PROVEN/1.0; Express local/imported association LIKELY/0.85 or0.75.
+Evidence points to the decorator/registration and retains six syntax coordinates.
+Unsupported paths/methods/provenance produce no endpoint. Unknown/ambiguous handlers retain static endpoints but no EXPOSES.
+No framework CALLS or APPLIES_MIDDLEWARE. Existing call confidence is never elevated.
+Class imports and exact complete decorated spans matter for receiver/handler association.
+Preserve parser pins and all previous ingestion/parsing/extraction/graph/call/import contracts.
 
 ## 12. Agent Instructions
 
-Read decisions.md, flow.md and this file completely before changing code. Verify current Git/Python state; do not trust historical summaries.
-Preserve append-only decisions and current confidence/ownership/security boundaries. Write regression tests before verified bug fixes.
-Run call tests, full suite, Ruff lint/format, strict mypy, compileall, pip check and architecture audit.
-Never execute untrusted targets, reread sources during resolution, publish or add a remote.
-Verify identity and forbidden/attribution audits before local commits. Finalize only new commit-reference fields.
-Stop at the authorized phase boundary; the next work is framework entry-point semantics, not speculative dynamic dispatch.
+Read decisions.md, flow.md and this handoff completely before changing code; verify actual environment/Git state.
+Preserve append-only decision history and conservative provenance/confidence/security boundaries.
+Reproduce bugs and add regressions; never guess handler, framework, mounted path or middleware semantics.
+Run framework/full tests, Ruff lint/format, strict mypy, compileall, pip check, public import/isolation/security audits and smoke.
+Keep sources/trees out of repository results and perform no source rereads in resolution.
+Verify identities, forbidden paths and attribution before local commits; finalize current references only.
+Do not publish, add remotes, push, execute targets or continue beyond the authorized phase.

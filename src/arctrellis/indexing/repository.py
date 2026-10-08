@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 from arctrellis.calls import CallExtractionError, CallSite, extract_call_sites
 from arctrellis.core import CodeEntity, Confidence, EntityKind, Evidence, Relationship, RelationshipKind
 from arctrellis.extraction import ExtractionError, build_lexical_graph, extract_entities
+from arctrellis.frameworks import FrameworkExtractionError, HttpRouteObservation, extract_framework_observations
 from arctrellis.graph import CodeGraph, GraphError
 from arctrellis.ingestion import DiscoveredFile, scan_repository
 from arctrellis.parsing import DEFAULT_MAX_SOURCE_BYTES, ParsingError, parse_discovered_file
@@ -55,7 +56,7 @@ def _membership(file: CodeEntity, module: CodeEntity) -> Relationship:
 
 def _analyze_file(
     root: str | os.PathLike[str], file: DiscoveredFile, limit: int
-) -> tuple[FileIndexResult, CodeGraph | None, tuple[CallSite, ...]]:
+) -> tuple[FileIndexResult, CodeGraph | None, tuple[CallSite, ...], tuple[HttpRouteObservation, ...]]:
     if file.language is None:
         raise RepositoryIndexInvariantError("unsupported file reached analysis")
     diagnostics = 0
@@ -67,7 +68,9 @@ def _analyze_file(
         result = extract_entities(parsed)
         stage = "call_extraction"
         call_sites = extract_call_sites(parsed, result)
-    except (ParsingError, ExtractionError, CallExtractionError) as error:
+        stage = "framework_extraction"
+        routes = extract_framework_observations(parsed, result)
+    except (ParsingError, ExtractionError, CallExtractionError, FrameworkExtractionError) as error:
         error_type = type(error).__name__[:128]
         return (
             FileIndexResult(
@@ -81,6 +84,7 @@ def _analyze_file(
                 f"{stage} failed ({error_type})",
             ),
             None,
+            (),
             (),
         )
     try:
@@ -101,9 +105,11 @@ def _analyze_file(
             local.relationship_count,
             diagnostics,
             call_site_count=len(call_sites),
+            route_observation_count=len(routes),
         ),
         local,
         call_sites,
+        routes,
     )
 
 
@@ -117,8 +123,9 @@ def index_repository(
     graph = CodeGraph()
     outcomes = []
     sites: list[CallSite] = []
+    routes: list[HttpRouteObservation] = []
     for file in inventory.supported_files:
-        summary, local, calls = _analyze_file(root, file, max_source_bytes)
+        summary, local, calls, observations = _analyze_file(root, file, max_source_bytes)
         if local is not None:
             try:
                 for entity in local.entities():
@@ -129,7 +136,8 @@ def index_repository(
                 raise RepositoryIndexInvariantError(f"graph collision while merging {file.path}") from error
         outcomes.append(summary)
         sites.extend(calls)
+        routes.extend(observations)
     try:
-        return RepositoryIndexResult(inventory, graph, tuple(outcomes), tuple(sites))
+        return RepositoryIndexResult(inventory, graph, tuple(outcomes), tuple(sites), tuple(routes))
     except (TypeError, ValueError) as error:
         raise RepositoryIndexInvariantError("repository summary does not match merged graph") from error
