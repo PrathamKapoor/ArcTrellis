@@ -35,7 +35,7 @@ Append-only record of engineering decisions.
 ### D-004: Finalize commit references without rewriting history
 - Date / phase / commit: 2026-10-08, Phase 0.1, e7a2f98d078583b392170d323682870745311e45
 - Context: The required documentation must reference real commits, but a commit cannot contain its own final hash.
-- Decision: Commit verified implementation and documentation together, then replace their uncommitted markers with that implementation hash in a separate documentation finalization commit. The finalization commit does not need to embed its own hash.
+- Decision: Commit verified implementation and documentation together, then replace their acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 markers with that implementation hash in a separate documentation finalization commit. The finalization commit does not need to embed its own hash.
 - Why: This follows the explicit safe procedure and preserves truthful history. No implementation occurred in the earlier process-launch failure.
 - Alternatives considered: Amending commits changes the hash again; inventing a hash or deleting decision history breaks traceability.
 - Consequences: Implementation records reference the implementation commit; the later commit records reference finalization and the verified handoff.
@@ -497,7 +497,7 @@ Append-only record of engineering decisions.
 - Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Documentation review found D-044 insertion had split D-010, and moving the entry also moved D-010's three bug-detail lines.
 - Decision: Restore the complete historical prefix from HEAD and append only the new entries; inspect the resulting diff before commit.
-- Why: Previous decisions must remain unchanged. The editing error affected only uncommitted documentation, not source behavior or Git history.
+- Why: Previous decisions must remain unchanged. The editing error affected only acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 documentation, not source behavior or Git history.
 - Alternatives considered: Manually rewriting historical entries risks further changes; retaining misplaced bug context is inaccurate.
 - Consequences: Append-only history remains intact; patch contexts must use the actual end of the decisions file.
 - Files: decisions.md, flow.md
@@ -563,7 +563,7 @@ Append-only record of engineering decisions.
 - Files: tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-055: Index supported source files with explicit outcomes and bounded ownership
-- Date / phase / commit: 2026-10-08, Phase 1.5, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.5, acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79
 - Context: Single-file semantics are verified; repository analysis needs explicit completeness without retaining all syntax/source bytes.
 - Decision: Add indexing FileIndexStatus, FileIndexResult, RepositoryIndexResult and index_repository. Process inventory order synchronously; per-file helper releases ParsedSource after returning summary/semantic graph. Record typed source/extraction failures as FAILED with bounded stage/type text, never exception objects or source-derived exception messages. Discovery failures and graph collisions abort.
 - Why: Baseline ran 236 tests, OK (skipped=7). The user requires best-effort file analysis and explicit fatal invariants. Indexing tests ran 10 tests OK; full suite ran 246 tests OK (skipped=7). Mixed smoke: five complete supported files, zero partial/failed, 17 entities, 12 relationships; excluded node_modules and unsupported README stay outside the graph.
@@ -572,7 +572,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/indexing/__init__.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/errors.py, tests/indexing/__init__.py, tests/indexing/test_repository.py, README.md, decisions.md, flow.md
 
 ### D-056: Add path-based FILE identities and proven file-to-module membership
-- Date / phase / commit: 2026-10-08, Phase 1.5, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.5, acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79
 - Context: A merged graph needs source-file structural roots without inventing repository identity.
 - Decision: Use UUID5/NAMESPACE_URL with compact versioned JSON for FILE language/path identity, independent of byte positions. FILE nodes are parentless, location-free and retain analyzed size_bytes. Add one PROVEN/1.0 FILE DEFINES MODULE edge with file_module_membership evidence from module root coordinates; merge existing lexical records through CodeGraph APIs.
 - Why: FILE identity remains path-stable across source edits while existing declaration identity is revision-deterministic. Module evidence already exists; a repository root identity remains undefined.

@@ -596,7 +596,7 @@ mutable by its existing contract; consumers should treat completed results as sn
 | Flow and capability documentation | Describe actual JS/TS transformation, omissions and unresolved import spelling. | README.md, decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-044, D-045 |
 | Modifier correction | Scan actual field containers and exclude decorator arguments after failing regressions. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-046 |
 | Empty import correction | Preserve an unbound module site for an empty named clause instead of reporting false partial state. | src/arctrellis/extraction/es_imports.py, tests/extraction/test_javascript.py, README.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-047 |
-| Decision-history correction | Restore historical entry boundaries from HEAD after an uncommitted insertion error. | decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-048 |
+| Decision-history correction | Restore historical entry boundaries from HEAD after an acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 insertion error. | decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-048 |
 | Scope correction | Require direct class-body membership before class method extraction, excluding embedded object methods. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-049 |
 | Phase gate and handoff | Record passing regressions, reviewed corrections and local-only continuation; finalize references separately. | README.md, decisions.md, flow.md, handoff.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-050, D-004 |
 
@@ -615,6 +615,6 @@ mutable by its existing contract; consumers should treat completed results as sn
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Repository contracts | Add mixed-language, outcome, memory, collision and structural proof tests before implementation. | tests/indexing/__init__.py, tests/indexing/test_repository.py | uncommitted | D-055, D-056 |
-| Repository pipeline | Add ordered per-file analysis, structural membership, fatal collision handling and explicit summaries without syntax retention. | src/arctrellis/indexing/__init__.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/errors.py, src/arctrellis/indexing/ids.py | uncommitted | D-055, D-056 |
-| Documentation | Describe repository outcomes, ownership lifecycle and structural identity. | README.md, decisions.md, flow.md | uncommitted | D-055, D-056 |
+| Repository contracts | Add mixed-language, outcome, memory, collision and structural proof tests before implementation. | tests/indexing/__init__.py, tests/indexing/test_repository.py | acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 | D-055, D-056 |
+| Repository pipeline | Add ordered per-file analysis, structural membership, fatal collision handling and explicit summaries without syntax retention. | src/arctrellis/indexing/__init__.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/errors.py, src/arctrellis/indexing/ids.py | acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 | D-055, D-056 |
+| Documentation | Describe repository outcomes, ownership lifecycle and structural identity. | README.md, decisions.md, flow.md | acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 | D-055, D-056 |
