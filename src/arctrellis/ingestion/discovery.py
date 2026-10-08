@@ -5,27 +5,46 @@ Pathname checks cannot provide atomic containment against concurrent hostile
 filesystem changes; callers must keep the tree stable throughout the scan.
 """
 
-from collections.abc import Set
 import os
-from pathlib import Path, PurePosixPath
 import stat
+from collections.abc import Set
+from pathlib import Path, PurePosixPath
 
 from .errors import InvalidRepositoryPathError, RepositoryAccessError
 from .models import DiscoveredFile, Language, RepositoryInventory, SkippedPath, SkipReason
 
-
-DEFAULT_EXCLUDED_DIRECTORIES: frozenset[str] = frozenset({
-    ".git", "node_modules", ".venv", "venv", "env", "__pycache__", "dist", "build",
-    "coverage", ".coverage", ".next", ".pytest_cache", ".mypy_cache", ".ruff_cache",
-    ".cache", "vendor",
-})
+DEFAULT_EXCLUDED_DIRECTORIES: frozenset[str] = frozenset(
+    {
+        ".git",
+        "node_modules",
+        ".venv",
+        "venv",
+        "env",
+        "__pycache__",
+        "dist",
+        "build",
+        "coverage",
+        ".coverage",
+        ".next",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".cache",
+        "vendor",
+    }
+)
 
 _EXTENSIONS = {
-    ".py": Language.PYTHON, ".pyi": Language.PYTHON,
-    ".js": Language.JAVASCRIPT, ".jsx": Language.JAVASCRIPT,
-    ".mjs": Language.JAVASCRIPT, ".cjs": Language.JAVASCRIPT,
-    ".ts": Language.TYPESCRIPT, ".tsx": Language.TYPESCRIPT,
-    ".mts": Language.TYPESCRIPT, ".cts": Language.TYPESCRIPT,
+    ".py": Language.PYTHON,
+    ".pyi": Language.PYTHON,
+    ".js": Language.JAVASCRIPT,
+    ".jsx": Language.JAVASCRIPT,
+    ".mjs": Language.JAVASCRIPT,
+    ".cjs": Language.JAVASCRIPT,
+    ".ts": Language.TYPESCRIPT,
+    ".tsx": Language.TYPESCRIPT,
+    ".mts": Language.TYPESCRIPT,
+    ".cts": Language.TYPESCRIPT,
 }
 
 
@@ -66,16 +85,25 @@ def _excluded_names(names: Set[str]) -> frozenset[str]:
     for name in names:
         if not isinstance(name, str):
             raise TypeError("excluded directory names must be strings")
-        if (not name or name in (".", "..") or "/" in name or "\\" in name
-                or ":" in name or any(ord(char) < 32 for char in name)):
+        if (
+            not name
+            or name in (".", "..")
+            or "/" in name
+            or "\\" in name
+            or ":" in name
+            or any(ord(char) < 32 for char in name)
+        ):
             raise ValueError("excluded directories must be single directory names")
     return frozenset(names)
 
 
 def _check_directory(path: Path, expected: os.stat_result) -> None:
     current = os.lstat(path)
-    if (_link_reason(current) is not None or not stat.S_ISDIR(current.st_mode)
-            or (current.st_dev, current.st_ino) != (expected.st_dev, expected.st_ino)):
+    if (
+        _link_reason(current) is not None
+        or not stat.S_ISDIR(current.st_mode)
+        or (current.st_dev, current.st_ino) != (expected.st_dev, expected.st_ino)
+    ):
         raise RepositoryAccessError(f"directory changed during discovery: {path}")
 
 
@@ -110,13 +138,17 @@ def _walk_directory(root: Path, metadata: os.stat_result, excluded: frozenset[st
         except OSError as error:
             raise RepositoryAccessError(f"filesystem inspection failed under: {directory}: {error}") from error
         except ValueError as error:
-            raise RepositoryAccessError(f"filesystem metadata is not representable under: {directory}: {error}") from error
-    return RepositoryInventory(tuple(sorted(files, key=lambda item: item.path)),
-                               tuple(sorted(skipped, key=lambda item: item.path)))
+            raise RepositoryAccessError(
+                f"filesystem metadata is not representable under: {directory}: {error}"
+            ) from error
+    return RepositoryInventory(
+        tuple(sorted(files, key=lambda item: item.path)), tuple(sorted(skipped, key=lambda item: item.path))
+    )
 
 
 def scan_repository(
-    root: str | os.PathLike[str], *,
+    root: str | os.PathLike[str],
+    *,
     excluded_directories: Set[str] = DEFAULT_EXCLUDED_DIRECTORIES,
 ) -> RepositoryInventory:
     """Inventory a local directory without reading or executing its files.

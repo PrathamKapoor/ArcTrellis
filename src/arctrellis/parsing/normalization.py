@@ -12,8 +12,14 @@ from .models import DiagnosticKind, ParseDiagnostic, SyntaxNode, SyntaxSpan
 
 
 def _span(node: Node) -> SyntaxSpan:
-    return SyntaxSpan(node.start_byte, node.end_byte, node.start_point.row + 1,
-                      node.start_point.column, node.end_point.row + 1, node.end_point.column)
+    return SyntaxSpan(
+        node.start_byte,
+        node.end_byte,
+        node.start_point.row + 1,
+        node.start_point.column,
+        node.end_point.row + 1,
+        node.end_point.column,
+    )
 
 
 def _capture(node: Node, field: str | None) -> SyntaxNode:
@@ -37,8 +43,15 @@ def _normalize_tree(root: Node) -> tuple[SyntaxNode, tuple[ParseDiagnostic, ...]
             frames.pop()
             retained = captured.is_named or captured.is_error or captured.is_missing or not frames
             if retained:
-                normalized = SyntaxNode(captured.kind, captured.span, captured.field_name, tuple(completed),
-                                        captured.is_error, captured.is_missing, captured.is_named)
+                normalized = SyntaxNode(
+                    captured.kind,
+                    captured.span,
+                    captured.field_name,
+                    tuple(completed),
+                    captured.is_error,
+                    captured.is_missing,
+                    captured.is_named,
+                )
                 if frames:
                     frames[-1][2].append(normalized)
             elif frames:

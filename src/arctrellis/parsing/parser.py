@@ -3,6 +3,7 @@
 import os
 
 from arctrellis.ingestion import DiscoveredFile, Language
+
 from .errors import ParserExecutionError
 from .models import ParsedSource
 from .normalization import _normalize_tree
@@ -10,8 +11,9 @@ from .registry import _grammar_for, _new_parser
 from .source import DEFAULT_MAX_SOURCE_BYTES, _check_size, _read_source, _validate_limit
 
 
-def parse_source(path: str, language: Language | None, source: bytes, *,
-                 max_source_bytes: int = DEFAULT_MAX_SOURCE_BYTES) -> ParsedSource:
+def parse_source(
+    path: str, language: Language | None, source: bytes, *, max_source_bytes: int = DEFAULT_MAX_SOURCE_BYTES
+) -> ParsedSource:
     """Parse exact bytes using an extension-compatible grammar and fresh parser.
 
     Syntax recovery returns diagnostics; hard infrastructure failures raise typed
@@ -22,6 +24,7 @@ def parse_source(path: str, language: Language | None, source: bytes, *,
     if not isinstance(source, bytes):
         raise TypeError("source must be immutable bytes")
     grammar = _grammar_for(path, language)
+    assert isinstance(language, Language)  # Grammar validation rejects unsupported languages.
     _check_size(len(source), max_source_bytes)
     parser = _new_parser(grammar)
     try:
@@ -34,8 +37,12 @@ def parse_source(path: str, language: Language | None, source: bytes, *,
     return ParsedSource(path, language, source, root, diagnostics)
 
 
-def parse_discovered_file(repository_root: str | os.PathLike[str], discovered_file: DiscoveredFile, *,
-                          max_source_bytes: int = DEFAULT_MAX_SOURCE_BYTES) -> ParsedSource:
+def parse_discovered_file(
+    repository_root: str | os.PathLike[str],
+    discovered_file: DiscoveredFile,
+    *,
+    max_source_bytes: int = DEFAULT_MAX_SOURCE_BYTES,
+) -> ParsedSource:
     """Revalidate and read one discovered source file, then normalize its syntax.
 
     Inventory size is not trusted. Reject observed links and nonregular targets;
@@ -46,5 +53,4 @@ def parse_discovered_file(repository_root: str | os.PathLike[str], discovered_fi
     _validate_limit(max_source_bytes)
     _grammar_for(discovered_file.path, discovered_file.language)
     source = _read_source(repository_root, discovered_file, max_source_bytes)
-    return parse_source(discovered_file.path, discovered_file.language, source,
-                        max_source_bytes=max_source_bytes)
+    return parse_source(discovered_file.path, discovered_file.language, source, max_source_bytes=max_source_bytes)

@@ -12,7 +12,7 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.6, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.6 and Quality Gate Q1, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
 internal import-resolution subset are implemented. Call/inheritance resolution,
@@ -40,6 +40,10 @@ Current capabilities:
 - Revision-deterministic IDs, exact locations, signatures and retained decorators.
 - Explicit partial results that conservatively omit malformed semantic declarations.
 - Single-file lexical graphs with proven DEFINES relationships and exact declaration evidence.
+- Repository-wide in-memory indexing with explicit COMPLETE/PARTIAL/FAILED outcomes.
+- FILE-to-MODULE structural evidence and a deterministic merged semantic graph.
+- Conservative internal module imports with explicit unresolved/ambiguous decisions and LIKELY evidence.
+- Optional pinned lint/format/type tooling and a native import boundary regression.
 
 Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
@@ -60,7 +64,24 @@ python -m venv .venv
 
 Core, graph, discovery and extraction use the standard library. Parsing uses pinned Tree-sitter
 and dedicated language grammars; setuptools is only the packaging backend.
-No formatter, linter or type checker is configured in this phase.
+Install the optional development tools and run the local quality gate:
+
+```powershell
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.venv\Scripts\python.exe -m ruff check src tests
+.venv\Scripts\python.exe -m ruff format --check src tests
+.venv\Scripts\python.exe -m mypy src/arctrellis
+.venv\Scripts\python.exe -m compileall -q src
+.venv\Scripts\python.exe -m pip check
+```
+
+Apply formatting with `.venv\Scripts\python.exe -m ruff format src tests`.
+Ruff 0.16.10 uses E/F/I/UP/B/SIM rules and 120 columns; mypy 2.4.0 checks
+`src/arctrellis` in strict mode without broad suppressions. Tests remain standard-library
+unittest. These commands were verified locally on Python 3.13.14; no CI or
+cross-platform validation is claimed. Configuration follows the
+[Ruff configuration documentation](https://docs.astral.sh/ruff/configuration/) and
+[mypy configuration documentation](https://mypy.readthedocs.io/en/stable/config_file.html).
 
 ## Architecture and invariants
 
@@ -239,7 +260,8 @@ non-following open flags. Pathname checks still require a stable tree and are no
 an atomic sandbox against hostile concurrent replacement.
 
 Fresh parser instances avoid shared mutable parser state; there is no pooling,
-parallel parsing, repository-wide parse job or incremental cache. Normalized syntax
+parallel parsing or incremental cache. Repository indexing orchestrates this single-file
+operation sequentially and releases each parse after extraction. Normalized syntax
 and retained source consume extra memory. The byte limit bounds input size, not
 native execution time or total tree memory. Iterative conversion, walking, equality
 and hashing support deep syntax. Native parser errors are not all Python exceptions;
@@ -396,8 +418,8 @@ NAMESPACE_URL, including parent/child identity and exact child proof coordinates
 They reproduce equal input but are not edit-stable or repository-namespaced.
 The builder revalidates result invariants, failing explicitly with chained
 SemanticExtractionError for corrupted producer output. Graph storage/query
-semantics are unchanged. Repository-wide assembly and semantic resolution remain
-future work.
+semantics are unchanged. Repository indexing and conservative import resolution below
+compose this single-file builder without changing its lexical contract.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.
@@ -429,6 +451,28 @@ results should be treated as snapshots. This is not persistent indexing.
 
 ### Conservative internal imports
 
-`from arctrellis.resolution import resolve_imports` resolves an index into a new graph and explicit per-import decisions. Python uses path-based modules (including __init__ and an extra alias without a leading src directory) and relative imports. JS/TS resolves simple quoted relative imports, exact source extensions and unique extension/index candidates; static CommonJS uses the same policy. A unique static match adds a LIKELY/0.90 IMPORTS edge from the lexical importing scope to the target MODULE with import-site evidence. Lexical DEFINES stays PROVEN. Multiple candidates are AMBIGUOUS with no edge; unresolved imports stay visible.
+```python
+from arctrellis.indexing import index_repository
+from arctrellis.resolution import resolve_imports
 
-No Node packages/node_modules, package.json exports, tsconfig/webpack aliases, complete Python environment/sys.path or namespace behavior, imported-symbol resolution or dynamic import evaluation. Escaped and percent-encoded JS strings are not evaluated or resolved. Resolution does not re-read files or mutate the original index. IDs are still not repository-namespaced.
+index = index_repository("path/to/local/repository")
+resolved = resolve_imports(index)
+print(resolved.resolved_count, resolved.unresolved_count, resolved.ambiguous_count)
+```
+
+`resolve_imports(index)` returns a new graph and explicit per-import decisions. Python uses path-based modules (including __init__ and an extra alias without a leading src directory) and relative imports. JS/TS resolves simple quoted relative imports, exact source extensions and unique extension/index candidates; static CommonJS uses the same policy. A unique static match adds a LIKELY/0.90 IMPORTS edge from the lexical importing scope to the target MODULE with import-site evidence. Lexical DEFINES stays PROVEN. Multiple candidates are AMBIGUOUS with no edge; unresolved imports stay visible.
+
+Unsupported: Node packages/node_modules, package.json exports, tsconfig/webpack aliases, complete Python environment/sys.path or namespace behavior, imported-symbol resolution or dynamic import evaluation. Escaped and percent-encoded JS strings are not evaluated or resolved. Resolution does not re-read files or mutate the original index. IDs are still not repository-namespaced.
+
+
+### Indexing and resolution safety
+
+Indexing scans metadata and reads supported source bytes through the existing bounded,
+revalidated parser. Extraction operates on owned bytes/syntax; graph assembly operates
+on semantic values. Resolution operates only on the index catalog and import metadata,
+with no source re-reads or external filesystem probes. No stage executes/imports target
+source, invokes Node, installs target dependencies, runs scripts/hooks or target tests.
+The existing concurrent-replacement/native-resource limitations still apply. A partial
+index remains partial after resolution; resolving imports does not certify complete
+repository understanding. Frozen summaries own mutable CodeGraph instances; callers
+must treat completed graphs as snapshots or counts may become stale.

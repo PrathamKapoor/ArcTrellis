@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from arctrellis.parsing import SyntaxNode
+
 from .source import _PythonSource
 
 
@@ -23,7 +24,11 @@ def _import_bindings(source: _PythonSource, statement: SyntaxNode) -> tuple[_Imp
     future = statement.kind == "future_import_statement"
     form = "from" if statement.kind in ("import_from_statement", "future_import_statement") else "import"
     module_node = statement.child_by_field("module_name")
-    if form == "from" and not future and (module_node is None or module_node.kind not in ("dotted_name", "relative_import")):
+    if (
+        form == "from"
+        and not future
+        and (module_node is None or module_node.kind not in ("dotted_name", "relative_import"))
+    ):
         return None
     module = "__future__" if future else (_module_text(source, module_node) if module_node else "")
     relative_level = len(module) - len(module.lstrip("."))
@@ -46,9 +51,14 @@ def _import_bindings(source: _PythonSource, statement: SyntaxNode) -> tuple[_Imp
         if not imported or (form == "from" and "." in imported):
             return None
         binding = alias or (imported.split(".")[0] if form == "import" else imported)
-        metadata = (("import_form", form), ("module", module if form == "from" else imported),
-                    ("imported_name", imported if form == "from" else ""), ("alias", alias),
-                    ("binding", binding), ("relative_level", str(relative_level)),
-                    ("is_wildcard", "true" if wildcard else "false"))
+        metadata = (
+            ("import_form", form),
+            ("module", module if form == "from" else imported),
+            ("imported_name", imported if form == "from" else ""),
+            ("alias", alias),
+            ("binding", binding),
+            ("relative_level", str(relative_level)),
+            ("is_wildcard", "true" if wildcard else "false"),
+        )
         bindings.append(_ImportBinding(clause, binding, metadata))
     return tuple(bindings) if bindings else None

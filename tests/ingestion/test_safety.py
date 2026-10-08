@@ -1,16 +1,21 @@
 """Link, reparse-point and incomplete-scan boundaries."""
 
 import os
-from pathlib import Path
 import stat
 import subprocess
+import unittest
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
-import unittest
 from unittest.mock import patch
 
-from arctrellis.ingestion import InvalidRepositoryPathError, RepositoryAccessError, SkipReason, scan_repository
-from arctrellis.ingestion import discovery
+from arctrellis.ingestion import (
+    InvalidRepositoryPathError,
+    RepositoryAccessError,
+    SkipReason,
+    discovery,
+    scan_repository,
+)
 
 
 class DiscoverySafetyTests(unittest.TestCase):
@@ -68,15 +73,18 @@ class DiscoverySafetyTests(unittest.TestCase):
             (Path(outside) / "secret.py").write_text("x", encoding="utf-8")
             link = self.root / "junction"
             # Native filesystem fixture creation only; no target scripts execute.
-            result = subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(link), outside],
-                                    capture_output=True, text=True, check=False)
+            result = subprocess.run(
+                ["cmd.exe", "/d", "/c", "mklink", "/J", str(link), outside], capture_output=True, text=True, check=False
+            )
             if result.returncode:
                 self.skipTest(f"junction creation unavailable: {result.stderr.strip()}")
             try:
                 self.assertTrue(link.is_junction())
                 inventory = scan_repository(self.root)
                 self.assertEqual(inventory.files, ())
-                self.assertEqual([(s.path, s.reason) for s in inventory.skipped_paths], [("junction", SkipReason.JUNCTION)])
+                self.assertEqual(
+                    [(s.path, s.reason) for s in inventory.skipped_paths], [("junction", SkipReason.JUNCTION)]
+                )
                 for root in (link, link / "nested"):
                     with self.subTest(root=root), self.assertRaises(InvalidRepositoryPathError):
                         scan_repository(root)
@@ -85,8 +93,9 @@ class DiscoverySafetyTests(unittest.TestCase):
             self.assertTrue((Path(outside) / "secret.py").exists())
 
     def test_simulated_other_reparse_point_is_skipped(self):
-        metadata = SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT,
-                                   st_reparse_tag=123)
+        metadata = SimpleNamespace(
+            st_mode=stat.S_IFDIR, st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT, st_reparse_tag=123
+        )
         entry = SimpleNamespace(name="indirect", stat=lambda **kwargs: metadata)
         with patch("arctrellis.ingestion.discovery.os.scandir") as mocked:
             mocked.return_value.__enter__.return_value = iter((entry,))
@@ -122,9 +131,11 @@ class DiscoverySafetyTests(unittest.TestCase):
 
     def test_entry_stat_failure_aborts_scan(self):
         entry = SimpleNamespace(name="a.py")
+
         def fail(**kwargs):
             self.assertFalse(kwargs["follow_symlinks"])
             raise FileNotFoundError("entry vanished")
+
         entry.stat = fail
         with patch("arctrellis.ingestion.discovery.os.scandir") as mocked:
             mocked.return_value.__enter__.return_value = iter((entry,))
@@ -137,9 +148,11 @@ class DiscoverySafetyTests(unittest.TestCase):
         target.write_text("x", encoding="utf-8")
         with os.scandir(self.root) as entries:
             entry = next(entries)
+
         def failing_iterator():
             yield entry
             raise PermissionError("iteration denied")
+
         with patch("arctrellis.ingestion.discovery.os.scandir") as mocked:
             mocked.return_value.__enter__.return_value = failing_iterator()
             with self.assertRaises(RepositoryAccessError) as caught:
@@ -147,21 +160,27 @@ class DiscoverySafetyTests(unittest.TestCase):
         self.assertIsInstance(caught.exception.__cause__, PermissionError)
 
     def test_root_metadata_access_failure_is_not_invalid_or_empty(self):
-        with patch("arctrellis.ingestion.discovery.os.lstat", side_effect=PermissionError("root denied")):
-            with self.assertRaises(RepositoryAccessError) as caught:
-                scan_repository(self.root)
+        with (
+            patch("arctrellis.ingestion.discovery.os.lstat", side_effect=PermissionError("root denied")),
+            self.assertRaises(RepositoryAccessError) as caught,
+        ):
+            scan_repository(self.root)
         self.assertIsInstance(caught.exception.__cause__, PermissionError)
 
     def test_directory_replacement_is_detected_before_descent(self):
         expected = os.lstat(self.root)
         replacement = SimpleNamespace(st_mode=stat.S_IFDIR, st_dev=expected.st_dev, st_ino=expected.st_ino + 1)
-        with patch("arctrellis.ingestion.discovery.os.lstat", return_value=replacement):
-            with self.assertRaises(RepositoryAccessError):
-                discovery._check_directory(self.root, expected)
+        with (
+            patch("arctrellis.ingestion.discovery.os.lstat", return_value=replacement),
+            self.assertRaises(RepositoryAccessError),
+        ):
+            discovery._check_directory(self.root, expected)
 
     def test_replacement_with_link_fails_even_with_matching_identity(self):
         expected = os.lstat(self.root)
         replacement = SimpleNamespace(st_mode=stat.S_IFLNK, st_dev=expected.st_dev, st_ino=expected.st_ino)
-        with patch("arctrellis.ingestion.discovery.os.lstat", return_value=replacement):
-            with self.assertRaises(RepositoryAccessError):
-                discovery._check_directory(self.root, expected)
+        with (
+            patch("arctrellis.ingestion.discovery.os.lstat", return_value=replacement),
+            self.assertRaises(RepositoryAccessError),
+        ):
+            discovery._check_directory(self.root, expected)

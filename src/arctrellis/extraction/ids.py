@@ -7,8 +7,9 @@ from arctrellis.core import EntityKind
 from arctrellis.ingestion import DiscoveredFile, Language
 
 
-def make_entity_id(*, language: Language, path: str, kind: EntityKind,
-                   qualified_name: str, start_byte: int, end_byte: int) -> str:
+def make_entity_id(
+    *, language: Language, path: str, kind: EntityKind, qualified_name: str, start_byte: int, end_byte: int
+) -> str:
     """Return UUID5 over a versioned canonical key; not stable across source edits.
 
     The key is a compact JSON array of marker, language, path, kind, lexical name
@@ -25,6 +26,9 @@ def make_entity_id(*, language: Language, path: str, kind: EntityKind,
         raise TypeError("byte offsets must be integers, not booleans")
     if not 0 <= start_byte <= end_byte:
         raise ValueError("byte range must satisfy 0 <= start_byte <= end_byte")
-    key = json.dumps(["arctrellis-entity-v1", language.value, path, kind.value,
-                      qualified_name, start_byte, end_byte], ensure_ascii=True, separators=(",", ":"))
+    key = json.dumps(
+        ["arctrellis-entity-v1", language.value, path, kind.value, qualified_name, start_byte, end_byte],
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
     return str(uuid5(NAMESPACE_URL, key))

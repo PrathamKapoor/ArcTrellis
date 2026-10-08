@@ -3,232 +3,234 @@
 ## 1. Current Phase
 
 Phase 1 — Repository Understanding.
-Phase 1.3 — JavaScript and TypeScript semantic entity extraction: complete.
-Phase 1.4 — Evidence-backed lexical structural graph assembly: complete.
-Objective: normalized supported-language source -> canonical entities -> single-file
-CodeGraph with proven lexical DEFINES relationships and exact declaration evidence.
-The bounded session stops here. Phase 1.5 has not begun.
+Phase 1.5 — Repository-wide semantic indexing and graph assembly: complete.
+Phase 1.6 — Conservative cross-file static import resolution: complete.
+Quality Gate Q1 — Linting, static typing and engineering hardening: complete.
+Objective: safe source indexing into a merged in-memory graph, conservative module
+imports with explicit uncertainty, and a verified local developer quality interface.
+Stop after Q1. Phase 1.7 has not begun.
 
 ## 2. Work Completed
 
-Verified clean master, C:/Projects/ArcTrellis, Python 3.13.14, required identity and
-empty remotes. Read decisions/flow/handoff and actual public contracts before edits.
-Inspected real normalized JS/TS/TSX grammar samples through source-as-data parsing.
+Verified C:/Projects/ArcTrellis, clean master at start, Python 3.13.14, required Git
+identity and empty remotes. Baseline suite ran 236 tests, OK (skipped=7).
 
-Added shared iterative JS/TS semantic extraction, static import sites and language
-dispatcher using existing canonical entities/result/UUID5 IDs. MODULE, CLASS,
-FUNCTION, METHOD and IMPORT values retain lexical scope, signatures, modifiers,
-decorators, exact spans and partial status. TypeScript types remain syntax-only.
-No target execution, imports, installation, filesystem reads or native parser
-objects occur in extraction.
+Added index_repository, FileIndexStatus, FileIndexResult and RepositoryIndexResult.
+Supported files run sequentially in inventory path order. Typed read/parse/extraction
+failures are bounded FAILED summaries and do not discard successful sibling files.
+Discovery failures and graph identity collisions abort. PARTIAL tracks recovery or
+structural omissions. Unsupported files remain inventory-only. FILE identity is
+language/path-based; FILE DEFINES MODULE carries PROVEN/1.0 module-root evidence.
+The per-file helper returns only semantic graph/summary values, releasing source/tree.
 
-Phase 1.3 independent review found static field modifier loss, decorator/export
-prefix confusion, false partial status for empty imports, and object methods inside
-static blocks misclassified as class members. Each was reproduced in a failing
-regression, fixed narrowly, documented and rechecked. Final focused review found no
-unresolved important issue. Local feature and reference finalization commits were
-completed with a clean tree before Phase 1.4.
+Added resolve_imports, immutable import decisions and a fresh graph. Python uses
+identifier-component path aliases, __init__ package aliases, leading-src heuristic
+and relative package arithmetic. JS/TS uses safe quoted relative literals and unique
+extension/index candidates. Directory intent probes indexes only. Ambiguous matches
+record candidates and create no edge; unsupported/bare/escaped/percent literals remain
+unresolved. Unique matches emit lexical owner IMPORTS target MODULE, LIKELY/0.90,
+with actual import-site evidence. Each site has separate deterministic proof/edge IDs.
+Resolution reads no files and leaves the original index graph unchanged.
 
-Added a language-independent build_lexical_graph operation returning a fresh
-CodeGraph. It revalidates result invariants, inserts entities first and emits
-one PROVEN/1.0 DEFINES edge per non-module with lexical_parentage Evidence pointing
-to the child declaration's inclusive lines and six exact coordinates.
-Existing shortest paths retain the original relationships/evidence.
-Independent lexical review found no critical or important findings.
+Review reproduced and fixed root index probes, literal-dot Python filename aliases,
+directory-intent false matches and percent-literal uncertainty. Each correction has
+regression coverage and a decision. Independent final review found no critical or
+important issue and confirmed original fixture bytes/assertions were preserved.
+
+Added optional Ruff 0.16.10 and mypy 2.4.0. Ruff E/F/I/UP/B/SIM uses 120 columns;
+strict mypy checks 37 source files without broad suppressions. Formatted Python,
+annotated helpers/work items and narrowed existing validated invariants. Runtime
+parser pins are unchanged. Added an import-boundary regression over ArcTrellis source.
 
 ## 3. Files Changed
 
-- src/arctrellis/extraction/javascript.py: shared JS/TS normalized semantic engine.
-- src/arctrellis/extraction/es_imports.py: immutable ES/CommonJS static import sites.
-- src/arctrellis/extraction/lexical.py: single-file graph/proof assembly and UUID5 identities.
-- src/arctrellis/extraction/__init__.py: JS/TS/dispatch/builder public APIs.
-- src/arctrellis/extraction/errors.py: decoding exception documentation covers both policies.
-- tests/extraction/test_javascript.py: 29 JS/TS/import/scoping/recovery/safety tests.
-- tests/extraction/test_lexical.py: 11 proof/cardinality/traversal/integration tests.
-- README.md: checked capabilities, omissions, security and identity/proof contracts.
-- decisions.md: append D-044 through D-054 and finalize actual commit references.
-- flow.md: real import/test/transformation flows and session change tables.
-- handoff.md: all twelve verified continuation sections.
+- src/arctrellis/indexing/__init__.py: public indexing API.
+- src/arctrellis/indexing/models.py: immutable file/repository summaries and completeness.
+- src/arctrellis/indexing/errors.py: typed fatal indexing invariant boundary.
+- src/arctrellis/indexing/ids.py: versioned FILE and structural proof identity helper.
+- src/arctrellis/indexing/repository.py: sequential analysis, membership and public graph merge.
+- tests/indexing/__init__.py, tests/indexing/test_repository.py: ten outcome/safety/memory contracts.
+- src/arctrellis/resolution/__init__.py: public resolver and decision records.
+- src/arctrellis/resolution/models.py: immutable statuses/candidates and derived counts.
+- src/arctrellis/resolution/catalog.py: pure path-based Python/JS/TS candidate sets.
+- src/arctrellis/resolution/imports.py: graph clone and import-site LIKELY evidence.
+- tests/resolution/__init__.py, tests/resolution/test_imports.py: thirteen conservative resolution contracts.
+- pyproject.toml: optional pinned quality tools and lint/format/type configuration.
+- tests/test_architecture.py: two native-import isolation contracts.
+- Existing Python source/tests: Ruff formatting/import ordering and explicit type contracts;
+  exact changed paths are listed in D-062/D-063. Core runtime model is unchanged.
+- README.md: capabilities, examples, identity/security limits and verified developer commands.
+- decisions.md: D-055 through D-066, with actual commit reference finalization.
+- flow.md: real indexing, resolution and quality flows plus phase change rows.
+- handoff.md: verified twelve-section continuation state.
 
 ## 4. Current Architecture / State
 
-Local repository -> scan_repository -> DiscoveredFile -> parse_discovered_file ->
-ParsedSource -> extract_entities -> ExtractionResult -> build_lexical_graph ->
-CodeGraph with embedded Evidence on DEFINES edges. All operations remain single-file;
-no repository-wide production indexing/merge exists.
+Local root -> scan_repository -> inventory -> per-file parse_discovered_file ->
+extract_entities -> build_lexical_graph -> FILE membership/merge -> RepositoryIndexResult.
+Then resolve_imports -> path catalog -> explicit decisions -> new CodeGraph.
 
-Python semantics/result/identity, core, graph, ingestion and parser implementations
-are unchanged. JS/TS reuse ExtractionResult and make_entity_id. Named declarations,
-simple identifier-bound callables/classes and class callable fields map to canonical
-kinds. Actual class-body membership distinguishes methods from object methods.
-Nearest represented lexical scopes own nested declarations; omitted anonymous/object
-scopes suppress their bodies rather than leaking descendants to outer parents.
+Graph entities include supported analyzed FILE/MODULE/CLASS/FUNCTION/METHOD/IMPORT.
+DEFINES edges remain PROVEN/1.0. File membership uses file_module_membership;
+lexical edges use lexical_parentage. IMPORTS edges are LIKELY/0.90, owner -> MODULE,
+with python_static_import_resolution or ecmascript_relative_import_resolution evidence.
+There is no REPOSITORY node or symbol/call/inheritance/framework resolution.
 
-Qualified names are lexical path::Outer.inner, not module resolution. IDs use existing
-arctrellis-entity-v1 compact JSON + UUID5/NAMESPACE_URL. Six decimal metadata coordinates
-remain start_byte/end_byte/start_line/start_column/end_line/end_column; half-open syntax
-offsets convert to inclusive SourceLocation lines. Signatures preserve declaration/
-binding headers without bodies/decorators. Callable variable headers omit const/let/
-var; callable field headers retain member modifiers. Decorators use numbered keys.
+Repository is synchronous and in-memory; no retained ParsedSource/full source bytes,
+persistence, concurrent indexing or incremental cache. Summaries are frozen but own
+ordinary mutable CodeGraph objects; treat them as snapshots. Resolver copies the base.
+Per-file statistics include structural FILE nodes and membership edges. is_complete
+requires zero failed and zero partial supported files. Resolution does not certify
+repository completeness. Declaration IDs are revision-deterministic; FILE IDs depend
+on language/path and survive content-only edits. IDs are not repository-namespaced.
 
-ES imports retain binding/form/module/imported name/alias/type-only state. module is
-exact source interior, module_literal is quoted syntax, module_format=source_spelling;
-escape sequences are not evaluated. Empty named/side-effect clauses are unbound sites.
-Simple identifier-bound require with one unescaped quoted string is a syntactic import
-site, with no assertion that require is unshadowed or resolved. Imports inside represented
-functions/methods/static blocks retain nearest semantic ownership.
+Runtime pins: tree-sitter==0.25.2, tree-sitter-python==0.25.0,
+tree-sitter-javascript==0.25.0, tree-sitter-typescript==0.23.2.
+Build-only setuptools==84.0.0. Optional dev pins: ruff==0.16.10, mypy==2.4.0.
 
-Lexical evidence UUID5 key includes arctrellis-lexical-evidence-v1, lexical_parentage,
-parent/child IDs, file/inclusive lines and ordered coordinates. Relationship key
-includes arctrellis-lexical-relationship-v1, DEFINES, parent/child IDs and evidence ID.
-IDs reproduce a revision; they are not edit-stable or repository-namespaced.
-Every non-module gets one parent -> DEFINES -> child; module gets no fabricated parent.
-Partial status remains on ExtractionResult, not CodeGraph; surviving edges are PROVEN.
-No CONTAINS, IMPORTS, CALLS or INHERITS relationships are created.
-
-Dependency configuration is unchanged: tree-sitter==0.25.2, Python/JS grammars==0.25.0,
-TypeScript grammar==0.23.2; build-only setuptools==84.0.0.
-Installed package metadata was rechecked: runtime 0.25.2, Python/JS 0.25.0, TS 0.23.2.
-No formatter/linter/type checker or CI was introduced.
-
-Phase 1.3 commits: 66d881e02bcb52e467720b39293319ff7595f085 feature,
-9de6e98 documentation reference finalization.
-Phase 1.4 implementation commit: ec887ee7426340589582ae618aa4e7751a89c0f5.
-References finalize in a separate local documentation commit under D-004; no history rewrite.
+Local Phase 1.5 commits: acfd609 (feature), 334ec3d (documentation finalization).
+Local Phase 1.6 commits: 300652d (feature), facc23e (documentation finalization).
+Q1 implementation/documentation references finalize separately under D-004.
 
 ## 5. Decisions Made
 
-- D-044: common normalized JS/TS engine and language dispatcher.
-- D-045: callable/signature/modifier/export/static import policies and literal spelling.
-- D-046: scan actual member/export prefixes, excluding decorator arguments.
-- D-047: empty named import sites retain complete status without false bindings.
-- D-048: restore historical decision boundaries after an uncommitted insertion error.
-- D-049: require direct class-body membership for methods.
-- D-050: verified Phase 1.3 gate and local continuity.
-- D-051: single-file proven lexical DEFINES graphs.
-- D-052: deterministic proof IDs and explicit producer invariant failures.
-- D-053: correct standalone graph test discovery package context.
-- D-054: final multilingual proof verification and bounded handoff.
-- Prior decisions remain in force, including D-004 hash finalization.
+- D-055: synchronous repository outcomes with bounded source/exception ownership.
+- D-056: path-based FILE IDs and proven FILE DEFINES MODULE evidence.
+- D-057: pure conservative path catalog and explicit import uncertainty.
+- D-058: import-site-specific LIKELY/0.90 scope-to-module evidence edges.
+- D-059: root index and identifier-component Python catalog corrections.
+- D-060: directory-intent candidate preservation.
+- D-061: percent-encoded specifier deferral and catalog negative coverage.
+- D-062: optional pinned Ruff/mypy and reproducible quality configuration.
+- D-063: explicit typed work items/validated invariants without suppression.
+- D-064: native import architecture audit and developer flow.
+- D-065: final verified handoff and bounded stop.
+- D-066: corrected auxiliary fixture input and Git whitespace audit invocation.
+Prior decisions remain in force, including D-004 hash finalization and D-027 native pin.
 
 ## 6. Requirements and Constraints
 
-Everything stays local: no remote additions/modifications, push, GitHub APIs, uploads,
-publication, releases or package publishing. All commits must be authored and committed
-as PrathamKapoor <prathamkapoor027@gmail.com>, without attribution trailers.
-Never commit paper/, research/ or *.tex. Keep decisions append-only and update flow
-with real call names/ordering; finalize commit references without rewriting history.
+Everything stays local: no remote additions/modifications, push, GitHub APIs, upload,
+publication, releases or package publishing. Commit author/committer must be
+PrathamKapoor <prathamkapoor027@gmail.com>, with no attribution trailers.
+Never commit paper/, research/ or *.tex. Append decisions; update real flows with code.
+Finalize actual commit references separately without rewriting history.
 
-Targets are untrusted. Discovery reads metadata; parsing reads source bytes;
-extraction and assembly interpret owned values. No target source execution/import,
-Node invocation, target dependency installation, scripts/hooks/tests or runtime
-reflection occurs. Existing parser link revalidation and stable-tree/native-resource
-limitations remain; extraction does not solve filesystem races.
+Targets are untrusted. Discovery inspects metadata; parsing reads bounded bytes;
+extraction interprets normalized syntax; resolution uses semantic metadata only.
+No target execution/import/require, Node invocation, target dependency installation,
+package hooks/scripts/tests or repository configuration evaluation occurs.
+Installing ArcTrellis itself and its optional tools is separate from target installation.
 
 ## 7. Testing and Verification
 
 Observed commands from C:/Projects/ArcTrellis:
 
 - git rev-parse --show-toplevel: C:/Projects/ArcTrellis.
-- git status --short: empty at start and after Phase 1.3 reference finalization.
-- git log --oneline -5: verified prior Python/parser/discovery history.
-- git config user.name / git config user.email: required values.
-- git var GIT_AUTHOR_IDENT / git var GIT_COMMITTER_IDENT: required identity.
-- git remote -v: empty at start and Phase 1.3 precommit.
 - .venv\Scripts\python.exe --version: Python 3.13.14.
-- .venv\Scripts\python.exe -m unittest tests.extraction.test_javascript -q:
-  final 29 tests, OK, no skips.
-- .venv\Scripts\python.exe -m unittest tests.extraction.test_lexical -v:
-  11 tests, OK, no skips.
-- .venv\Scripts\python.exe -m unittest discover -s tests/extraction -q:
-  71 tests, OK, no skips.
-- .venv\Scripts\python.exe -m unittest discover -s tests/graph -q:
-  failed three imports: ImportError: attempted relative import with no known parent package.
-- .venv\Scripts\python.exe -m unittest discover -s tests/graph -t . -q:
-  corrected invocation, 56 tests, OK.
-- .venv\Scripts\python.exe -m unittest discover -s tests -q:
-  baseline 196; Phase 1.3 gate 225; Phase 1.4 final 236 tests, OK (skipped=7).
+- git config user.name / git config user.email: required values before each commit.
+- git remote -v: empty at startup and stage boundaries.
+- .venv\Scripts\python.exe -m unittest tests.indexing.test_repository -q: 10 tests OK.
+- .venv\Scripts\python.exe -m unittest tests.resolution.test_imports -q: 13 tests OK.
+- .venv\Scripts\python.exe -m unittest discover -s tests/graph -t . -q: 56 tests OK.
+- .venv\Scripts\python.exe -m unittest tests.test_architecture -q: 2 tests OK.
+- .venv\Scripts\python.exe -m unittest discover -s tests -q: baseline236,
+  indexing246, resolution259, final261; every gate OK (skipped=7).
+- .venv\Scripts\python.exe -m pip index versions ruff: available latest 0.16.10.
+- .venv\Scripts\python.exe -m pip index versions mypy: available latest 2.4.0.
+- .venv\Scripts\python.exe -m pip install -e .: success.
+- .venv\Scripts\python.exe -m pip install -e ".[dev]": success.
+- .venv\Scripts\python.exe -m pip show ruff mypy tree-sitter tree-sitter-python
+  tree-sitter-javascript tree-sitter-typescript: verified installed pins above.
+- .venv\Scripts\python.exe -m ruff --version: ruff 0.16.10.
+- .venv\Scripts\python.exe -m mypy --version: mypy 2.4.0 (compiled: yes).
+- .venv\Scripts\python.exe -m ruff format src tests: applied Python formatting.
+- .venv\Scripts\python.exe -m ruff check src tests: All checks passed.
+- .venv\Scripts\python.exe -m ruff format --check src tests: 65 files already formatted.
+- .venv\Scripts\python.exe -m mypy src/arctrellis: Success, 37 source files.
+- .venv\Scripts\python.exe -m compileall -q src: exit zero.
 - .venv\Scripts\python.exe -m pip check: No broken requirements found.
-- Public ExtractionResult/extract_entities/JS/TS/Python/build_lexical_graph import
-  command: printed Public extraction and lexical graph imports OK.
-- rg -n '(from|import)\s+tree_sitter' src/arctrellis/extraction:
-  no matches, normal exit one.
-- Dependency/stable-layer diff: empty for pyproject/core/graph/ingestion/parsing/Python extractor.
-- git diff --check: zero; staging EOF whitespace was corrected before Phase 1.3 commit.
+- Literal-stdin public import check: all seven public package boundaries imported.
+- Source audit for eval/exec/subprocess/os.system/importlib/native imports:
+  only parsing normalization/registry native imports and fixed grammar loader matched.
+  No type: ignore, ignore_errors or disable_error_code was introduced.
 
-Actual literal-stdin temporary smoke pipelines:
-Button.tsx partial=False, MODULE/FUNCTION (2 entities/1 edge);
-service.js and service.py partial=False, MODULE/CLASS/METHOD (3 entities/2 edges).
-Earlier TS graph smoke verified:
-service.ts::Service DEFINES service.ts::Service.create
-Evidence service.ts lines 1..1, lexical_parentage, PROVEN, score 1.0.
-All three language paths returned MODULE -> CLASS -> METHOD with original evidence.
+Literal-stdin temporary index smoke: supported5, complete5, partial0, failed0,
+entities17, relationships12. README stayed inventory-only; node_modules was excluded.
+Temporary resolution smoke: supported6, complete6, partial0, failed0, entities19,
+base relationships13; resolved2, unresolved1, ambiguous1; rerun decisions/edges equal.
+Verified edge: service.py::create IMPORTS util.py; service.py lines2..2,
+python_static_import_resolution, LIKELY, score0.9. TS app.ts IMPORTS legacy.js,
+app.ts lines1..1, ecmascript_relative_import_resolution, LIKELY/0.9.
 
-Test-first API assertions failed before implementation as expected. Static/export,
-empty import and object-method regressions each failed before correction. One
-uncommitted documentation insertion split D-010; its exact historical prefix was
-restored from HEAD before the first feature commit. No historical commit was rewritten.
-The JS/TS pipeline fixture contains a top-level marker-writing statement; parsing/
-extraction returns normally and the marker stays absent. No target script was run.
+Expected test-first failures: missing indexing/resolution packages before creation.
+Actual new catalog regressions failed before fixes, recorded in D-059 through D-061.
+Initial mypy:38 errors/9 files; annotations reduced that to10 local-name inference
+errors then zero. Initial Ruff:134 issues (36 fixed); formatting/manual corrections
+removed remaining findings. A targeted SIM117 automatic fix attempt reported seven
+unchanged findings; contexts were merged explicitly and rerun passed. No suppressions
+were used and no test assertions were removed. An auxiliary fixture smoke initially
+supplied str to a write_bytes helper and failed with TypeError: memoryview: a
+bytes-like object is required, not 'str'; rerun with bytes returned 3 complete
+supported files, 9 entities, 6 relationships. A temporary core.autocrlf=false
+whitespace invocation reported raw CRLF lines as trailing whitespace; normal
+repository git diff --check and staged checks passed with no persistent config change.
+D-066 records both verification-command corrections.
 
-A fresh full-suite runner printed all skip reasons: six symbolic link fixtures lack
-Windows privilege (WinError 1314); one FIFO fixture lacks os.mkfifo. Junction tests
-remain included in the passing existing suite. New extraction/graph tests have no skips.
-Not verified: other platforms/Python versions, hostile filesystem races, real OS
-permission denial, performance bounds/benchmarks, compiler-validity, arbitrary encoding
-support, cross-revision matching or repository-wide resolution/indexing.
-
-Independent reviews used read-only code inspection/normalized syntax probes; they
-did not run the full suite. Test pass claims above come from actual local commands.
-Final staged whitespace audit passed; forbidden-path audit reported no forbidden
-paths; attribution search had no matches; author/committer and empty remotes were
-verified. git status --short after the Phase 1.4 feature commit was empty.
-This documentation commit finalizes its references separately under D-004.
+Seven platform skips: six symlink fixtures lack Windows privilege (WinError1314);
+one FIFO fixture lacks os.mkfifo. Junction tests remain in the passing suite.
+Not tested: other OS/Python versions, adversarial filesystem races, arbitrary loader
+configuration, dynamic/module/symbol/call behavior, scale benchmarks or native resource bounds.
+Independent review was read-only and did not run the full suite; pass claims here
+come from observed local commands. Final Git identity/whitespace/forbidden/attribution
+and clean-tree audits are performed with local commit finalization.
 
 ## 8. Known Issues / Risks
 
-Confirmed: no unresolved production defect found in final tests/reviews. Actual
-symbolic-link/FIFO runtime coverage remains limited by the seven platform skips.
-Previously verified non-UTF-8 Python identifier limitation remains.
+Confirmed: no unresolved production defect found in final tests/reviews.
+Runtime symlink/FIFO coverage is limited by the seven recorded platform skips.
+The earlier non-UTF-8 Python identifier/native grammar limitation remains documented.
 
-Possible: recovery can omit whole enclosing declarations; native parsing has resource
-and race limitations; identities collide across independent repositories with identical
-components and change across edits. Core filename/name representability constraints
-remain. Grammar versions may change field shapes and must be verified deliberately.
+Possible: pathname checks are not an atomic sandbox under hostile concurrent
+replacement; the byte cap does not bound native time or total tree memory. Declaration
+IDs change with edits and can collide across independent identical repositories.
+Mutable graph misuse can invalidate frozen summary counts. Static path catalog
+matches do not establish runtime loader behavior, hence LIKELY confidence.
 
-Deferred intentionally: anonymous unbound callables/classes, object literal methods,
-computed properties, arbitrary/destructured/dynamic/escaped require, TS interface/type/
-enum entities, cooked module-string decoding, runtime require binding proof, re-export
-resolution, import/call/inheritance/framework semantics and repository-wide assembly.
+Deferred intentionally: full Python environment/sys.path/namespace resolution,
+JS package exports/aliases/transpiler rewriting/escaped or percent literals,
+imported-symbol resolution, call/inheritance/framework semantics, persistence,
+repository identity, concurrent/incremental indexing, CI and publication.
 
 ## 9. Unfinished Work
 
-No authorized Phase 1.3 or Phase 1.4 implementation remains unfinished.
-Phase 1.4 is locally committed; this separate documentation update finalizes its
-references under D-004 without a self-referential finalization hash.
-Phase 1.5 is not started and must wait for the next session.
+No authorized implementation remains unfinished after the verified three gates.
+Q1 commit references are finalized by a separate documentation commit under D-004.
+No call-site extraction or Phase 1.7 work began.
 
 ## 10. Next Subphase
 
-Phase 1.5 — Repository-wide semantic indexing and graph assembly.
-Future design must define per-file failures, aggregate partial diagnostics, repository
-identity and indexing lifecycle. Do not implement it during this bounded session.
+Phase 1.7 — Static call-site extraction and conservative call resolution.
+Require a later authorization. Split likely work into call sites, same-file resolution,
+import-assisted resolution, confidence classification and evidence-backed CALLS edges.
+Do not start it in this bounded session.
 
 ## 11. Critical Context
 
-Tree-sitter runtime 0.26.0 crashed in earlier Windows deep-point probes; keep 0.25.2
-until deliberate compatibility verification. Do not restore inconsistent Windows
-DirEntry/lstat directory identity comparisons. Python signature/future-import/encoding
-semantics are stable and were not refactored. Graph storage and traversal are unchanged.
-Import entities are sites, never resolved target modules; their lexical edges use DEFINES.
-Evidence keys retain exact child coordinates, and graph paths preserve the proof records.
+Keep Tree-sitter0.25.2: earlier Windows deep-point probes crashed under0.26.0.
+Runtime upgrades need deliberate grammar/deep-input verification. Use graph public
+APIs; never overwrite identity collisions. IMPORT entities are evidence sites, not
+resolved targets. Import edges originate from their lexical owner and preserve sites
+separately. Lexical evidence remains PROVEN while module resolution is LIKELY/0.90.
+Do not use source/config execution to increase import recall or resolve ambiguity.
+Snapshot ownership is conventional: graph APIs remain mutable. Frozen containers
+are not a persistence format or immutable graph implementation.
 
 ## 12. Agent Instructions
 
-Start the next session by reading all three state documents and verifying state,
-identity/Python/remotes. Keep native parsing objects isolated and target code inert.
-Reuse canonical extraction/result/identity APIs; do not infer unsupported edges.
-Document meaningful choices with code, reproduce regressions before fixes, run all
-tests and report real failures/skips. Stage explicit paths, audit forbidden material
-and attribution, verify both Git identities and keep all commits local.
-The current session ends after Phase 1.4; only a new authorization may begin Phase 1.5.
+Read all three state documents and verify root/status/history/Python/identities/remotes
+before new work. Keep native objects inside parsing and target source inert. Preserve
+canonical models, revision identity and explicit uncertainty. Reproduce bugs before
+fixing them, document choices with code, run every quality command and report actual
+skips/failures. Stage explicit paths, audit forbidden content and authorship, finalize
+hashes separately and keep all commits local. The current session stops after Q1.

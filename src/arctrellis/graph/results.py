@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from arctrellis.core import CodeEntity, Relationship
 
 
-def _require_records(records: tuple, record_type: type, field: str) -> None:
+def _require_records(records: tuple[object, ...], record_type: type[object], field: str) -> None:
     if not isinstance(records, tuple):
         raise TypeError(f"{field} must be a tuple")
     if any(not isinstance(record, record_type) for record in records):
@@ -47,8 +47,5 @@ class GraphPath:
         if len(self.entities) != len(self.relationships) + 1:
             raise ValueError("path must contain exactly one more entity than relationship")
         for index, edge in enumerate(self.relationships):
-            if (
-                edge.source_entity_id != self.entities[index].id
-                or edge.target_entity_id != self.entities[index + 1].id
-            ):
+            if edge.source_entity_id != self.entities[index].id or edge.target_entity_id != self.entities[index + 1].id:
                 raise ValueError("path relationships must connect adjacent entities in source-to-target order")

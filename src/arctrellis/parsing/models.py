@@ -70,15 +70,25 @@ class SyntaxNode:
                 raise TypeError(f"{field} must be a boolean")
         previous = self.span.start_byte
         for child in self.children:
-            if (child.span.start_byte < previous or child.span.end_byte > self.span.end_byte
-                    or (child.span.start_line, child.span.start_column) < (self.span.start_line, self.span.start_column)
-                    or (child.span.end_line, child.span.end_column) > (self.span.end_line, self.span.end_column)):
+            if (
+                child.span.start_byte < previous
+                or child.span.end_byte > self.span.end_byte
+                or (child.span.start_line, child.span.start_column) < (self.span.start_line, self.span.start_column)
+                or (child.span.end_line, child.span.end_column) > (self.span.end_line, self.span.end_column)
+            ):
                 raise ValueError("children must be contained in the parent and in source order")
             previous = child.span.start_byte
 
     def _signature(self) -> tuple[str, SyntaxSpan, str | None, bool, bool, bool, int]:
-        return (self.kind, self.span, self.field_name, self.is_error, self.is_missing,
-                self.is_named, len(self.children))
+        return (
+            self.kind,
+            self.span,
+            self.field_name,
+            self.is_error,
+            self.is_missing,
+            self.is_named,
+            len(self.children),
+        )
 
     def __eq__(self, other: object) -> bool:
         if type(other) is not type(self):
@@ -90,7 +100,7 @@ class SyntaxNode:
                 continue
             if left._signature() != right._signature():
                 return False
-            pending.extend(zip(left.children, right.children))
+            pending.extend(zip(left.children, right.children, strict=True))
         return True
 
     def __hash__(self) -> int:
@@ -160,7 +170,9 @@ class ParsedSource:
             raise TypeError("root must be SyntaxNode")
         if not isinstance(self.diagnostics, tuple) or any(not isinstance(d, ParseDiagnostic) for d in self.diagnostics):
             raise TypeError("diagnostics must be a tuple of ParseDiagnostic values")
-        if self.root.span.end_byte > len(self.source) or any(d.span.end_byte > len(self.source) for d in self.diagnostics):
+        if self.root.span.end_byte > len(self.source) or any(
+            d.span.end_byte > len(self.source) for d in self.diagnostics
+        ):
             raise ValueError("syntax and diagnostic byte spans must fit source bytes")
 
     @property
@@ -184,4 +196,4 @@ class ParsedSource:
             raise TypeError("node must be SyntaxNode")
         if node.span.end_byte > len(self.source):
             raise ValueError("node span exceeds source bytes")
-        return self.source[node.span.start_byte:node.span.end_byte]
+        return self.source[node.span.start_byte : node.span.end_byte]

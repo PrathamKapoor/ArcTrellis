@@ -1,9 +1,10 @@
 """Immutable public query results enforce their own structural contracts."""
 
-from dataclasses import FrozenInstanceError, replace
 import unittest
+from dataclasses import FrozenInstanceError, replace
 
 from arctrellis.graph import GraphPath, TraversalResult
+
 from .fixtures import entity, relationship
 
 
@@ -14,8 +15,11 @@ class ResultTests(unittest.TestCase):
         self.assertEqual(GraphPath((entity("A"),), ()).relationships, ())
 
     def test_graph_path_rejects_empty_and_mismatched_cardinality(self):
-        for entities, relationships in (((), ()), ((entity("A"), entity("B")), ()),
-                                        ((entity("A"),), (relationship("r", "A", "B"),))):
+        for entities, relationships in (
+            ((), ()),
+            ((entity("A"), entity("B")), ()),
+            ((entity("A"),), (relationship("r", "A", "B"),)),
+        ):
             with self.subTest(entities=entities), self.assertRaises(ValueError):
                 GraphPath(entities, relationships)
 

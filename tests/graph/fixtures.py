@@ -1,7 +1,12 @@
 """Small explicit payment graph shared by graph tests."""
 
 from arctrellis.core import (
-    CodeEntity, Confidence, EntityKind, Evidence, Relationship, RelationshipKind,
+    CodeEntity,
+    Confidence,
+    EntityKind,
+    Evidence,
+    Relationship,
+    RelationshipKind,
     SourceLocation,
 )
 from arctrellis.graph import CodeGraph
@@ -12,18 +17,22 @@ def entity(entity_id: str, kind: EntityKind = EntityKind.FUNCTION) -> CodeEntity
 
 
 def relationship(
-    edge_id: str, source: str, target: str,
+    edge_id: str,
+    source: str,
+    target: str,
     kind: RelationshipKind = RelationshipKind.CALLS,
 ) -> Relationship:
     evidence = Evidence(
-        f"evidence-{edge_id}", SourceLocation("src/payments.ts", 61, 61),
+        f"evidence-{edge_id}",
+        SourceLocation("src/payments.ts", 61, 61),
         "direct_call_resolution",
     )
     return Relationship(edge_id, source, kind, target, Confidence.PROVEN, 1.0, (evidence,))
 
 
 def build_graph(
-    entities: tuple[CodeEntity, ...], relationships: tuple[Relationship, ...],
+    entities: tuple[CodeEntity, ...],
+    relationships: tuple[Relationship, ...],
 ) -> CodeGraph:
     graph = CodeGraph()
     for record in entities:

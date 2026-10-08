@@ -1,11 +1,17 @@
 import os
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
-from arctrellis.ingestion import (DEFAULT_EXCLUDED_DIRECTORIES, InvalidRepositoryPathError,
-    Language, RepositoryAccessError, SkipReason, scan_repository)
+from arctrellis.ingestion import (
+    DEFAULT_EXCLUDED_DIRECTORIES,
+    InvalidRepositoryPathError,
+    Language,
+    RepositoryAccessError,
+    SkipReason,
+    scan_repository,
+)
 
 
 class DiscoveryTests(unittest.TestCase):
@@ -38,9 +44,18 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(scan_repository(self.root).file_count, 1)
 
     def test_all_extensions_and_case_preservation(self):
-        extensions = {"py": Language.PYTHON, "pyi": Language.PYTHON, "js": Language.JAVASCRIPT,
-            "jsx": Language.JAVASCRIPT, "mjs": Language.JAVASCRIPT, "cjs": Language.JAVASCRIPT,
-            "ts": Language.TYPESCRIPT, "tsx": Language.TYPESCRIPT, "mts": Language.TYPESCRIPT, "cts": Language.TYPESCRIPT}
+        extensions = {
+            "py": Language.PYTHON,
+            "pyi": Language.PYTHON,
+            "js": Language.JAVASCRIPT,
+            "jsx": Language.JAVASCRIPT,
+            "mjs": Language.JAVASCRIPT,
+            "cjs": Language.JAVASCRIPT,
+            "ts": Language.TYPESCRIPT,
+            "tsx": Language.TYPESCRIPT,
+            "mts": Language.TYPESCRIPT,
+            "cts": Language.TYPESCRIPT,
+        }
         for extension in extensions:
             self.write(f"example.{extension}")
             self.write(f"UPPER.{extension.upper()}")
@@ -57,16 +72,34 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(result.supported_files, ())
 
     def test_default_exclusions_prune_before_descent_at_every_level(self):
-        expected = {".git", "node_modules", ".venv", "venv", "env", "__pycache__", "dist",
-            "build", "coverage", ".coverage", ".next", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".cache", "vendor"}
+        expected = {
+            ".git",
+            "node_modules",
+            ".venv",
+            "venv",
+            "env",
+            "__pycache__",
+            "dist",
+            "build",
+            "coverage",
+            ".coverage",
+            ".next",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".cache",
+            "vendor",
+        }
         self.assertEqual(DEFAULT_EXCLUDED_DIRECTORIES, frozenset(expected))
         for name in expected:
             self.write(f"{name}/dependency.py")
             self.write(f"nested/{name}/dependency.py")
         real_scandir = os.scandir
+
         def guarded(path):
             self.assertNotIn(Path(path).name, expected, "excluded directory was entered")
             return real_scandir(path)
+
         with patch("arctrellis.ingestion.discovery.os.scandir", side_effect=guarded):
             result = scan_repository(self.root)
         self.assertEqual(result.files, ())
@@ -78,15 +111,19 @@ class DiscoveryTests(unittest.TestCase):
         self.write(".gitignore", "ignored.py\n")
         self.write("ignored.py")
         self.write(".coverage")
-        self.assertEqual([f.path for f in scan_repository(self.root).files],
-            [".coverage", ".github/workflows/check.yml", ".gitignore", "ignored.py"])
+        self.assertEqual(
+            [f.path for f in scan_repository(self.root).files],
+            [".coverage", ".github/workflows/check.yml", ".gitignore", "ignored.py"],
+        )
 
     def test_custom_exclusions_replace_defaults_and_names_are_case_sensitive(self):
         self.write("custom/a.py")
         self.write("node_modules/b.js")
         self.write("DIST/c.py")
-        self.assertEqual([f.path for f in scan_repository(self.root, excluded_directories={"custom"}).files],
-            ["DIST/c.py", "node_modules/b.js"])
+        self.assertEqual(
+            [f.path for f in scan_repository(self.root, excluded_directories={"custom"}).files],
+            ["DIST/c.py", "node_modules/b.js"],
+        )
         self.assertEqual(scan_repository(self.root, excluded_directories=frozenset()).file_count, 3)
 
     def test_invalid_exclusions_are_rejected(self):
@@ -118,27 +155,36 @@ class DiscoveryTests(unittest.TestCase):
             scan_repository(42)
 
     def test_access_failure_preserves_original_cause(self):
-        with patch("arctrellis.ingestion.discovery.os.scandir", side_effect=PermissionError("denied")):
-            with self.assertRaises(RepositoryAccessError) as caught:
-                scan_repository(self.root)
+        with (
+            patch("arctrellis.ingestion.discovery.os.scandir", side_effect=PermissionError("denied")),
+            self.assertRaises(RepositoryAccessError) as caught,
+        ):
+            scan_repository(self.root)
         self.assertIsInstance(caught.exception.__cause__, PermissionError)
 
     def test_nested_failure_never_returns_partial_inventory(self):
         self.write("a.py")
         self.write("src/b.py")
         real_scandir = os.scandir
+
         def failing(path):
             if Path(path).name == "src":
                 raise PermissionError("nested denied")
             return real_scandir(path)
-        with patch("arctrellis.ingestion.discovery.os.scandir", side_effect=failing):
-            with self.assertRaises(RepositoryAccessError):
-                scan_repository(self.root)
+
+        with (
+            patch("arctrellis.ingestion.discovery.os.scandir", side_effect=failing),
+            self.assertRaises(RepositoryAccessError),
+        ):
+            scan_repository(self.root)
 
     def test_source_is_neither_read_nor_executed(self):
         self.write("malicious.py", "from pathlib import Path\nPath(__file__).with_name('executed').touch()")
         self.write("setup.py", "raise RuntimeError('must never run')")
-        with patch("builtins.open", side_effect=AssertionError("content read")), patch("io.open", side_effect=AssertionError("content read")):
+        with (
+            patch("builtins.open", side_effect=AssertionError("content read")),
+            patch("io.open", side_effect=AssertionError("content read")),
+        ):
             result = scan_repository(self.root)
         self.assertEqual(result.file_count, 2)
         self.assertFalse((self.root / "executed").exists())

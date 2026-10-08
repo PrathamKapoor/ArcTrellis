@@ -1,8 +1,8 @@
 """Domain contract tests through the public package API."""
 
-from dataclasses import FrozenInstanceError, asdict, fields, replace
 import json
 import unittest
+from dataclasses import FrozenInstanceError, asdict, fields, replace
 
 from arctrellis.core import (
     CodeEntity,
@@ -19,16 +19,39 @@ class VocabularyTests(unittest.TestCase):
     def test_entity_kinds_match_required_vocabulary(self):
         self.assertEqual(
             {item.value for item in EntityKind},
-            {"REPOSITORY", "DIRECTORY", "FILE", "MODULE", "CLASS", "FUNCTION",
-             "METHOD", "VARIABLE", "IMPORT", "API_ENDPOINT", "MIDDLEWARE",
-             "TEST", "DATABASE_OPERATION"},
+            {
+                "REPOSITORY",
+                "DIRECTORY",
+                "FILE",
+                "MODULE",
+                "CLASS",
+                "FUNCTION",
+                "METHOD",
+                "VARIABLE",
+                "IMPORT",
+                "API_ENDPOINT",
+                "MIDDLEWARE",
+                "TEST",
+                "DATABASE_OPERATION",
+            },
         )
 
     def test_relationship_kinds_match_required_vocabulary(self):
         self.assertEqual(
             {item.value for item in RelationshipKind},
-            {"DEFINES", "CONTAINS", "IMPORTS", "CALLS", "INHERITS", "USES",
-             "EXPOSES", "APPLIES_MIDDLEWARE", "TESTS", "READS_DATABASE", "WRITES_DATABASE"},
+            {
+                "DEFINES",
+                "CONTAINS",
+                "IMPORTS",
+                "CALLS",
+                "INHERITS",
+                "USES",
+                "EXPOSES",
+                "APPLIES_MIDDLEWARE",
+                "TESTS",
+                "READS_DATABASE",
+                "WRITES_DATABASE",
+            },
         )
 
     def test_confidence_contains_only_static_classifications(self):
@@ -58,13 +81,28 @@ class SourceLocationTests(unittest.TestCase):
         for value in (True, 1.0, "1", None):
             for field in ("start_line", "end_line"):
                 with self.subTest(value=value, field=field), self.assertRaises(TypeError):
-                    SourceLocation(**{"file_path": "file.py", "start_line": 1,
-                                      "end_line": 1, field: value})
+                    SourceLocation(**{"file_path": "file.py", "start_line": 1, "end_line": 1, field: value})
 
     def test_source_location_rejects_absolute_and_noncanonical_paths(self):
-        for path in ("", " ", "/src/a.py", "C:/src/a.py", "C:a.py", "//host/a.py",
-                     "src\\a.py", "../a.py", "src/../a.py", "./a.py", "src/./a.py",
-                     "src//a.py", "src/a.py/", " a.py", "a.py ", "a\x00.py", "."):
+        for path in (
+            "",
+            " ",
+            "/src/a.py",
+            "C:/src/a.py",
+            "C:a.py",
+            "//host/a.py",
+            "src\\a.py",
+            "../a.py",
+            "src/../a.py",
+            "./a.py",
+            "src/./a.py",
+            "src//a.py",
+            "src/a.py/",
+            " a.py",
+            "a.py ",
+            "a\x00.py",
+            ".",
+        ):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 SourceLocation(path, 1, 1)
 
@@ -90,13 +128,24 @@ class DomainRecordTests(unittest.TestCase):
     def setUp(self):
         self.location = SourceLocation("src/payment/PaymentService.ts", 61, 61)
         self.entity = CodeEntity(
-            "payment.create", EntityKind.METHOD, "create", "PaymentService.create",
-            self.location, "payment", "typescript", (("visibility", "public"),),
+            "payment.create",
+            EntityKind.METHOD,
+            "create",
+            "PaymentService.create",
+            self.location,
+            "payment",
+            "typescript",
+            (("visibility", "public"),),
         )
         self.evidence = Evidence("call-site-61", self.location, "direct_call_resolution")
         self.relationship = Relationship(
-            "payment-fraud-call", self.entity.id, RelationshipKind.CALLS, "fraud.check",
-            Confidence.PROVEN, 1.0, (self.evidence,),
+            "payment-fraud-call",
+            self.entity.id,
+            RelationshipKind.CALLS,
+            "fraud.check",
+            Confidence.PROVEN,
+            1.0,
+            (self.evidence,),
         )
 
     def test_valid_entity_preserves_identity_kind_and_optional_data(self):
@@ -132,9 +181,12 @@ class DomainRecordTests(unittest.TestCase):
 
     def test_evidence_rejects_invalid_id_location_and_method(self):
         for field, value, error in (
-            ("id", "", ValueError), ("location", None, TypeError),
-            ("analysis_method", "", ValueError), ("analysis_method", "Direct call", ValueError),
-            ("analysis_method", "1_method", ValueError), ("analysis_method", None, TypeError),
+            ("id", "", ValueError),
+            ("location", None, TypeError),
+            ("analysis_method", "", ValueError),
+            ("analysis_method", "Direct call", ValueError),
+            ("analysis_method", "1_method", ValueError),
+            ("analysis_method", None, TypeError),
         ):
             with self.subTest(field=field, value=value), self.assertRaises(error):
                 replace(self.evidence, **{field: value})
@@ -147,8 +199,7 @@ class DomainRecordTests(unittest.TestCase):
     def test_relationship_direction_remains_source_to_target(self):
         self.assertEqual(self.relationship.source_entity_id, "payment.create")
         self.assertEqual(self.relationship.target_entity_id, "fraud.check")
-        reverse = replace(self.relationship, source_entity_id="fraud.check",
-                          target_entity_id="payment.create")
+        reverse = replace(self.relationship, source_entity_id="fraud.check", target_entity_id="payment.create")
         self.assertNotEqual(reverse, self.relationship)
 
     def test_relationship_rejects_empty_source_id(self):
@@ -187,14 +238,17 @@ class DomainRecordTests(unittest.TestCase):
     def test_relationship_preserves_uncertainty_without_assumed_thresholds(self):
         for classification in Confidence:
             with self.subTest(classification=classification):
-                relationship = replace(self.relationship, confidence=classification,
-                                       confidence_score=None, evidence=())
+                relationship = replace(self.relationship, confidence=classification, confidence_score=None, evidence=())
                 self.assertIs(relationship.confidence, classification)
                 self.assertEqual(relationship.evidence, ())
 
     def test_relationship_rejects_raw_enums_mutable_or_invalid_evidence(self):
-        for field, value in (("kind", "CALLS"), ("confidence", "PROVEN"),
-                             ("evidence", [self.evidence]), ("evidence", ("id",))):
+        for field, value in (
+            ("kind", "CALLS"),
+            ("confidence", "PROVEN"),
+            ("evidence", [self.evidence]),
+            ("evidence", ("id",)),
+        ):
             with self.subTest(field=field), self.assertRaises(TypeError):
                 replace(self.relationship, **{field: value})
 
@@ -204,8 +258,7 @@ class DomainRecordTests(unittest.TestCase):
 
     def test_metadata_rejects_mutable_nested_or_duplicate_values(self):
         for record in (self.entity, self.evidence):
-            for metadata in ({"key": "value"}, (("key", []),), (["key", "value"],),
-                             (("key", "value", "extra"),)):
+            for metadata in ({"key": "value"}, (("key", []),), (["key", "value"],), (("key", "value", "extra"),)):
                 with self.subTest(record=type(record), metadata=metadata), self.assertRaises(TypeError):
                     replace(record, metadata=metadata)
             for metadata in ((("", "value"),), (("key", "one"), ("key", "two"))):

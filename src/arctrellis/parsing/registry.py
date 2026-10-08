@@ -7,17 +7,23 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from arctrellis.ingestion import DiscoveredFile, Language
+
 from .errors import ParserConfigurationError, UnsupportedLanguageError
 
 if TYPE_CHECKING:
     from tree_sitter import Parser
 
 _GRAMMARS = {
-    ".py": (Language.PYTHON, "python"), ".pyi": (Language.PYTHON, "python"),
-    ".js": (Language.JAVASCRIPT, "javascript"), ".jsx": (Language.JAVASCRIPT, "javascript"),
-    ".mjs": (Language.JAVASCRIPT, "javascript"), ".cjs": (Language.JAVASCRIPT, "javascript"),
-    ".ts": (Language.TYPESCRIPT, "typescript"), ".mts": (Language.TYPESCRIPT, "typescript"),
-    ".cts": (Language.TYPESCRIPT, "typescript"), ".tsx": (Language.TYPESCRIPT, "tsx"),
+    ".py": (Language.PYTHON, "python"),
+    ".pyi": (Language.PYTHON, "python"),
+    ".js": (Language.JAVASCRIPT, "javascript"),
+    ".jsx": (Language.JAVASCRIPT, "javascript"),
+    ".mjs": (Language.JAVASCRIPT, "javascript"),
+    ".cjs": (Language.JAVASCRIPT, "javascript"),
+    ".ts": (Language.TYPESCRIPT, "typescript"),
+    ".mts": (Language.TYPESCRIPT, "typescript"),
+    ".cts": (Language.TYPESCRIPT, "typescript"),
+    ".tsx": (Language.TYPESCRIPT, "tsx"),
 }
 
 
@@ -31,7 +37,9 @@ def _grammar_for(path: str, language: Language | None) -> str:
 
 def _new_parser(grammar: str) -> Parser:
     try:
-        from tree_sitter import Language as ParserLanguage, Parser
+        from tree_sitter import Language as ParserLanguage
+        from tree_sitter import Parser
+
         if grammar in ("typescript", "tsx"):
             module = import_module("tree_sitter_typescript")
             capsule = module.language_tsx() if grammar == "tsx" else module.language_typescript()

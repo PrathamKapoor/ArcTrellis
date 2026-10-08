@@ -1,5 +1,5 @@
-from dataclasses import FrozenInstanceError
 import unittest
+from dataclasses import FrozenInstanceError
 
 from arctrellis.ingestion import Language
 from arctrellis.parsing import DiagnosticKind, ParseDiagnostic, ParsedSource, SyntaxNode, SyntaxSpan
@@ -16,9 +16,15 @@ class SyntaxModelTests(unittest.TestCase):
         self.assertEqual(self.span(end_byte=0, end_column=0).start_line, 1)
 
     def test_invalid_byte_line_and_column_ranges_are_rejected(self):
-        for change in ({"start_byte": -1}, {"start_byte": 2}, {"start_line": 0},
-                       {"start_line": 2}, {"start_column": -1}, {"end_column": -1},
-                       {"start_column": 2}):
+        for change in (
+            {"start_byte": -1},
+            {"start_byte": 2},
+            {"start_line": 0},
+            {"start_line": 2},
+            {"start_column": -1},
+            {"end_column": -1},
+            {"start_column": 2},
+        ):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 self.span(**change)
         with self.assertRaises(TypeError):

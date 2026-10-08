@@ -14,7 +14,7 @@ def _entity_span(entity: CodeEntity) -> SyntaxSpan:
         values = tuple(int(metadata[name]) for name in names)
     except (KeyError, ValueError) as error:
         raise ValueError("extracted entities require six integer syntax coordinates") from error
-    if any(str(value) != metadata[name] for name, value in zip(names, values)):
+    if any(str(value) != metadata[name] for name, value in zip(names, values, strict=True)):
         raise ValueError("syntax coordinates must use canonical decimal strings")
     return SyntaxSpan(*values)
 
@@ -55,15 +55,26 @@ class ExtractionResult:
         for index, entity in enumerate(self.entities):
             if entity.id in seen:
                 raise ValueError("duplicate entity ID")
-            if entity.language != self.language.value or entity.location is None or entity.location.file_path != self.path:
+            if (
+                entity.language != self.language.value
+                or entity.location is None
+                or entity.location.file_path != self.path
+            ):
                 raise ValueError("entity language and source location must match the result")
             span = _entity_span(entity)
-            last_line = max(span.start_line, span.end_line - int(span.end_column == 0 and span.end_byte > span.start_byte))
+            last_line = max(
+                span.start_line, span.end_line - int(span.end_column == 0 and span.end_byte > span.start_byte)
+            )
             if entity.location != SourceLocation(self.path, span.start_line, last_line):
                 raise ValueError("entity location must agree with its exact syntax span")
             if index:
-                parent = seen.get(entity.parent_id)
-                if parent is None or parent.kind not in (EntityKind.MODULE, EntityKind.CLASS, EntityKind.FUNCTION, EntityKind.METHOD):
+                parent = seen.get(entity.parent_id) if entity.parent_id is not None else None
+                if parent is None or parent.kind not in (
+                    EntityKind.MODULE,
+                    EntityKind.CLASS,
+                    EntityKind.FUNCTION,
+                    EntityKind.METHOD,
+                ):
                     raise ValueError("entity parent must be an earlier semantic scope in this result")
                 parent_span = spans[parent.id]
                 if span.start_byte < parent_span.start_byte or span.end_byte > parent_span.end_byte:

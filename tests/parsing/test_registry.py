@@ -6,9 +6,11 @@ from arctrellis.parsing import UnsupportedLanguageError, parse_source
 
 class GrammarSelectionTests(unittest.TestCase):
     def test_all_extensions_and_uppercase_select_valid_grammars(self):
-        families = ((Language.PYTHON, ("py", "pyi"), b"x = 1\n", "module"),
-                    (Language.JAVASCRIPT, ("js", "jsx", "mjs", "cjs"), b"const x = 1;", "program"),
-                    (Language.TYPESCRIPT, ("ts", "tsx", "mts", "cts"), b"const x: number = 1;", "program"))
+        families = (
+            (Language.PYTHON, ("py", "pyi"), b"x = 1\n", "module"),
+            (Language.JAVASCRIPT, ("js", "jsx", "mjs", "cjs"), b"const x = 1;", "program"),
+            (Language.TYPESCRIPT, ("ts", "tsx", "mts", "cts"), b"const x: number = 1;", "program"),
+        )
         for language, extensions, source, root_kind in families:
             for extension in extensions:
                 for suffix in (extension, extension.upper()):

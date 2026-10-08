@@ -1,6 +1,6 @@
-from dataclasses import FrozenInstanceError, asdict
 import json
 import unittest
+from dataclasses import FrozenInstanceError, asdict
 
 from arctrellis.ingestion import DiscoveredFile, Language, RepositoryInventory, SkippedPath, SkipReason
 
@@ -12,8 +12,18 @@ class InventoryModelTests(unittest.TestCase):
         self.assertEqual(hash(item), hash(DiscoveredFile("src/app.py", 12, Language.PYTHON)))
 
     def test_invalid_paths_are_rejected(self):
-        for path in ("", "/a.py", "C:/a.py", "C:a.py", "../a.py", "src/../a.py",
-                     "src\\a.py", "src//a.py", "./a.py", "a\x00.py"):
+        for path in (
+            "",
+            "/a.py",
+            "C:/a.py",
+            "C:a.py",
+            "../a.py",
+            "src/../a.py",
+            "src\\a.py",
+            "src//a.py",
+            "./a.py",
+            "a\x00.py",
+        ):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 DiscoveredFile(path, 0)
 
@@ -52,13 +62,21 @@ class InventoryModelTests(unittest.TestCase):
                 RepositoryInventory(files)
 
     def test_supported_subset_counts_and_order(self):
-        result = RepositoryInventory((DiscoveredFile("README.md", 1),
-            DiscoveredFile("a.py", 2, Language.PYTHON), DiscoveredFile("b.ts", 3, Language.TYPESCRIPT),
-            DiscoveredFile("c.js", 4, Language.JAVASCRIPT), DiscoveredFile("d.py", 5, Language.PYTHON)))
+        result = RepositoryInventory(
+            (
+                DiscoveredFile("README.md", 1),
+                DiscoveredFile("a.py", 2, Language.PYTHON),
+                DiscoveredFile("b.ts", 3, Language.TYPESCRIPT),
+                DiscoveredFile("c.js", 4, Language.JAVASCRIPT),
+                DiscoveredFile("d.py", 5, Language.PYTHON),
+            )
+        )
         self.assertEqual(result.file_count, 5)
         self.assertEqual(result.supported_file_count, 4)
         self.assertEqual(result.supported_files, result.files[1:])
-        self.assertEqual(result.language_counts, ((Language.JAVASCRIPT, 1), (Language.PYTHON, 2), (Language.TYPESCRIPT, 1)))
+        self.assertEqual(
+            result.language_counts, ((Language.JAVASCRIPT, 1), (Language.PYTHON, 2), (Language.TYPESCRIPT, 1))
+        )
 
     def test_skip_validation_order_and_overlap(self):
         skip = SkippedPath("vendor", SkipReason.EXCLUDED_DIRECTORY)

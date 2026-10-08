@@ -1,13 +1,18 @@
 """Graph storage, adjacency, consistency and snapshot contracts."""
 
-from dataclasses import replace
 import unittest
+from dataclasses import replace
 
 from arctrellis.core import Confidence, RelationshipKind
 from arctrellis.graph import (
-    CodeGraph, DuplicateEntityError, DuplicateRelationshipError, GraphError,
-    UnknownEntityError, UnknownRelationshipError,
+    CodeGraph,
+    DuplicateEntityError,
+    DuplicateRelationshipError,
+    GraphError,
+    UnknownEntityError,
+    UnknownRelationshipError,
 )
+
 from .fixtures import build_graph, entity, ids, payment_graph, relationship
 
 
@@ -84,9 +89,11 @@ class GraphStorageTests(unittest.TestCase):
     def test_conflicting_relationship_id_fails_without_changing_indexes(self):
         edge = relationship("r", "A", "B")
         graph = build_graph((entity("A"), entity("B"), entity("C")), (edge,))
-        for conflicting in (replace(edge, target_entity_id="C"),
-                            replace(edge, confidence=Confidence.LIKELY),
-                            replace(edge, evidence=())):
+        for conflicting in (
+            replace(edge, target_entity_id="C"),
+            replace(edge, confidence=Confidence.LIKELY),
+            replace(edge, evidence=()),
+        ):
             with self.subTest(conflicting=conflicting), self.assertRaises(DuplicateRelationshipError):
                 graph.add_relationship(conflicting)
         self.assertIs(graph.get_relationship("r"), edge)
@@ -94,8 +101,7 @@ class GraphStorageTests(unittest.TestCase):
         self.assertEqual(ids(graph.outgoing("A")), ("r",))
 
     def test_distinct_relationship_ids_preserve_parallel_edges_and_unique_neighbors(self):
-        graph = build_graph((entity("A"), entity("B")),
-                            (relationship("r2", "A", "B"), relationship("r1", "A", "B")))
+        graph = build_graph((entity("A"), entity("B")), (relationship("r2", "A", "B"), relationship("r1", "A", "B")))
         self.assertEqual(ids(graph.outgoing("A")), ("r1", "r2"))
         self.assertEqual(ids(graph.successors("A")), ("B",))
         self.assertEqual(ids(graph.predecessors("B")), ("A",))
@@ -112,8 +118,10 @@ class GraphStorageTests(unittest.TestCase):
 
     def test_unknown_lookups_raise_intentional_graph_errors(self):
         graph = CodeGraph()
-        for lookup, error in ((graph.get_entity, UnknownEntityError),
-                              (graph.get_relationship, UnknownRelationshipError)):
+        for lookup, error in (
+            (graph.get_entity, UnknownEntityError),
+            (graph.get_relationship, UnknownRelationshipError),
+        ):
             with self.subTest(lookup=lookup), self.assertRaises(error) as raised:
                 lookup("missing")
             self.assertIsInstance(raised.exception, GraphError)
@@ -127,8 +135,14 @@ class GraphStorageTests(unittest.TestCase):
 
     def test_query_ids_must_be_strings(self):
         graph = CodeGraph()
-        for query in (graph.get_entity, graph.get_relationship, graph.has_entity,
-                      graph.has_relationship, graph.outgoing, graph.incoming):
+        for query in (
+            graph.get_entity,
+            graph.get_relationship,
+            graph.has_entity,
+            graph.has_relationship,
+            graph.outgoing,
+            graph.incoming,
+        ):
             with self.subTest(query=query), self.assertRaises(TypeError):
                 query([])
 
@@ -155,46 +169,44 @@ class AdjacencyTests(unittest.TestCase):
         self.assertEqual(ids(self.graph.incoming("fraud")), ("fraud-call", "import"))
 
     def test_outgoing_can_filter_relationship_kind(self):
-        self.assertEqual(ids(self.graph.outgoing("controller", kind=RelationshipKind.CALLS)),
-                         ("controller-call",))
+        self.assertEqual(ids(self.graph.outgoing("controller", kind=RelationshipKind.CALLS)), ("controller-call",))
 
     def test_incoming_can_filter_relationship_kind(self):
         self.assertEqual(ids(self.graph.incoming("fraud", kind=RelationshipKind.IMPORTS)), ("import",))
 
     def test_successors_return_unique_entities_sorted_by_id(self):
         self.assertEqual(ids(self.graph.successors("controller")), ("fraud", "service"))
-        self.assertEqual(ids(self.graph.successors("controller", kind=RelationshipKind.CALLS)),
-                         ("service",))
+        self.assertEqual(ids(self.graph.successors("controller", kind=RelationshipKind.CALLS)), ("service",))
 
     def test_predecessors_return_unique_entities_sorted_by_id(self):
         self.assertEqual(ids(self.graph.predecessors("fraud")), ("controller", "service"))
-        self.assertEqual(ids(self.graph.predecessors("fraud", kind=RelationshipKind.CALLS)),
-                         ("service",))
+        self.assertEqual(ids(self.graph.predecessors("fraud", kind=RelationshipKind.CALLS)), ("service",))
 
     def test_known_isolated_entity_has_empty_adjacency_and_neighbors(self):
-        for query in (self.graph.outgoing, self.graph.incoming,
-                      self.graph.successors, self.graph.predecessors):
+        for query in (self.graph.outgoing, self.graph.incoming, self.graph.successors, self.graph.predecessors):
             with self.subTest(query=query):
                 self.assertEqual(query("isolated"), ())
 
     def test_unknown_adjacency_and_neighbor_ids_raise(self):
-        for query in (self.graph.outgoing, self.graph.incoming,
-                      self.graph.successors, self.graph.predecessors):
+        for query in (self.graph.outgoing, self.graph.incoming, self.graph.successors, self.graph.predecessors):
             with self.subTest(query=query), self.assertRaises(UnknownEntityError):
                 query("missing")
 
     def test_raw_string_kind_filters_are_rejected(self):
-        for query in (self.graph.outgoing, self.graph.incoming,
-                      self.graph.successors, self.graph.predecessors):
+        for query in (self.graph.outgoing, self.graph.incoming, self.graph.successors, self.graph.predecessors):
             with self.subTest(query=query), self.assertRaises(TypeError):
                 query("controller", kind="CALLS")
 
     def test_full_snapshots_and_neighbors_ignore_insertion_order(self):
         reverse = payment_graph(reverse_insertion=True)
-        self.assertEqual(ids(self.graph.entities()),
-                         ("controller", "endpoint", "fraud", "isolated", "payment", "repository", "service"))
-        self.assertEqual(ids(self.graph.relationships()),
-                         ("controller-call", "expose", "fraud-call", "import", "repository-call", "write"))
+        self.assertEqual(
+            ids(self.graph.entities()),
+            ("controller", "endpoint", "fraud", "isolated", "payment", "repository", "service"),
+        )
+        self.assertEqual(
+            ids(self.graph.relationships()),
+            ("controller-call", "expose", "fraud-call", "import", "repository-call", "write"),
+        )
         self.assertEqual(self.graph.entities(), reverse.entities())
         self.assertEqual(self.graph.relationships(), reverse.relationships())
         for entity_id in ("controller", "fraud", "service"):

@@ -7,7 +7,9 @@ from collections.abc import Iterator, Set
 from arctrellis.core import CodeEntity, Relationship, RelationshipKind
 
 from .errors import (
-    DuplicateEntityError, DuplicateRelationshipError, UnknownEntityError,
+    DuplicateEntityError,
+    DuplicateRelationshipError,
+    UnknownEntityError,
     UnknownRelationshipError,
 )
 from .results import GraphPath, TraversalResult
@@ -125,49 +127,70 @@ class CodeGraph:
         return tuple(self._relationships[key] for key in sorted(self._relationships))
 
     def outgoing(
-        self, entity_id: str, *, kind: RelationshipKind | None = None,
+        self,
+        entity_id: str,
+        *,
+        kind: RelationshipKind | None = None,
     ) -> tuple[Relationship, ...]:
         """Edges leaving a known entity, optionally filtered, sorted by edge ID."""
         self.get_entity(entity_id)
         return self._adjacent(entity_id, reverse=False, kinds=_single_kind(kind))
 
     def incoming(
-        self, entity_id: str, *, kind: RelationshipKind | None = None,
+        self,
+        entity_id: str,
+        *,
+        kind: RelationshipKind | None = None,
     ) -> tuple[Relationship, ...]:
         """Edges entering a known entity, optionally filtered, sorted by edge ID."""
         self.get_entity(entity_id)
         return self._adjacent(entity_id, reverse=True, kinds=_single_kind(kind))
 
     def successors(
-        self, entity_id: str, *, kind: RelationshipKind | None = None,
+        self,
+        entity_id: str,
+        *,
+        kind: RelationshipKind | None = None,
     ) -> tuple[CodeEntity, ...]:
         """Unique one-edge outgoing neighbors sorted by entity ID."""
         neighbor_ids = {edge.target_entity_id for edge in self.outgoing(entity_id, kind=kind)}
         return tuple(self._entities[key] for key in sorted(neighbor_ids))
 
     def predecessors(
-        self, entity_id: str, *, kind: RelationshipKind | None = None,
+        self,
+        entity_id: str,
+        *,
+        kind: RelationshipKind | None = None,
     ) -> tuple[CodeEntity, ...]:
         """Unique one-edge incoming neighbors sorted by entity ID."""
         neighbor_ids = {edge.source_entity_id for edge in self.incoming(entity_id, kind=kind)}
         return tuple(self._entities[key] for key in sorted(neighbor_ids))
 
     def traverse_forward(
-        self, start_entity_id: str, max_depth: int, *,
+        self,
+        start_entity_id: str,
+        max_depth: int,
+        *,
         relationship_kinds: Set[RelationshipKind] | None = None,
     ) -> TraversalResult:
         """Discover distinct nodes within max_depth outgoing steps, start included."""
         return self._traverse(start_entity_id, max_depth, reverse=False, kinds=relationship_kinds)
 
     def traverse_reverse(
-        self, start_entity_id: str, max_depth: int, *,
+        self,
+        start_entity_id: str,
+        max_depth: int,
+        *,
         relationship_kinds: Set[RelationshipKind] | None = None,
     ) -> TraversalResult:
         """Discover distinct nodes within max_depth incoming steps, start included."""
         return self._traverse(start_entity_id, max_depth, reverse=True, kinds=relationship_kinds)
 
     def shortest_path(
-        self, source_entity_id: str, target_entity_id: str, *,
+        self,
+        source_entity_id: str,
+        target_entity_id: str,
+        *,
         relationship_kinds: Set[RelationshipKind] | None = None,
     ) -> GraphPath | None:
         """Find an unweighted directed path, or None for disconnected known nodes.
@@ -188,17 +211,25 @@ class CodeGraph:
         return None
 
     def _adjacent(
-        self, entity_id: str, *, reverse: bool,
+        self,
+        entity_id: str,
+        *,
+        reverse: bool,
         kinds: frozenset[RelationshipKind] | None,
     ) -> tuple[Relationship, ...]:
         index = self._incoming if reverse else self._outgoing
         return tuple(
-            self._relationships[key] for key in index[entity_id]
+            self._relationships[key]
+            for key in index[entity_id]
             if kinds is None or self._relationships[key].kind in kinds
         )
 
     def _traverse(
-        self, start_entity_id: str, max_depth: int, *, reverse: bool,
+        self,
+        start_entity_id: str,
+        max_depth: int,
+        *,
+        reverse: bool,
         kinds: Set[RelationshipKind] | None,
     ) -> TraversalResult:
         self.get_entity(start_entity_id)
@@ -207,13 +238,19 @@ class CodeGraph:
         if max_depth < 0:
             raise ValueError("max_depth must be >= 0")
         selected = _selected_kinds(kinds)
-        return TraversalResult(tuple(
-            self._entities[key]
-            for key, _ in self._breadth_first(start_entity_id, max_depth, reverse=reverse, kinds=selected)
-        ))
+        return TraversalResult(
+            tuple(
+                self._entities[key]
+                for key, _ in self._breadth_first(start_entity_id, max_depth, reverse=reverse, kinds=selected)
+            )
+        )
 
     def _breadth_first(
-        self, start: str, max_depth: int | None, *, reverse: bool,
+        self,
+        start: str,
+        max_depth: int | None,
+        *,
+        reverse: bool,
         kinds: frozenset[RelationshipKind] | None,
     ) -> Iterator[tuple[str, Relationship | None]]:
         """Yield (entity ID, discovery edge); the start has no discovery edge."""
@@ -233,7 +270,10 @@ class CodeGraph:
                 yield neighbor, edge
 
     def _build_path(
-        self, source: str, target: str, parents: dict[str, Relationship],
+        self,
+        source: str,
+        target: str,
+        parents: dict[str, Relationship],
     ) -> GraphPath:
         entity_ids = [target]
         edges: list[Relationship] = []

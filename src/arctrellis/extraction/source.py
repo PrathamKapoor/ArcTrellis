@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import tokenize
 from dataclasses import dataclass
 from io import BytesIO, StringIO
-import tokenize
 
 from arctrellis.core import SourceLocation
 from arctrellis.parsing import ParsedSource, SyntaxNode, SyntaxSpan
+
 from .errors import SemanticExtractionError, SourceDecodingError
 
 
@@ -46,7 +47,7 @@ class _PythonSource:
             raise SourceDecodingError(f"cannot decode syntax slice in {self.parsed.path}") from error
 
     def signature(self, definition: SyntaxNode, body: SyntaxNode) -> str:
-        header = self.decode(self.parsed.source[definition.span.start_byte:body.span.start_byte])
+        header = self.decode(self.parsed.source[definition.span.start_byte : body.span.start_byte])
         depth = 0
         boundary = None
         line_offsets = [0] + [index + 1 for index, character in enumerate(header) if character == "\n"]

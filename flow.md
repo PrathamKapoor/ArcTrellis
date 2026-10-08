@@ -492,12 +492,13 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
      │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
      │   ├─ _file_entity()               create path-based FILE with analyzed byte size
      │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
-     │   └─ _membership()               PROVEN FILE DEFINES MODULE with root evidence
-     │       └─ _stable_id()             versioned canonical JSON/UUID5 proof identities
+     │   ├─ _membership()               PROVEN FILE DEFINES MODULE with root evidence
+     │   │   └─ _stable_id()             versioned canonical JSON/UUID5 proof identities
+     │   └─ FileIndexResult()            indexing/models.py; summarize before source/tree release
      ├─ CodeGraph.add_entity()           graph/graph.py; merge canonical endpoints first
      ├─ CodeGraph.add_relationship()     graph/graph.py; retain immutable evidence
-     └─ FileIndexResult()                indexing/models.py; explicit COMPLETE/PARTIAL/FAILED summary
-RepositoryIndexResult()                  indexing/models.py; validate ordered outcomes and graph counts
+     └─ outcomes.append()               retain explicit COMPLETE/PARTIAL/FAILED summary
+ └─ RepositoryIndexResult()              indexing/models.py; validate ordered outcomes and graph counts
 ```
 
 Output: inventory, merged in-memory graph and frozen per-file summaries. FILE identity
@@ -516,7 +517,8 @@ Input: RepositoryIndexResult; no source or configuration reads.
 ```text
 resolve_imports(index)                          src/arctrellis/resolution/imports.py
  ├─ RepositoryIndexResult(...)                 reject stale summary invariants
- ├─ CodeGraph.add_entity()/add_relationship()  clone base graph without mutation
+ ├─ CodeGraph.add_entity()                     copy endpoints before edges
+ ├─ CodeGraph.add_relationship()               copy proof without mutating base graph
  ├─ _catalog(modules)                          resolution/catalog.py: derive path-based module candidates
  └─ for each IMPORT in deterministic ID order
      ├─ _python_candidates(...)               calculate absolute/relative Python aliases
@@ -526,7 +528,24 @@ resolve_imports(index)                          src/arctrellis/resolution/import
          └─ CodeGraph.add_relationship()       retain import-site evidence
 ```
 
-Python supports identifier-component path aliases and an explicit leading-src heuristic; no environment/configuration or imported-symbol resolution. JS/TS probes exact supported extensions, or all supported extension/index paths for extensionless names; explicit directory-intent specifiers probe only indexes; no priority guesses. Unknown extensions, bare imports, escaped literals and outside-root paths are unresolved. Ambiguous imports record sorted candidate IDs without an edge. Output is ImportResolutionResult with a new graph and decisions. Invalid graph/summary invariants abort explicitly; original index remains unchanged. Evidence points to the IMPORT location with language-specific analysis method, not a guessed target declaration.
+Python supports identifier-component path aliases and an explicit leading-src heuristic; no environment/configuration or imported-symbol resolution. JS/TS probes exact supported extensions, or all supported extension/index paths for extensionless names; explicit directory-intent specifiers probe only indexes; no priority guesses. Unknown extensions, bare imports, escaped/percent literals and outside-root paths are unresolved. Ambiguous imports record sorted candidate IDs without an edge. Output is ImportResolutionResult with a new graph and decisions. Invalid graph/summary invariants abort explicitly; original index remains unchanged. Evidence points to the IMPORT location with language-specific analysis method, not a guessed target declaration.
+
+## 15. Local development quality gate
+
+Developer input is ArcTrellis source/tests and pyproject.toml, never a target repository.
+
+```text
+developer gate (manual local sequence)        commands below run independently
+ ├─ python -m pip install -e ".[dev]"          pyproject.toml: opt in to pinned development tools
+ ├─ python -m unittest discover -s tests -v    verify runtime contracts and import-boundary audit
+ ├─ python -m ruff check src tests             lint without target execution
+ ├─ python -m ruff format --check src tests    require deterministic Python formatting
+ ├─ python -m mypy src/arctrellis              check strict types without blanket suppression
+ ├─ python -m compileall -q src                compile ArcTrellis source without executing it
+ └─ python -m pip check                        verify installed dependency consistency
+```
+
+`ruff format src tests` applies formatting before checks. Tools are optional dev dependencies; runtime parser pins remain unchanged. The standard-library tests/test_architecture.py import audit inspects ArcTrellis source only and rejects native imports outside parsing. Any failed command requires correction and rerun; no CI, publication or target package hooks are introduced.
 
 ## Changes in this session (Phase 0.1)
 
@@ -647,3 +666,14 @@ Python supports identifier-component path aliases and an explicit leading-src he
 | Candidate boundaries | Correct root index probes and reject literal-dot Python filename aliases. | src/arctrellis/resolution/catalog.py, src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-059 |
 | Directory candidates | Preserve trailing slash/dot directory intent and restrict probes to indexes. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-060 |
 | Conservative literals | Defer percent-encoded specifiers and cover alias/relative-level negatives. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-061 |
+
+## Changes in this session (Quality Gate Q1)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Development | Add optional pinned quality tools, Ruff configuration and strict mypy. | pyproject.toml, README.md, decisions.md, flow.md | uncommitted | D-062 |
+| Python quality | Format and lint source/tests; make static type contracts explicit. | src/arctrellis/**/*.py, tests/**/*.py | uncommitted | D-062 |
+| Static contracts | Annotate iterative work items and helper boundaries; preserve fixture bytes and validated invariants. | src/arctrellis/, tests/, decisions.md, flow.md | uncommitted | D-063 |
+| Architecture | Add native import audit and verified local developer quality flow. | tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-064 |
+| Handoff | Record verified gates, limits and twelve-section continuation state; stop after Q1. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-065 |
+| Verification commands | Correct auxiliary smoke byte input and retain existing Git line normalization for whitespace audit. | decisions.md, flow.md, handoff.md | uncommitted | D-066 |

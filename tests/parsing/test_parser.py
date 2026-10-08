@@ -1,51 +1,86 @@
-from dataclasses import fields, is_dataclass
-from pathlib import Path
 import os
 import stat
 import subprocess
 import sys
+import unittest
+from dataclasses import fields, is_dataclass
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
-import unittest
 from unittest.mock import patch
 
 from arctrellis.ingestion import DiscoveredFile, Language, scan_repository
-from arctrellis.parsing import (DiagnosticKind, ParsedSource, SyntaxNode, SyntaxSpan,
-    ParserConfigurationError, ParserExecutionError, SourceReadError, SourceTooLargeError,
-    UnsupportedLanguageError, UnsafeSourceError, parse_discovered_file, parse_source)
+from arctrellis.parsing import (
+    DiagnosticKind,
+    ParsedSource,
+    ParserConfigurationError,
+    ParserExecutionError,
+    SourceReadError,
+    SourceTooLargeError,
+    SyntaxSpan,
+    UnsafeSourceError,
+    UnsupportedLanguageError,
+    parse_discovered_file,
+    parse_source,
+)
 
 
 class ParserTests(unittest.TestCase):
     def test_representative_python_syntax(self):
-        source = b"import os\n@decorate\nasync def work(x):\n    return x\nclass Service:\n    def create(self):\n        pass\n"
+        source = (
+            b"import os\n@decorate\nasync def work(x):\n    return x\nclass Service"
+            b":\n    def create(self):\n        pass\n"
+        )
         result = parse_source("a.py", Language.PYTHON, source)
         kinds = {node.kind for node in result.root.walk()}
-        self.assertTrue({"import_statement", "decorated_definition", "function_definition", "class_definition"} <= kinds)
+        self.assertTrue(
+            {"import_statement", "decorated_definition", "function_definition", "class_definition"} <= kinds
+        )
         self.assertFalse(result.has_errors)
 
     def test_representative_javascript_and_jsx(self):
-        source = b"import x from 'x'; export async function f() { return 1; } const g = () => <div>Hello</div>; class C { m() {} }"
+        source = (
+            b"import x from 'x'; export async function f() { return 1; } const "
+            b"g = () => <div>Hello</div>; class C { m() {} }"
+        )
         result = parse_source("a.jsx", Language.JAVASCRIPT, source)
         self.assertFalse(result.has_errors)
         kinds = {node.kind for node in result.root.walk()}
-        self.assertTrue({"function_declaration", "arrow_function", "class_declaration", "jsx_element", "import_statement"} <= kinds)
+        self.assertTrue(
+            {"function_declaration", "arrow_function", "class_declaration", "jsx_element", "import_statement"} <= kinds
+        )
 
     def test_representative_typescript(self):
-        result = parse_source("a.ts", Language.TYPESCRIPT,
-            b"import {x} from 'x'; interface Payment { amount: number; } function create(p: Payment): void {} class C { m(): void {} }")
+        result = parse_source(
+            "a.ts",
+            Language.TYPESCRIPT,
+            (
+                b"import {x} from 'x'; interface Payment { amount: number; } functi"
+                b"on create(p: Payment): void {} class C { m(): void {} }"
+            ),
+        )
         self.assertFalse(result.has_errors)
         self.assertIn("interface_declaration", [node.kind for node in result.root.walk()])
 
     def test_tsx_uses_dedicated_grammar_and_keeps_canonical_language(self):
-        result = parse_source("Button.tsx", Language.TYPESCRIPT,
-            b"type Props = { label: string; }; export function Button({label}: Props) { return <button>{label}</button>; }")
+        result = parse_source(
+            "Button.tsx",
+            Language.TYPESCRIPT,
+            (
+                b"type Props = { label: string; }; export function Button({label}: "
+                b"Props) { return <button>{label}</button>; }"
+            ),
+        )
         self.assertEqual(result.language, Language.TYPESCRIPT)
         self.assertFalse(result.has_errors)
         self.assertIn("jsx_element", [node.kind for node in result.root.walk()])
 
     def test_invalid_syntax_returns_diagnostics_for_all_languages(self):
-        for path, language, source in (("a.py", Language.PYTHON, b"def broken(\n return 1"),
-            ("a.js", Language.JAVASCRIPT, b"function {"), ("a.ts", Language.TYPESCRIPT, b"interface {")):
+        for path, language, source in (
+            ("a.py", Language.PYTHON, b"def broken(\n return 1"),
+            ("a.js", Language.JAVASCRIPT, b"function {"),
+            ("a.ts", Language.TYPESCRIPT, b"interface {"),
+        ):
             with self.subTest(path=path):
                 result = parse_source(path, language, source)
                 self.assertTrue(result.has_errors)
@@ -76,7 +111,10 @@ class ParserTests(unittest.TestCase):
     def test_nested_drive_component_cannot_escape_root_or_trigger_io(self):
         with TemporaryDirectory() as temp:
             item = DiscoveredFile("src/D:/outside/a.py", 0, Language.PYTHON)
-            with patch("arctrellis.parsing.source.os.lstat") as metadata, patch("arctrellis.parsing.source.os.open") as opened:
+            with (
+                patch("arctrellis.parsing.source.os.lstat") as metadata,
+                patch("arctrellis.parsing.source.os.open") as opened,
+            ):
                 with self.assertRaises(UnsafeSourceError):
                     parse_discovered_file(temp, item)
                 metadata.assert_not_called()
@@ -128,12 +166,16 @@ else:
             self.assertIsInstance(caught.exception.__cause__, RuntimeError)
 
     def test_other_public_packages_do_not_load_native_parser(self):
-        command = "import sys; import arctrellis.core, arctrellis.graph, arctrellis.ingestion; assert not any(n.startswith('tree_sitter') for n in sys.modules)"
+        command = (
+            "import sys; import arctrellis.core, arctrellis.graph, arctrellis."
+            "ingestion; assert not any(n.startswith('tree_sitter') for n in sy"
+            "s.modules)"
+        )
         result = subprocess.run([sys.executable, "-c", command], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_named_nodes_fields_exact_bytes_and_unicode_columns(self):
-        source = "def work():\n    return 'é'\n".encode("utf-8")
+        source = "def work():\n    return 'é'\n".encode()
         result = parse_source("a.py", Language.PYTHON, source)
         function = result.root.children[0]
         name = function.child_by_field("name")
@@ -213,16 +255,21 @@ else:
         with TemporaryDirectory() as temp:
             (Path(temp) / "a.py").write_bytes(b"x=1")
             item = scan_repository(temp).supported_files[0]
-            with patch("arctrellis.parsing.source.os.read", side_effect=PermissionError("read denied")):
-                with self.assertRaises(SourceReadError) as caught:
-                    parse_discovered_file(temp, item)
+            with (
+                patch("arctrellis.parsing.source.os.read", side_effect=PermissionError("read denied")),
+                self.assertRaises(SourceReadError) as caught,
+            ):
+                parse_discovered_file(temp, item)
             self.assertIsInstance(caught.exception.__cause__, PermissionError)
 
     def test_growth_past_limit_during_read_is_rejected_before_parsing(self):
         with TemporaryDirectory() as temp:
             (Path(temp) / "a.py").write_bytes(b"x")
             item = scan_repository(temp).supported_files[0]
-            with patch("arctrellis.parsing.source.os.read", return_value=b"xxxx"), patch("arctrellis.parsing.parser._new_parser") as factory:
+            with (
+                patch("arctrellis.parsing.source.os.read", return_value=b"xxxx"),
+                patch("arctrellis.parsing.parser._new_parser") as factory,
+            ):
                 with self.assertRaises(SourceTooLargeError):
                     parse_discovered_file(temp, item, max_source_bytes=3)
                 factory.assert_not_called()
@@ -232,10 +279,15 @@ else:
             (Path(temp) / "a.py").write_bytes(b"x")
             item = scan_repository(temp).supported_files[0]
             real_fstat, real_close = os.fstat, os.close
+
             def changed_identity(descriptor):
                 info = real_fstat(descriptor)
                 return SimpleNamespace(st_mode=info.st_mode, st_dev=info.st_dev, st_ino=info.st_ino + 1)
-            with patch("arctrellis.parsing.source.os.fstat", side_effect=changed_identity), patch("arctrellis.parsing.source.os.close", wraps=real_close) as closed:
+
+            with (
+                patch("arctrellis.parsing.source.os.fstat", side_effect=changed_identity),
+                patch("arctrellis.parsing.source.os.close", wraps=real_close) as closed,
+            ):
                 with self.assertRaises(SourceReadError):
                     parse_discovered_file(temp, item)
                 closed.assert_called_once()
@@ -246,6 +298,7 @@ else:
             item = scan_repository(temp).supported_files[0]
             real_fstat = os.fstat
             calls = 0
+
             def changed_mtime(descriptor):
                 nonlocal calls
                 calls += 1
@@ -253,14 +306,20 @@ else:
                 if calls == 1:
                     return info
                 return SimpleNamespace(st_size=info.st_size, st_mtime_ns=info.st_mtime_ns + 1)
-            with patch("arctrellis.parsing.source.os.fstat", side_effect=changed_mtime):
-                with self.assertRaises(SourceReadError):
-                    parse_discovered_file(temp, item)
+
+            with (
+                patch("arctrellis.parsing.source.os.fstat", side_effect=changed_mtime),
+                self.assertRaises(SourceReadError),
+            ):
+                parse_discovered_file(temp, item)
 
     def test_observed_link_or_reparse_metadata_is_refused_before_open(self):
         from arctrellis.parsing.source import _ordinary
-        for info in (SimpleNamespace(st_mode=stat.S_IFLNK),
-                     SimpleNamespace(st_mode=stat.S_IFREG, st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT)):
+
+        for info in (
+            SimpleNamespace(st_mode=stat.S_IFLNK),
+            SimpleNamespace(st_mode=stat.S_IFREG, st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT),
+        ):
             with self.subTest(info=info), self.assertRaises(UnsafeSourceError):
                 _ordinary(info, Path("a.py"), False)
 
@@ -275,8 +334,12 @@ else:
             (parent / "a.py").unlink()
             parent.rmdir()
             (Path(outside) / "a.py").write_bytes(b"x=2")
-            made = subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(parent), outside],
-                                  capture_output=True, text=True, check=False)
+            made = subprocess.run(
+                ["cmd.exe", "/d", "/c", "mklink", "/J", str(parent), outside],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             if made.returncode:
                 self.skipTest(f"junction creation unavailable: {made.stderr}")
             try:

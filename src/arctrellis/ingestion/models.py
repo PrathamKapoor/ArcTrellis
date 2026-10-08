@@ -27,9 +27,13 @@ class SkipReason(StrEnum):
 def _require_path(path: str) -> None:
     if not isinstance(path, str):
         raise TypeError("path must be a string")
-    if (not path or PureWindowsPath(path).anchor or "\\" in path
-            or any(ord(char) < 32 for char in path)
-            or any(part in ("", ".", "..") for part in path.split("/"))):
+    if (
+        not path
+        or PureWindowsPath(path).anchor
+        or "\\" in path
+        or any(ord(char) < 32 for char in path)
+        or any(part in ("", ".", "..") for part in path.split("/"))
+    ):
         raise ValueError("path must be an unmodified repository-relative forward-slash path")
 
 
@@ -64,7 +68,11 @@ class SkippedPath:
             raise TypeError("reason must be SkipReason")
 
 
-def _require_ordered_records(records: tuple, record_type: type, field: str) -> None:
+def _require_ordered_records(
+    records: tuple[DiscoveredFile | SkippedPath, ...],
+    record_type: type[DiscoveredFile] | type[SkippedPath],
+    field: str,
+) -> None:
     if not isinstance(records, tuple) or any(not isinstance(item, record_type) for item in records):
         raise TypeError(f"{field} must be a tuple of {record_type.__name__} records")
     paths = tuple(item.path for item in records)
