@@ -159,7 +159,12 @@ def resolve_calls(index: RepositoryIndexResult, imports: ImportResolutionResult)
         raise TypeError("call resolution requires repository and import result snapshots")
     try:
         RepositoryIndexResult(
-            index.inventory, index.graph, index.file_results, index.call_sites, index.route_observations
+            index.inventory,
+            index.graph,
+            index.file_results,
+            index.call_sites,
+            index.route_observations,
+            index.pre_handler_observations,
         )
         ImportResolutionResult(imports.graph, imports.resolutions)
         entities = {e.id: e for e in index.graph.entities()}

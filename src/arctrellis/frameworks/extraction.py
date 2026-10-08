@@ -340,17 +340,13 @@ def _python_routes(
     return routes
 
 
-def _express_routes(
-    parsed: ParsedSource,
-    result: ExtractionResult,
-    bindings: dict[str, tuple[Framework, FrameworkBinding]],
-    text: _Text,
-    unsafe: dict[int, bool],
-) -> list[HttpRouteObservation]:
-    routes = []
+def _reference_support(
+    parsed: ParsedSource, result: ExtractionResult, text: _Text
+) -> Callable[[tuple[str, ...]], bool]:
     writes = _writes(parsed.root, text)
     declarations: dict[str, set[tuple[int, int]]] = {}
     direct: list[SyntaxNode] = []
+
     for statement in parsed.root.children:
         if statement.kind == "export_statement":
             direct.extend(statement.children)
@@ -379,6 +375,33 @@ def _express_routes(
             represented.setdefault(entity_binding, set()).add((span.start_byte, span.end_byte))
             if entity.kind is EntityKind.IMPORT and dict(entity.metadata).get("import_form") == "require":
                 require_bindings.add(entity_binding)
+
+    def supported(reference: tuple[str, ...]) -> bool:
+        if not reference:
+            return False
+        root = reference[0]
+        known = represented.get(root, set())
+        safe = writes.get(root, set()).issubset(known) and (
+            not declarations.get(root) or known.issubset(declarations.get(root, set()))
+        )
+        if known and writes.get(root) and not known.issubset(declarations.get(root, set())):
+            safe = False
+        if root in require_bindings and writes.get("require"):
+            safe = False
+        return safe
+
+    return supported
+
+
+def _express_routes(
+    parsed: ParsedSource,
+    result: ExtractionResult,
+    bindings: dict[str, tuple[Framework, FrameworkBinding]],
+    text: _Text,
+    unsafe: dict[int, bool],
+) -> list[HttpRouteObservation]:
+    routes = []
+    supported_reference = _reference_support(parsed, result, text)
     for statement in parsed.root.children:
         if statement.kind != "expression_statement":
             continue
@@ -408,19 +431,7 @@ def _express_routes(
                 for a in args[1:]
             ):
                 path = None
-            supported = True
-            if reference:
-                root = reference[0]
-                known = represented.get(root, set())
-                supported = writes.get(root, set()).issubset(known) and (
-                    not declarations.get(root) or known.issubset(declarations.get(root, set()))
-                )
-                # Canonical parentage omits block environments. A known function
-                # must also have direct module syntax before it can be a handler.
-                if known and writes.get(root) and not known.issubset(declarations.get(root, set())):
-                    supported = False
-                if root in require_bindings and writes.get("require"):
-                    supported = False
+            supported = not reference or supported_reference(reference)
             routes.append(
                 _observe(
                     parsed,

@@ -47,7 +47,14 @@ def _validate_snapshots(
         or not isinstance(calls, CallResolutionResult)
     ):
         raise TypeError("endpoint resolution requires repository/import/call snapshots")
-    RepositoryIndexResult(index.inventory, index.graph, index.file_results, index.call_sites, index.route_observations)
+    RepositoryIndexResult(
+        index.inventory,
+        index.graph,
+        index.file_results,
+        index.call_sites,
+        index.route_observations,
+        index.pre_handler_observations,
+    )
     ImportResolutionResult(imports.graph, imports.resolutions)
     CallResolutionResult(calls.graph, calls.resolutions)
     entities = {e.id: e for e in index.graph.entities()}
@@ -80,18 +87,20 @@ def _validate_snapshots(
         raise FrameworkResolutionInvariantError("call decisions and graph proof disagree")
 
 
-def _choose(route: HttpRouteObservation, candidates: list[CodeEntity], method: str) -> HttpEndpointResolution:
+def _choose_reference(observation_id: str, candidates: list[CodeEntity], method: str) -> HttpEndpointResolution:
     ids = tuple(sorted(e.id for e in candidates))
     if len(ids) == 1:
-        return HttpEndpointResolution(route.id, Status.RESOLVED, ids[0], ids, "unique_handler", method)
+        return HttpEndpointResolution(observation_id, Status.RESOLVED, ids[0], ids, "unique_handler", method)
     if len(ids) > 1:
-        return HttpEndpointResolution(route.id, Status.AMBIGUOUS, None, ids, "multiple_handler_witnesses")
-    return HttpEndpointResolution(route.id, Status.UNRESOLVED, None, (), "no_handler_candidate")
+        return HttpEndpointResolution(observation_id, Status.AMBIGUOUS, None, ids, "multiple_handler_witnesses")
+    return HttpEndpointResolution(observation_id, Status.UNRESOLVED, None, (), "no_handler_candidate")
+
+
+def _choose(route: HttpRouteObservation, candidates: list[CodeEntity], method: str) -> HttpEndpointResolution:
+    return _choose_reference(route.id, candidates, method)
 
 
 def _handler(route: HttpRouteObservation, symbols: _HandlerIndex) -> HttpEndpointResolution:
-    from arctrellis.resolution import ImportResolutionStatus
-
     if route.route_path is None or not route.http_methods:
         return HttpEndpointResolution(route.id, Status.UNSUPPORTED, None, (), "unsupported_path_or_methods")
     if route.framework is not Framework.EXPRESS:
@@ -99,38 +108,60 @@ def _handler(route: HttpRouteObservation, symbols: _HandlerIndex) -> HttpEndpoin
         candidates = [] if span is None else symbols.declarations.get((route.path, span.start_byte, span.end_byte), [])
         candidates = [e for e in candidates if (e.name,) == route.handler_reference]
         return _choose(route, candidates, route.framework.value + "_decorated_handler")
-    reference = route.handler_reference
-    if not route.handler_binding_supported or not reference or len(reference) > 2:
-        return HttpEndpointResolution(route.id, Status.UNRESOLVED, None, (), "unsupported_handler_reference")
-    functions = symbols.functions.get((route.owner_module_id, reference[0]), []) if len(reference) == 1 else []
-    bindings = symbols.bindings.get((route.owner_module_id, reference[0]), [])
+    return _reference_handler(
+        route.id,
+        route.owner_module_id,
+        route.handler_reference,
+        route.handler_binding_supported,
+        route.framework,
+        symbols,
+    )
+
+
+def _reference_handler(
+    observation_id: str,
+    owner_module_id: str,
+    reference: tuple[str, ...],
+    supported: bool,
+    framework: Framework,
+    symbols: _HandlerIndex,
+) -> HttpEndpointResolution:
+    from arctrellis.resolution import ImportResolutionStatus
+
+    if not supported or not reference or len(reference) > 2:
+        return HttpEndpointResolution(observation_id, Status.UNRESOLVED, None, (), "unsupported_handler_reference")
+    functions = symbols.functions.get((owner_module_id, reference[0]), []) if len(reference) == 1 else []
+    bindings = symbols.bindings.get((owner_module_id, reference[0]), [])
     if functions and bindings or len(bindings) > 1:
-        return _choose(route, functions + bindings, "express_local_handler_resolution")
+        return _choose_reference(observation_id, functions + bindings, framework.value + "_local_handler_resolution")
     if functions:
-        return _choose(route, functions, "express_local_handler_resolution")
+        return _choose_reference(observation_id, functions, framework.value + "_local_handler_resolution")
     if not bindings:
-        return _choose(route, [], "express_local_handler_resolution")
+        return _choose_reference(observation_id, [], framework.value + "_local_handler_resolution")
     site = bindings[0]
     metadata = dict(site.metadata)
     decision = symbols.imports[site.id]
     if metadata.get("is_type_only") == "true" or decision.status is not ImportResolutionStatus.RESOLVED:
-        return HttpEndpointResolution(route.id, Status.UNRESOLVED, None, (), "non_runtime_or_unresolved_import")
+        return HttpEndpointResolution(observation_id, Status.UNRESOLVED, None, (), "non_runtime_or_unresolved_import")
     form = metadata.get("import_form")
-    if len(reference) == 1 and form == "named":
+    if len(reference) == 1 and form in ("named", "from"):
         name = metadata.get("imported_name", "")
-    elif len(reference) == 2 and form in ("namespace", "require"):
+    elif len(reference) == 2 and form in ("namespace", "require", "import"):
         name = reference[1]
     else:
-        return HttpEndpointResolution(route.id, Status.UNRESOLVED, None, (), "unsupported_handler_import")
+        return HttpEndpointResolution(observation_id, Status.UNRESOLVED, None, (), "unsupported_handler_import")
+    if form == "import" and not metadata.get("alias") and metadata.get("module") != metadata.get("binding"):
+        return HttpEndpointResolution(observation_id, Status.UNRESOLVED, None, (), "unsupported_dotted_import")
     candidates = symbols.functions.get((decision.target_module_id, name), [])
     # Express imports require an explicit directly exported declaration. Re-export
     # lists/default exports and CommonJS export assignments are not resolved here.
-    candidates = [
-        e
-        for e in candidates
-        if dict(e.metadata).get("is_exported") == "true" and dict(e.metadata).get("is_default_export") != "true"
-    ]
-    return _choose(route, candidates, "express_imported_handler_resolution")
+    if framework is Framework.EXPRESS:
+        candidates = [
+            e
+            for e in candidates
+            if dict(e.metadata).get("is_exported") == "true" and dict(e.metadata).get("is_default_export") != "true"
+        ]
+    return _choose_reference(observation_id, candidates, framework.value + "_imported_handler_resolution")
 
 
 def _endpoint(route: HttpRouteObservation, method: str) -> CodeEntity:
@@ -202,6 +233,25 @@ def _relationship(
     )
 
 
+def _handler_index(index: RepositoryIndexResult, imports: ImportResolutionResult) -> _HandlerIndex:
+    entities = {e.id: e for e in index.graph.entities()}
+    symbols = _HandlerIndex(entities, {}, {}, {}, {r.import_entity_id: r for r in imports.resolutions})
+    for entity in entities.values():
+        if entity.kind is EntityKind.FUNCTION:
+            symbols.functions.setdefault((entity.parent_id, entity.name), []).append(entity)
+        if entity.kind in (EntityKind.FUNCTION, EntityKind.METHOD):
+            span = _entity_span(entity)
+            assert entity.location is not None
+            symbols.declarations.setdefault((entity.location.file_path, span.start_byte, span.end_byte), []).append(
+                entity
+            )
+        elif entity.kind is EntityKind.IMPORT:
+            name = dict(entity.metadata).get("binding", "")
+            if name:
+                symbols.bindings.setdefault((entity.parent_id, name), []).append(entity)
+    return symbols
+
+
 def resolve_http_endpoints(
     index: RepositoryIndexResult, imports: ImportResolutionResult, calls: CallResolutionResult
 ) -> FrameworkAnalysisResult:
@@ -216,20 +266,7 @@ def resolve_http_endpoints(
         _validate_snapshots(index, imports, calls)
         entities = {e.id: e for e in index.graph.entities()}
         inventory_paths = {file.path for file in index.inventory.supported_files}
-        symbols = _HandlerIndex(entities, {}, {}, {}, {r.import_entity_id: r for r in imports.resolutions})
-        for entity in entities.values():
-            if entity.kind is EntityKind.FUNCTION:
-                symbols.functions.setdefault((entity.parent_id, entity.name), []).append(entity)
-            if entity.kind in (EntityKind.FUNCTION, EntityKind.METHOD):
-                span = _entity_span(entity)
-                assert entity.location is not None
-                symbols.declarations.setdefault((entity.location.file_path, span.start_byte, span.end_byte), []).append(
-                    entity
-                )
-            elif entity.kind is EntityKind.IMPORT:
-                name = dict(entity.metadata).get("binding", "")
-                if name:
-                    symbols.bindings.setdefault((entity.parent_id, name), []).append(entity)
+        symbols = _handler_index(index, imports)
         graph = CodeGraph()
         for entity in calls.graph.entities():
             graph.add_entity(entity)

@@ -47,7 +47,12 @@ def resolve_imports(index: RepositoryIndexResult) -> ImportResolutionResult:
     decisions = []
     try:
         RepositoryIndexResult(
-            index.inventory, index.graph, index.file_results, index.call_sites, index.route_observations
+            index.inventory,
+            index.graph,
+            index.file_results,
+            index.call_sites,
+            index.route_observations,
+            index.pre_handler_observations,
         )
         for entity in index.graph.entities():
             graph.add_entity(entity)

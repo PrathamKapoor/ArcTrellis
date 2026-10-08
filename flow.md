@@ -491,6 +491,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
      │   ├─ extract_entities()          extraction/__init__.py; canonical language dispatch
      │   ├─ extract_call_sites()        calls/extraction.py; retain body-owned observations before releasing syntax
      │   ├─ extract_framework_observations() frameworks/extraction.py; retain route/provenance syntax before release
+     │   ├─ extract_pre_handler_observations() frameworks/flow_extraction.py; preserve precise pre-handler occurrences
      │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
      │   ├─ _file_entity()               create path-based FILE with analyzed byte size
      │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
@@ -503,7 +504,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
  └─ RepositoryIndexResult()              indexing/models.py; validate ordered outcomes and graph counts
 ```
 
-Output: inventory, merged in-memory graph, frozen per-file summaries, source-ordered CallSite and HttpRouteObservation tuples. FILE identity
+Output: inventory, merged in-memory graph, frozen per-file summaries, source-ordered CallSite, HttpRouteObservation and PreHandlerObservation tuples. FILE identity
 uses path/language, not declaration positions; no repository entity is invented.
 Counts include FILE and membership edges. ParsedSource, bytes, trees, exceptions and
 tracebacks are not retained. Typed source/parsing/extraction failures return bounded
@@ -788,3 +789,31 @@ Observations separate syntax from target selection. Constructor/import provenanc
 | Scope/provenance review | Restrict direct imports, reject wildcard/class/require shadows, and match complete decorated wrapper spans. | src/arctrellis/frameworks/extraction.py, tests/frameworks/test_endpoints.py | 023b7922f15f4a31beec3c62d498044f13c980bf | D-087 |
 | Public documentation and smoke | Explain supported HTTP patterns/limits and provide a repeatable evidence-backed mixed trace command. | README.md, tests/frameworks/smoke.py, decisions.md, flow.md | 023b7922f15f4a31beec3c62d498044f13c980bf | D-088 |
 | Final verification and handoff | Record real gates, negative subcases, skips, local audits and twelve-section continuation state. | tests/frameworks/test_endpoints.py, README.md, decisions.md, flow.md, handoff.md | 023b7922f15f4a31beec3c62d498044f13c980bf | D-089 |
+
+## 19. Static framework pre-handler flow
+
+Input: owned ParsedSource and existing entities/routes during indexing, then matching repository/import/call/endpoint snapshots.
+
+```text
+extract_pre_handler_observations()         frameworks/flow_extraction.py; retain occurrence syntax before parse release
+ ├─ _bindings() / _writes()               frameworks/extraction.py; require constructor provenance and visible binding safety
+ ├─ Express arguments before final handler preserve route-local order; omit final handler
+ ├─ FastAPI decorator dependency list     require direct FastAPI Depends import; never evaluate dependency calls
+ └─ Flask before_request decorator        retain exact same-app binding and decorated function
+resolve_framework_flow()                  frameworks/flow.py; copy prior graph, never reread sources
+ ├─ validate existing endpoint snapshot   reject stale facts rather than silently replacing them
+ ├─ _HandlerIndex() / _reference_handler() frameworks/resolution.py; reuse function/import selection
+ ├─ resolve each pre-handler              duplicates ambiguous; unsupported/unknown produces no edge
+ └─ _pre_edge()                           endpoint APPLIES_MIDDLEWARE callable with occurrence Evidence
+```
+
+Evidence metadata retains semantic_kind and order_index. Express/FastAPI edges are LIKELY/0.85 locally or0.75 import-assisted. Flask exact same-app hooks are PROVEN/1.0; source order is per-file/app registration order, not a claim of cross-file runtime ordering. No middleware-to-handler CALLS are fabricated. Typed extraction failure remains a bounded FAILED file outcome.
+
+## Changes in this session (Phase 1.9A)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Pre-handler contracts and pipeline | Add precise observations, lifetime/count extension and evidence-backed independent flow graphs. | src/arctrellis/frameworks/, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py, tests/frameworks/test_flow.py, README.md | uncommitted | D-090 |
+| Reference safety | Preserve the complete direct-module visibility index and test actual snapshot boundaries. | src/arctrellis/frameworks/extraction.py, src/arctrellis/indexing/models.py, tests/frameworks/test_flow.py | uncommitted | D-091 |
+| Scope and provenance | Defer class dependencies and validate exact constructor/Depends witnesses and app identity. | src/arctrellis/frameworks/flow_extraction.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/frameworks/flow.py, src/arctrellis/indexing/models.py, tests/frameworks/test_flow.py, README.md | uncommitted | D-092 |
+| Verification gate | Record52 framework/347 total tests, quality/isolation checks, smoke and reviewed corrections. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-093 |

@@ -6,7 +6,13 @@ from pathlib import PurePosixPath
 from arctrellis.calls import CallExtractionError, CallSite, extract_call_sites
 from arctrellis.core import CodeEntity, Confidence, EntityKind, Evidence, Relationship, RelationshipKind
 from arctrellis.extraction import ExtractionError, build_lexical_graph, extract_entities
-from arctrellis.frameworks import FrameworkExtractionError, HttpRouteObservation, extract_framework_observations
+from arctrellis.frameworks import (
+    FrameworkExtractionError,
+    HttpRouteObservation,
+    PreHandlerObservation,
+    extract_framework_observations,
+    extract_pre_handler_observations,
+)
 from arctrellis.graph import CodeGraph, GraphError
 from arctrellis.ingestion import DiscoveredFile, scan_repository
 from arctrellis.parsing import DEFAULT_MAX_SOURCE_BYTES, ParsingError, parse_discovered_file
@@ -56,7 +62,13 @@ def _membership(file: CodeEntity, module: CodeEntity) -> Relationship:
 
 def _analyze_file(
     root: str | os.PathLike[str], file: DiscoveredFile, limit: int
-) -> tuple[FileIndexResult, CodeGraph | None, tuple[CallSite, ...], tuple[HttpRouteObservation, ...]]:
+) -> tuple[
+    FileIndexResult,
+    CodeGraph | None,
+    tuple[CallSite, ...],
+    tuple[HttpRouteObservation, ...],
+    tuple[PreHandlerObservation, ...],
+]:
     if file.language is None:
         raise RepositoryIndexInvariantError("unsupported file reached analysis")
     diagnostics = 0
@@ -70,6 +82,8 @@ def _analyze_file(
         call_sites = extract_call_sites(parsed, result)
         stage = "framework_extraction"
         routes = extract_framework_observations(parsed, result)
+        stage = "pre_handler_extraction"
+        pre_handlers = extract_pre_handler_observations(parsed, result, routes)
     except (ParsingError, ExtractionError, CallExtractionError, FrameworkExtractionError) as error:
         error_type = type(error).__name__[:128]
         return (
@@ -84,6 +98,7 @@ def _analyze_file(
                 f"{stage} failed ({error_type})",
             ),
             None,
+            (),
             (),
             (),
         )
@@ -106,10 +121,12 @@ def _analyze_file(
             diagnostics,
             call_site_count=len(call_sites),
             route_observation_count=len(routes),
+            pre_handler_observation_count=len(pre_handlers),
         ),
         local,
         call_sites,
         routes,
+        pre_handlers,
     )
 
 
@@ -124,8 +141,9 @@ def index_repository(
     outcomes = []
     sites: list[CallSite] = []
     routes: list[HttpRouteObservation] = []
+    pre_handlers: list[PreHandlerObservation] = []
     for file in inventory.supported_files:
-        summary, local, calls, observations = _analyze_file(root, file, max_source_bytes)
+        summary, local, calls, observations, pre_observations = _analyze_file(root, file, max_source_bytes)
         if local is not None:
             try:
                 for entity in local.entities():
@@ -137,7 +155,10 @@ def index_repository(
         outcomes.append(summary)
         sites.extend(calls)
         routes.extend(observations)
+        pre_handlers.extend(pre_observations)
     try:
-        return RepositoryIndexResult(inventory, graph, tuple(outcomes), tuple(sites), tuple(routes))
+        return RepositoryIndexResult(
+            inventory, graph, tuple(outcomes), tuple(sites), tuple(routes), tuple(pre_handlers)
+        )
     except (TypeError, ValueError) as error:
         raise RepositoryIndexInvariantError("repository summary does not match merged graph") from error

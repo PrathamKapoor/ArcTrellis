@@ -6,6 +6,7 @@ from enum import StrEnum
 from arctrellis.calls.models import CallSite, _site_order
 from arctrellis.core import EntityKind
 from arctrellis.extraction.models import _entity_span
+from arctrellis.frameworks.flow_models import PreHandlerKind, PreHandlerObservation, _contains, _pre_id, _pre_order
 from arctrellis.frameworks.models import HttpRouteObservation, _route_order
 from arctrellis.graph import CodeGraph
 from arctrellis.ingestion import DiscoveredFile, Language, RepositoryInventory
@@ -29,6 +30,7 @@ class FileIndexResult:
     error_message: str | None = None
     call_site_count: int = 0
     route_observation_count: int = 0
+    pre_handler_observation_count: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.language, Language) or not isinstance(self.status, FileIndexStatus):
@@ -40,13 +42,22 @@ class FileIndexResult:
             self.diagnostic_count,
             self.call_site_count,
             self.route_observation_count,
+            self.pre_handler_observation_count,
         ):
             if type(count) is not int:
                 raise TypeError("counts must be non-boolean integers")
             if count < 0:
                 raise ValueError("counts must be nonnegative")
         if self.status is FileIndexStatus.FAILED:
-            if self.entity_count or self.relationship_count or self.call_site_count or self.route_observation_count:
+            if any(
+                (
+                    self.entity_count,
+                    self.relationship_count,
+                    self.call_site_count,
+                    self.route_observation_count,
+                    self.pre_handler_observation_count,
+                )
+            ):
                 raise ValueError("failed files cannot contribute graph records")
             for text in (self.error_type, self.error_message):
                 if not isinstance(text, str):
@@ -74,6 +85,7 @@ class RepositoryIndexResult:
     file_results: tuple[FileIndexResult, ...]
     call_sites: tuple[CallSite, ...] = ()
     route_observations: tuple[HttpRouteObservation, ...] = ()
+    pre_handler_observations: tuple[PreHandlerObservation, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.inventory, RepositoryInventory) or not isinstance(self.graph, CodeGraph):
@@ -168,6 +180,83 @@ class RepositoryIndexResult:
             route_counts[route.path] = route_counts.get(route.path, 0) + 1
         if any(route_counts.get(f.path, 0) != f.route_observation_count for f in self.file_results):
             raise ValueError("route observation counts must match file summaries")
+
+        if not isinstance(self.pre_handler_observations, tuple) or any(
+            not isinstance(p, PreHandlerObservation) for p in self.pre_handler_observations
+        ):
+            raise TypeError("pre-handlers must be an immutable canonical tuple")
+        if self.pre_handler_observations != tuple(sorted(self.pre_handler_observations, key=_pre_order)) or len(
+            {p.id for p in self.pre_handler_observations}
+        ) != len(self.pre_handler_observations):
+            raise ValueError("pre-handlers must be ordered and unique")
+        routes = {r.id: r for r in self.route_observations}
+        pre_counts: dict[str, int] = {}
+        from arctrellis.frameworks.extraction import _constructor_import
+
+        for p in self.pre_handler_observations:
+            module = entities.get(p.owner_module_id)
+            witness = entities.get(p.binding.import_entity_id)
+            summary = summaries.get(p.path)
+            if (
+                module is None
+                or module.kind is not EntityKind.MODULE
+                or module.location is None
+                or module.location.file_path != p.path
+                or module.language != p.language.value
+                or witness is None
+                or witness.kind is not EntityKind.IMPORT
+                or witness.parent_id != module.id
+                or summary is None
+                or summary.status is FileIndexStatus.FAILED
+                or not _contains(_entity_span(module), p.span)
+                or not _contains(_entity_span(module), p.binding.span)
+                or _entity_span(witness).end_byte > p.binding.span.start_byte
+                or p.id != _pre_id(p)
+            ):
+                raise ValueError("pre-handler requires valid analyzed module/provenance/coordinates/identity")
+            constructor = _constructor_import(witness)
+            if (
+                constructor is None
+                or constructor[0] is not p.framework
+                or p.binding.constructor
+                not in (("express", "Router") if p.framework.value == "express" else (constructor[1],))
+            ):
+                raise ValueError("pre-handler framework constructor witness disagrees")
+            if p.route_observation_id:
+                pre_route = routes.get(p.route_observation_id)
+                if (
+                    pre_route is None
+                    or pre_route.binding != p.binding
+                    or pre_route.framework is not p.framework
+                    or pre_route.owner_module_id != p.owner_module_id
+                    or not _contains(pre_route.span, p.span)
+                ):
+                    raise ValueError("pre-handler must belong to its exact route registration")
+            if p.semantic_kind is PreHandlerKind.DEPENDENCY and p.provenance_import_id is not None:
+                dependency = entities.get(p.provenance_import_id)
+                if (
+                    dependency is None
+                    or dependency.kind is not EntityKind.IMPORT
+                    or dependency.parent_id != module.id
+                    or any(
+                        dict(dependency.metadata).get(k) != v
+                        for k, v in (
+                            ("module", "fastapi"),
+                            ("import_form", "from"),
+                            ("relative_level", "0"),
+                            ("imported_name", "Depends"),
+                        )
+                    )
+                    or _entity_span(dependency).end_byte > p.span.start_byte
+                ):
+                    raise ValueError("dependency requires canonical FastAPI Depends import provenance")
+            pre_counts[p.path] = pre_counts.get(p.path, 0) + 1
+        if any(pre_counts.get(f.path, 0) != f.pre_handler_observation_count for f in self.file_results):
+            raise ValueError("pre-handler counts must match file summaries")
+
+    @property
+    def pre_handler_observation_count(self) -> int:
+        return len(self.pre_handler_observations)
 
     @property
     def route_observation_count(self) -> int:

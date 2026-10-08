@@ -12,12 +12,12 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.8 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.9A with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
 internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
 and Express adapters identify HTTP endpoints with handler evidence. Inheritance resolution,
-middleware, test classification and database semantics are not implemented. There is no
+global middleware execution, test classification and database semantics are not implemented. There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
 
@@ -648,3 +648,26 @@ Local reproducible verification:
 .venv\Scripts\python.exe -m unittest discover -s tests/frameworks -t . -v
 .venv\Scripts\python.exe -m tests.frameworks.smoke
 ```
+
+## Static framework pre-handler semantics
+
+`resolve_framework_flow(index, imports, calls, endpoints)` returns an independent graph
+and explicit resolved/unresolved/ambiguous/unsupported pre-handler decisions.
+Indexing retains lightweight observations, never source bytes or trees.
+
+- Express: direct route arguments before the final handler; simple module functions,
+  named/aliased imports and namespace members. Declared argument order is retained.
+- FastAPI: decorator `dependencies=[Depends(auth)]` or a tuple, requiring direct
+  `fastapi.Depends` from-import provenance (aliases supported). Class-scoped decorators, parameter injection,
+  factories and arbitrary dependency trees are deferred.
+- Flask: direct module `@app.before_request` functions apply only to the exact same
+  recognized app binding. Declaration order is per file/app, not global runtime order.
+
+`API_ENDPOINT APPLIES_MIDDLEWARE FUNCTION` reuses canonical declarations. Evidence
+retains `semantic_kind=route_middleware|dependency|request_hook`, `order_index` and
+exact reference coordinates. Dependencies are not ASGI middleware; request hooks
+are not WSGI middleware. Express/FastAPI associations are LIKELY/0.85 locally or
+LIKELY/0.75 import-assisted. Exact Flask same-app hook association is PROVEN/1.0.
+Unknown/ambiguous/unsupported targets receive no edge. No synthetic middleware-to-handler
+CALLS are created. Global Express use, Flask other hooks/Blueprints, router mounts
+and prefix composition are deferred at this gate.
