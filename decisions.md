@@ -156,7 +156,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/ingestion/test_discovery.py::DiscoveryTests.test_nested_files_have_relative_posix_paths_and_sizes and test_creation_order_and_repeated_scans_are_equal.
 
 ### D-017: Pin the Tree-sitter runtime explicitly
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Syntax parsing now requires a runtime dependency; pip index versions reported 0.26.0 and official documentation describes ABI compatibility.
 - Decision: Add tree-sitter==0.26.0 and verify actual installation and grammar compatibility before completion.
 - Why: Exact pins make syntax behavior reproducible; this is the current version observed through package tooling.
@@ -168,7 +168,7 @@ Append-only record of engineering decisions.
 - Packages compared: tree-sitter-languages convenience bundle versus explicit runtime plus grammars; the explicit approach ships only required grammars and exposes their versions.
 
 ### D-018: Pin the Python grammar separately
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Python and stub syntax need a grammar; package tooling reported 0.25.0.
 - Decision: Add tree-sitter-python==0.25.0 for .py and .pyi.
 - Why: Dedicated grammar ownership and exact syntax-version reproducibility match the requested architecture.
@@ -180,7 +180,7 @@ Append-only record of engineering decisions.
 - Packages compared: tree-sitter-languages bundling and standard-library ast; neither satisfies the chosen explicit shared syntax boundary as directly.
 
 ### D-019: Pin the JavaScript grammar separately
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: JavaScript and JSX need a grammar; package tooling reported 0.25.0.
 - Decision: Add tree-sitter-javascript==0.25.0 for .js/.jsx/.mjs/.cjs.
 - Why: Explicit grammar ownership avoids unrelated language bundles.
@@ -192,7 +192,7 @@ Append-only record of engineering decisions.
 - Packages compared: tree-sitter-languages bundle; separate grammar offers clearer provenance and narrower installation.
 
 ### D-020: Pin TypeScript and TSX grammar ownership together
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: TypeScript requires separate TS and TSX dialect selection; tooling reported 0.23.2.
 - Decision: Add tree-sitter-typescript==0.23.2; .tsx selects its TSX grammar while canonical language remains typescript.
 - Why: The dedicated package provides both required dialects without creating a new ingestion language.
@@ -204,7 +204,7 @@ Append-only record of engineering decisions.
 - Packages compared: tree-sitter-languages convenience bundle and JavaScript grammar; JavaScript does not cover TypeScript type syntax.
 
 ### D-021: Own normalized immutable syntax instead of parser objects
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Future semantic extractors need syntax without infrastructure-specific objects.
 - Decision: Add parsing models SyntaxSpan, SyntaxNode, ParseDiagnostic, DiagnosticKind and ParsedSource. Retain named nodes plus any error/missing nodes, preserve child/field order and flags, discard parser identity. Spans use half-open byte ranges, 1-based lines and 0-based byte columns. Retain source bytes exactly and immutable diagnostic tuples. Add iterative preorder walk, first-match child_by_field and bounded bytes_for helpers.
 - Why: Own values isolate Tree-sitter and permit deterministic equality. Missing anonymous punctuation must remain visible. Raw bytes avoid duplicate decoded strings and preserve exact slicing.
@@ -213,7 +213,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/parsing/models.py, src/arctrellis/parsing/normalization.py, src/arctrellis/parsing/__init__.py, tests/parsing/__init__.py, tests/parsing/test_models.py, tests/parsing/test_parser.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-022: Select explicit grammars and fresh synchronous parsers
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Every ingestion extension must parse consistently, including TSX, without shared mutable parser state.
 - Decision: Add private grammar selection and parser construction in registry.py; reject contradictory language/extension metadata. Construct a fresh Parser and grammar wrapper for every parse. parse_source returns normalized syntax and ERROR/MISSING diagnostics even for malformed source; internal parser failures use typed exceptions.
 - Why: Fresh instances avoid reuse/thread-safety assumptions. Invalid syntax is a recoverable result, distinct from configuration or hard parser failure.
@@ -222,7 +222,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/parsing/registry.py, src/arctrellis/parsing/parser.py, src/arctrellis/parsing/errors.py, src/arctrellis/parsing/__init__.py, tests/parsing/test_registry.py, tests/parsing/test_parser.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-023: Bound and revalidate source reads separately from discovery
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Parsing now needs source contents from potentially stale inventory metadata and untrusted paths.
 - Decision: Add parse_discovered_file and a dedicated source reader. Validate root/ancestors and current ordinary file status, reject observed links/reparse points, check descriptor metadata, read at most limit+1 bytes and recheck identity/size/mtime after reading. Apply DEFAULT_MAX_SOURCE_BYTES=2*1024*1024 to both entry points; equality is allowed, positive integer overrides supported, oversized sources fail without parsing truncations. Distinguish SourceReadError, UnsafeSourceError, SourceTooLargeError, UnsupportedLanguageError, ParserConfigurationError and ParserExecutionError under ParsingError.
 - Why: Bounded reads contain input allocation and ignore stale discovery size. Exception chaining preserves filesystem failures. Parsing still never imports, evaluates, executes or installs target code.
@@ -231,7 +231,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/parsing/source.py, src/arctrellis/parsing/parser.py, src/arctrellis/parsing/errors.py, tests/parsing/test_parser.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-024: Postpone recursive and type-only parser annotations
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: The first implementation test run failed during public package import.
 - Decision: Use postponed annotations in models.py and registry.py for recursive SyntaxNode types and the private type-checking-only Parser annotation.
 - Why: Python 3.13 otherwise evaluates type names during definition; SyntaxNode does not exist inside its own unfinished class body. Registry imports Parser only under TYPE_CHECKING.
@@ -243,7 +243,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/parsing/test_models.py::SyntaxModelTests.test_walk_and_field_lookup_preserve_order_and_choose_first_match; public import and grammar selection tests also require successful module definition.
 
 ### D-025: Capture syntax coordinates at cursor entry
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Deep array nesting exposed a normalized child containment failure after standard samples passed.
 - Decision: Capture primitive node metadata into immutable SyntaxNode templates when entering each native cursor position; reconstruct children from these values rather than delayed native-node access.
 - Why: The failing conversion printed an array at bytes 1207..1210 with start column 1210, while direct native-tree inspection showed consistent spans and cursor-entry inspection showed start column 1207. The delayed frame metadata differed from the entry metadata.
@@ -255,7 +255,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/parsing/test_parser.py::ParserTests.test_deep_native_tree_normalization_does_not_use_python_recursion.
 
 ### D-026: Replace native cursor traversal after a verified Windows crash
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Capturing at cursor entry did not fix deep traversal: focused runs exited one without a traceback; a faulthandler reproduction printed Windows fatal exception: access violation in _span from native cursor-node access.
 - Decision: Use iterative native Node.children traversal and field_name_for_child, keeping immediate primitive snapshots and avoiding TreeCursor. Preserve strict span validation rather than hiding corruption.
 - Why: Independent direct native-child inspection of the same 1200-level source reported native spans consistent. Cursor-backed metadata access was the verified crash surface; the native implementation mechanism is unknown.
@@ -268,7 +268,7 @@ Append-only record of engineering decisions.
 - Supersedes: D-025
 
 ### D-027: Compare an earlier runtime after native point-read crashes
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Child-object traversal also crashed. A minimal native loop calling _span, and another retaining Point objects explicitly, reproduced Windows fatal exception: access violation without normalized nodes. The cursor-only diagnosis in D-026 was insufficient.
 - Decision: Replace the runtime pin with tree-sitter==0.25.2, an available version reported by pip index, and verify the same three grammars and deep regression before completion. Keep direct child traversal and strict coordinate validation.
 - Why: Failure occurs in native point access independently of conversion strategy. Runtime comparison tests compatibility instead of guessing a Python workaround. Exact native internals remain unknown.
@@ -284,7 +284,7 @@ Append-only record of engineering decisions.
 - Supersedes: D-017, D-026
 
 ### D-028: Compare and hash normalized trees iteratively
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Independent review identified recursive dataclass equality/hash despite iterative normalization and traversal.
 - Decision: Use iterative SyntaxNode equality over corresponding ordered children and iterative preorder hashing with child counts. Preserve immutable value semantics without a depth cap.
 - Why: Repeated parse values must compare equal even for deep inputs; generation must not rely on Python recursion depth.
@@ -296,7 +296,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/parsing/test_parser.py::ParserTests.test_deep_repeated_parse_equality_and_hashing_do_not_recurse.
 
 ### D-029: Enforce final Windows path containment before filesystem access
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Review identified nested drive-bearing components in caller-created DiscoveredFile paths. A reproduction accepted src/D:/outside/a.py and joined it to D:outside\a.py from C:/repo.
 - Decision: Reject drive-bearing individual components at the parser read boundary and require the constructed target to be relative to the normalized root before any metadata/open calls. Preserve ingestion semantics; parsing adds its own read safety checks.
 - Why: Static root escape is a preventable input-validation defect, separate from the documented concurrent filesystem limitation.
@@ -308,7 +308,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/parsing/test_parser.py::ParserTests.test_nested_drive_component_cannot_escape_root_or_trigger_io.
 
 ### D-030: Keep annotation-only native types out of runtime imports
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Review found normalization importing native Node solely for annotations before parser initialization error handling.
 - Decision: Postpone normalization annotations and import Node only under TYPE_CHECKING; load runtime/grammars inside _new_parser where failures are chained as ParserConfigurationError.
 - Why: Public normalized models remain importable without native initialization; missing dependencies must use the intended caller-facing error.
@@ -320,7 +320,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/parsing/test_parser.py::ParserTests.test_missing_native_runtime_becomes_typed_configuration_error.
 
 ### D-031: Finalize verified parser compatibility and accurate call ownership
-- Date / phase / commit: 2026-10-08, Phase 1.1, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.1, 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168
 - Context: Runtime comparison and review corrections require final evidence; flow review found parser containment checks placed in the discovery call tree.
 - Decision: Retain the D-027 runtime/grammar pins after successful parser and full-suite verification. Record the failed 0.26.0 approaches and final results in handoff.md; place PureWindowsPath and Path.relative_to only under parsing _read_source in flow.md. Finalize implementation hashes separately under D-004.
 - Why: The parser suite ran 37 tests, OK (skipped=1); the full suite ran 164 tests, OK (skipped=7). pip show verified runtime 0.25.2 and grammars 0.25.0/0.25.0/0.23.2; pip check reported no broken requirements. Public imports succeeded and the real scan-to-parse smoke printed app.py module 0. Source inspection confirms containment calls belong to parsing/source.py, not ingestion/discovery.py.

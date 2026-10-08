@@ -75,7 +75,10 @@ size <= limit is accepted. Files are rechecked against current metadata, not sta
 inventory size. Reads take at most limit+1 bytes and never parse truncated data.
 Fresh parsers avoid shared mutable instance state; no thread-safety claim is made.
 
-Implementation commit: uncommitted. Commit references follow D-004: finalize the
+Implementation commit: 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168,
+feat(parsing): add normalized Tree-sitter parser infrastructure.
+Required author and committer were verified; git status --short after this commit
+was empty. The reference finalization changes documentation only. Commit references follow D-004: finalize the
 implementation hash in a separate documentation commit; do not embed that final
 commit's own hash or rewrite history. Obtain finalization history from git log.
 
