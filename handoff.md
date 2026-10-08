@@ -93,7 +93,7 @@ No formatter/linter/type checker or CI was introduced.
 
 Phase 1.3 commits: 66d881e02bcb52e467720b39293319ff7595f085 feature,
 9de6e98 documentation reference finalization.
-Phase 1.4 implementation commit: uncommitted.
+Phase 1.4 implementation commit: ec887ee7426340589582ae618aa4e7751a89c0f5.
 References finalize in a separate local documentation commit under D-004; no history rewrite.
 
 ## 5. Decisions Made
@@ -180,8 +180,10 @@ support, cross-revision matching or repository-wide resolution/indexing.
 
 Independent reviews used read-only code inspection/normalized syntax probes; they
 did not run the full suite. Test pass claims above come from actual local commands.
-Final staged whitespace/forbidden-path/attribution/identity/remotes audits and clean
-status verification accompany local commits; hashes finalize separately under D-004.
+Final staged whitespace audit passed; forbidden-path audit reported no forbidden
+paths; attribution search had no matches; author/committer and empty remotes were
+verified. git status --short after the Phase 1.4 feature commit was empty.
+This documentation commit finalizes its references separately under D-004.
 
 ## 8. Known Issues / Risks
 
@@ -202,7 +204,8 @@ resolution, import/call/inheritance/framework semantics and repository-wide asse
 ## 9. Unfinished Work
 
 No authorized Phase 1.3 or Phase 1.4 implementation remains unfinished.
-Local Phase 1.4 commit/reference finalization is the final administrative step.
+Phase 1.4 is locally committed; this separate documentation update finalizes its
+references under D-004 without a self-referential finalization hash.
 Phase 1.5 is not started and must wait for the next session.
 
 ## 10. Next Subphase

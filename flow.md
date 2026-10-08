@@ -573,9 +573,9 @@ it introduces no concurrency, persistence or alternate traversal behavior.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Lexical graph contracts | Add entity/edge cardinality, proof, identity, traversal, partial and multilingual pipeline tests before implementation. | tests/extraction/test_lexical.py | uncommitted | D-051 |
-| Graph assembly | Insert all entities, then proven lexical DEFINES edges with exact child evidence and deterministic identities. | src/arctrellis/extraction/lexical.py, src/arctrellis/extraction/__init__.py | uncommitted | D-051, D-052 |
-| Boundary documentation | Describe graph proof ownership, partial-result status, native isolation and the shared decoding exception policy. | README.md, decisions.md, flow.md, src/arctrellis/extraction/errors.py | uncommitted | D-051, D-052 |
-| Verification invocation | Use graph test package context after the standalone relative-import invocation failed. | decisions.md, flow.md, handoff.md | uncommitted | D-053 |
-| Security proof and handoff | Strengthen top-level non-execution fixture and record final regression, graph evidence and bounded continuation. | tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-054 |
-| Commit traceability | Finalize local feature references separately without rewriting history or embedding a self-referential hash. | decisions.md, flow.md, handoff.md | uncommitted | D-004, D-054 |
+| Lexical graph contracts | Add entity/edge cardinality, proof, identity, traversal, partial and multilingual pipeline tests before implementation. | tests/extraction/test_lexical.py | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-051 |
+| Graph assembly | Insert all entities, then proven lexical DEFINES edges with exact child evidence and deterministic identities. | src/arctrellis/extraction/lexical.py, src/arctrellis/extraction/__init__.py | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-051, D-052 |
+| Boundary documentation | Describe graph proof ownership, partial-result status, native isolation and the shared decoding exception policy. | README.md, decisions.md, flow.md, src/arctrellis/extraction/errors.py | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-051, D-052 |
+| Verification invocation | Use graph test package context after the standalone relative-import invocation failed. | decisions.md, flow.md, handoff.md | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-053 |
+| Security proof and handoff | Strengthen top-level non-execution fixture and record final regression, graph evidence and bounded continuation. | tests/extraction/test_javascript.py, README.md, decisions.md, flow.md, handoff.md | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-054 |
+| Commit traceability | Finalize local feature references separately without rewriting history or embedding a self-referential hash. | decisions.md, flow.md, handoff.md | ec887ee7426340589582ae618aa4e7751a89c0f5 | D-004, D-054 |
