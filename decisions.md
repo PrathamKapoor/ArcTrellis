@@ -923,7 +923,7 @@ Append-only record of engineering decisions.
 - Files: tests/frameworks/test_endpoints.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-090: Normalize precise pre-handler roles with immutable source observations
-- Date / phase / commit: 2026-10-08, Phase 1.9A, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9A, 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9
 - Context: Existing endpoint adapters retain argument counts but no pre-handler semantics; core Relationship has embedded Evidence but no metadata field.
 - Decision: Add flow_models.py, flow_extraction.py and flow.py under frameworks and test_flow.py. Represent route_middleware, dependency and request_hook distinctly; retain binding, route identity or exact hook declaration, declared order and six coordinates. Normalize endpoint-to-callable edges as APPLIES_MIDDLEWARE with precise role/order in Evidence metadata; never add callable wrapper entities or synthetic CALLS. Reuse versioned canonical JSON/UUID5 and existing handler/import indexes. Extend indexing with final default lightweight tuples/counts and preserve them in all snapshot validators.
 - Why: Phase 1.9 explicitly requires this separation and source lifetime. Baseline was 327 tests OK/skipped=7. Initial 13 pre-handler tests failed because resolve_framework_flow was absent. Syntax inspection verified direct decorator attributes and list/call/keyword fields. A first inspection used the wrong parse_source argument order and failed with TypeError: parse_source() got multiple values for argument path; corrected inspection succeeded.
@@ -932,7 +932,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/frameworks/flow_models.py, src/arctrellis/frameworks/flow_extraction.py, src/arctrellis/frameworks/flow.py, src/arctrellis/frameworks/__init__.py, src/arctrellis/frameworks/extraction.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py, tests/frameworks/test_flow.py, README.md, decisions.md, flow.md
 
 ### D-091: Preserve complete reference indexes and record test-boundary corrections
-- Date / phase / commit: 2026-10-08, Phase 1.9A, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9A, 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9
 - Context: Initial helper extraction and additional snapshot tests revealed development failures before the phase gate.
 - Decision: Move the complete direct-declaration/represented-import setup into _reference_support; retain the same endpoint behavior and reuse it for middleware. Use explicit optional local names for index validation. Correct new tests to use actual source_entity_id/target_entity_id, relationship_kinds and embedded Evidence metadata; inject a stale edge between existing entities rather than a dangling endpoint.
 - Why: Initial pre-handler run failed seven cases with NameError: name direct is not defined; the visibility setup had been moved only up to its first loop. Mypy found eight errors including optional route variable reuse. The corrected run passed thirteen tests and strict mypy. An additional stale-snapshot fixture failed before reaching the resolver with UnknownEntityError because it inserted an edge to an absent endpoint; corrected injection exercises the intended boundary.
@@ -944,7 +944,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/frameworks/test_flow.py test_express_preserves_argument_order_and_excludes_handler and test_pre_handler_identity_and_route_containment_are_checked; existing tests/frameworks/test_endpoints.py guard preserved handler behavior.
 
 ### D-092: Omit class dependency environments and validate exact pre-handler provenance
-- Date / phase / commit: 2026-10-08, Phase 1.9A, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9A, 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9
 - Context: Review reproduced module dependency selection despite class-local shadows, and caller-created snapshots could substitute incompatible framework/Depends witnesses.
 - Decision: Extract decorator dependencies only for represented module FUNCTION declarations; preserve class route endpoints but defer class-scoped dependencies. Require canonical Depends import metadata and preceding coordinates, nonempty dependency provenance, constructor witness/framework/kind agreement, and framework-qualified app association. Use statement-position lookup for direct Python callable visibility.
 - Why: Class-scope regression failed three assertions (assignment/function/import shadows emitted LIKELY/0.85 module dependency edges). Two provenance tests failed with ValueError not raised: a Flask hook could adopt a FastAPI binding, and a dependency could adopt the FastAPI constructor import. The initial minimal edit script stopped at an unmatched formatting assertion after changing extraction/model; actual formatted validation context was then inspected and corrected.
@@ -956,7 +956,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/frameworks/test_flow.py test_class_scoped_depends_and_callable_shadows_are_deferred, test_pre_handler_provenance_cannot_be_replaced_by_other_framework_import, test_depends_requires_actual_fastapi_depends_import.
 
 ### D-093: Close the pre-handler gate before static route composition
-- Date / phase / commit: 2026-10-08, Phase 1.9A, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.9A, 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9
 - Context: Phase 1.9B is authorized only after a verified, committed green pre-handler stage.
 - Decision: Commit the precise pre-handler implementation, tests and documentation locally; finalize current reference fields separately before composition. Record independent review corrections, real quality gates, memory/failure/source-free contracts and deliberate omissions.
 - Why: Pre-handler suite ran 20 tests OK, framework suite52 OK, full suite347 OK/skipped7. Ruff check and92-file format check passed; strict mypy52 source files, compileall, pip check and2 architecture tests passed. Mixed smoke produced3 observations/3 resolved/3 APPLIES_MIDDLEWARE edges with exact .85/.85/1.0 confidence contracts. Public flow imports passed; dependencies unchanged and remotes empty. Review reran class and snapshot regressions and found no remaining important blocker.

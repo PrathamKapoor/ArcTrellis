@@ -34,7 +34,7 @@ No remaining confirmed important defect found. Dynamic runtime binding behavior 
 
 ## 9. Unfinished Work
 
-Phase1.9B not started. Finalize current implementation commit references separately. No required1.9A code remains.
+Phase1.9B not started. Implementation commit 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9 exists; decision/table references finalized separately. No required1.9A code remains.
 
 ## 10. Next Subphase
 
