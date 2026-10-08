@@ -2,200 +2,207 @@
 
 ## 1. Current Phase
 
-Phase 0 — Repository Foundation. Subphase 0.2 — In-memory graph container and
-deterministic traversal. Objective: store explicitly supplied domain records and
-answer predictable structural queries without infrastructure dependencies.
-Status: complete. Phase 1.0 has not begun.
+Phase 1 — Repository Understanding. Subphase 1.0 — Safe repository discovery,
+inventory and language detection. Objective: provide deterministic metadata inputs
+for future parsers without reading or executing target code. Status: complete.
+Phase 1.1 has not begun.
 
 ## 2. Work Completed
 
-Verified the repository root, clean starting tree, Phase 0.1 commits, Git identity,
-Python 3.13.14 and absence of remotes. Read all required root documents and domain
-implementation. Added CodeGraph with canonical ID dictionaries and sorted
-incoming/outgoing indexes, explicit graph errors, immutable TraversalResult and
-evidence-preserving GraphPath records. Core files, packages and configuration
-were not changed.
+Verified the clean local starting tree, root, previous commits, required identity,
+Python 3.13.14 and empty remotes. Read the required documents and Phase 0 code.
+Added metadata-only scan_repository, immutable DiscoveredFile, SkippedPath and
+RepositoryInventory records, Language/SkipReason enums and explicit ingestion errors.
+Core/graph semantics, dependencies and configuration were not changed.
 
-Equal value reinsertions return None and preserve original records; conflicting
-IDs fail. Distinct edge IDs may share a structural triple. Both endpoints must
-exist before any relationship storage/index mutation. UNRESOLVED edges obey the
-same rule: any placeholder entity must be explicitly inserted.
+The scanner checks root ancestors, uses non-following metadata, prunes explicit
+names before descent and skips symbolic links, junctions, other reparse points and
+nonregular objects. An iterative stack avoids Python recursion limits. Unexpected
+filesystem failures abort the scan; no partial inventory is returned. Files and
+skips sort by original relative POSIX path. Supported extension matching ignores
+case while preserving original names. Unsupported ordinary files remain visible.
 
-Snapshots and neighbors sort by ID; BFS expands sorted edge IDs and visits nodes
-once at discovery. Traversal includes the start and contains nodes only. Shortest
-paths preserve original relationships/evidence, use unweighted BFS, return None
-for disconnected known nodes, and return one entity with zero edges for same-node
-queries. Query confidence is not filtered or reclassified. No inference occurs.
-
-Independent review found no important correctness issues; the three minor
-Markdown/validation-policy findings were checked and corrected under D-010.
+Windows DirEntry.stat returned zero identity fields; using os.lstat consistently
+for queued and refreshed directories corrected false change detection (D-016).
+No target contents are opened, hashed, imported or executed. No Git operations
+are performed on target repositories. Independent read-only review found no
+actionable findings; it did not independently run tests.
 
 ## 3. Files Changed
 
-- src/arctrellis/graph/__init__.py: intentional public graph exports.
-- src/arctrellis/graph/graph.py: indexed storage, safe insertion, counts, lookups,
-  snapshots, adjacency, neighbors, bounded BFS and shortest paths.
-- src/arctrellis/graph/errors.py: conflicts and unknown-reference exceptions.
-- src/arctrellis/graph/results.py: frozen validated TraversalResult and GraphPath.
-- tests/graph/__init__.py: graph test discovery.
-- tests/graph/fixtures.py: explicit synthetic payment graph and small test helpers.
-- tests/graph/test_graph.py: storage, integrity, adjacency and snapshots.
-- tests/graph/test_traversal.py: bounds, direction, cycles, filters and path choice.
-- tests/graph/test_results.py: result cardinality, continuity and immutability.
-- README.md: local graph capabilities, semantics and public imports.
-- decisions.md: D-006 through D-010, preserving earlier entries.
-- flow.md: graph call order and Phase 0.2 table, preserving the previous table.
-- handoff.md: verified current phase and continuation state.
+- src/arctrellis/ingestion/__init__.py: intentional public exports.
+- src/arctrellis/ingestion/models.py: immutable portable inventory and summaries.
+- src/arctrellis/ingestion/discovery.py: root checks, metadata walk, pruning and detection.
+- src/arctrellis/ingestion/errors.py: invalid-input versus incomplete-scan errors.
+- tests/ingestion/__init__.py: enable unittest discovery.
+- tests/ingestion/test_models.py: validation, ordering, immutability and counts.
+- tests/ingestion/test_discovery.py: synthetic trees, extension mapping and pruning.
+- tests/ingestion/test_safety.py: links, junctions and injected filesystem failures.
+- README.md: current capabilities, semantics and security boundary.
+- decisions.md: append D-011 through D-016; preserve prior decisions.
+- flow.md: real ingestion call order and Phase 1.0 changes; preserve prior tables.
+- handoff.md: current verified state and continuation instructions.
 
 ## 4. Current Architecture / State
 
-Repository root: C:/Projects/ArcTrellis. Python and .venv Python: 3.13.14.
-Public core: EntityKind, RelationshipKind, Confidence, SourceLocation, CodeEntity,
-Evidence and Relationship. Public graph: CodeGraph, GraphPath, TraversalResult,
-GraphError, DuplicateEntityError, DuplicateRelationshipError, UnknownEntityError
-and UnknownRelationshipError.
+Repository root: C:/Projects/ArcTrellis. Virtual-environment Python: 3.13.14.
+Git identity: PrathamKapoor <prathamkapoor027@gmail.com>. No Git remote exists.
 
-CodeGraph is mutable and append-oriented; its stored records are immutable.
-No removal, caching, persistence or thread-safety guarantee exists. Dictionary
-lookups average O(1); adjacency scans O(degree); sorted insertion costs O(degree);
-BFS is O(V+E) over explored nodes/edges. Snapshots and unique neighbors incur sorting.
-These are algorithmic expectations, not measured benchmarks.
+Local directory -> scan_repository -> RepositoryInventory -> future parser.
+The parser is not implemented. Existing arctrellis.core and arctrellis.graph APIs
+remain unchanged. The ingestion API exports scan_repository,
+DEFAULT_EXCLUDED_DIRECTORIES, DiscoveredFile, RepositoryInventory, SkippedPath,
+Language, SkipReason, IngestionError, InvalidRepositoryPathError and RepositoryAccessError.
+The caller retains the root separately; it is not canonical repository identity.
 
-No runtime dependency was added. pyproject.toml still declares Python >=3.13 and
-build-only setuptools==84.0.0. The existing editable installation exposes the new
-package. No formatter, linter, type checker, CI configuration or license exists.
-Git has no remotes. This session has not pushed or published anything.
-Implementation commit: 7c9b42800c1e5b7c8d22791109480cc2cb42b94f,
-feat(graph): add deterministic in-memory code graph. The required author and
-committer were verified and the working tree was clean after this commit.
-A separate documentation commit finalizes references under D-004; its hash is
-available from git log. No history was rewritten.
+Default exclusions are .git, node_modules, .venv, venv, env, __pycache__, dist,
+build, coverage, .coverage, .next, .pytest_cache, .mypy_cache, .ruff_cache,
+.cache and vendor. Names match case-sensitively at any depth. Custom set/frozenset
+names replace defaults. An empty set disables name exclusions but not link guards.
+Hidden directories are not globally excluded; .gitignore is not interpreted.
+
+Supported extensions: .py/.pyi, .js/.jsx/.mjs/.cjs and .ts/.tsx/.mts/.cts.
+Language values are python/javascript/typescript; unknown ordinary files use None.
+Files and skips are sorted unique tuples. Counts are derived, and language_counts
+is a tuple of nonzero (Language, count) pairs in lexical canonical-language order.
+Metadata records are hashable and convert through dataclasses.asdict and JSON.
+
+No runtime dependencies were added. pyproject.toml retains Python >=3.13 and
+build-only setuptools==84.0.0. Existing editable installation exposes ingestion.
+No formatter, linter, type checker, CI or license file is configured/present.
+Expected work is linear in visited entries plus file/skip sorting; not benchmarked.
+
+Implementation commit: uncommitted. Reference finalization follows D-004 in a
+separate documentation commit without rewriting history.
 
 ## 5. Decisions Made
 
-- D-006: append-oriented graph, duplicate policy and endpoint integrity.
-- D-007: sorted adjacency and shared deterministic breadth-first search.
-- D-008: explicit errors and immutable traversal/path results.
-- D-009: synthetic fixtures and truthful session traceability.
-- D-010: documentation corrections and a supported in-place handoff rewrite.
-- Existing D-001 through D-005 remain in force; D-004 governs hash finalization.
+- D-011: immutable portable inventory records and derived summaries.
+- D-012: standard-library metadata traversal, explicit pruning and link omissions.
+- D-013: explicit incomplete-scan failure and honest concurrent replacement limits.
+- D-014: synthetic local verification and preservation of prior phases.
+- D-015: retry an atomic patch with verified Markdown context.
+- D-016: correct Windows identity comparison using consistent os.lstat metadata.
+- D-001 through D-010 remain in force; D-004 governs commit-reference finalization.
 
 ## 6. Requirements and Constraints
 
-Keep graph behavior independent of parsers, databases, graph libraries and
-explanation providers. Query inserted records only; preserve direction,
-uncertainty and evidence. Do not infer architectural truth from prose.
-No removal semantics or global evidence/parent-reference policy was added.
+Treat target repositories as untrusted filesystem input. Never read source contents,
+import modules, execute scripts/package hooks, install target dependencies or follow
+links during discovery. Keep scanning separate from syntax extraction and graph facts.
+No .gitignore semantics, hashing, parsing, cloning, persistence or incremental scan
+is implemented. A stable target tree is required; this is not an atomic sandbox.
 
-All commits must use PrathamKapoor <prathamkapoor027@gmail.com> as author and
-committer, with no attribution trailers. Never commit paper/, research/ or *.tex.
-No remote additions, pushes, uploads, publication or external repository operations
-are authorized. Keep decisions append-only except permitted hash finalization;
-update real call flows alongside changes.
+Keep everything local. No remote creation/modification, push, GitHub API access,
+upload, release or package publication is authorized. All commits must use
+PrathamKapoor <prathamkapoor027@gmail.com> as author and committer without attribution
+trailers. Never commit paper/, research/ or *.tex. Preserve append-only decisions,
+real call flows and all twelve handoff sections.
 
 ## 7. Testing and Verification
 
-Commands executed from the repository root:
+Observed commands/results from the repository root:
 
 - git rev-parse --show-toplevel: C:/Projects/ArcTrellis.
-- git status at startup: on master, working tree clean.
-- git log --oneline --decorate -10: HEAD a3d364e followed by e7a2f98.
-- git config user.name: PrathamKapoor.
-- git config user.email: prathamkapoor027@gmail.com.
-- python --version and .venv\Scripts\python.exe --version: Python 3.13.14.
-- git remote -v: empty output at startup and during review, no remotes.
+- git status at start: master, clean working tree.
+- git log --oneline --decorate -10: 83cc9fc, 7c9b428, a3d364e and e7a2f98.
+- git config user.name: PrathamKapoor; git config user.email: prathamkapoor027@gmail.com.
+- git remote -v: empty at start and after implementation; no remote was changed.
+- .venv\Scripts\python.exe --version: Python 3.13.14.
 - .venv\Scripts\python.exe -m unittest discover -s tests -v:
-  baseline 33 tests, OK, exit zero. After writing graph tests before implementation,
-  the suite failed with three module-import errors and exit one:
-  ModuleNotFoundError: No module named 'arctrellis.graph'. This was an expected
-  missing-feature check, not a domain regression. After implementation and after
-  naming payment entities, the full suite ran 89 tests, OK, exit zero.
-- .venv\Scripts\python.exe -c "from arctrellis.graph import CodeGraph, GraphPath, TraversalResult, GraphError, DuplicateEntityError, DuplicateRelationshipError, UnknownEntityError, UnknownRelationshipError; print('Graph public API imports OK')":
-  printed Graph public API imports OK, exit zero.
-- .venv\Scripts\python.exe -c "from arctrellis.graph import CodeGraph, GraphPath, TraversalResult":
-  README graph import command succeeded with exit zero.
-- git diff --check: no whitespace errors. Git emitted LF-to-CRLF notices under
-  existing environment settings; no line-ending or signing settings were changed.
-- git status --short during review: intended README/decision/flow changes and new
-  graph implementation/tests only.
-- git diff --cached --check: no whitespace errors in the staged changes.
-- git diff --cached --name-only: thirteen intended graph/test/documentation paths;
-  the forbidden-path check printed No forbidden files staged.
-- Staged-content attribution scan with git grep: no matches; exit one means no
-  matches. Reviewed staged files contain no secrets or attribution.
-- git commit -m "feat(graph): add deterministic in-memory code graph": succeeded,
-  creating 7c9b428 with the thirteen intended graph/test/documentation files.
-- git rev-parse HEAD: 7c9b42800c1e5b7c8d22791109480cc2cb42b94f.
-- git log -1 --format='%h %an <%ae> | %cn <%ce> | %s': verified the required author
-  and committer and exact graph implementation message.
-- git status --short after the graph implementation commit: empty, clean tree.
+  baseline 89 tests, OK. After safety tests, 125 tests, OK (skipped=6).
+  Final run after simulated link/nonregular coverage: 127 tests, OK (skipped=6),
+  exit zero. All 89 existing Phase 0 tests remained included and passed.
+- .venv\Scripts\python.exe -m unittest discover -s tests/ingestion -v:
+  test-first run failed with two import errors: ModuleNotFoundError: No module
+  named 'arctrellis.ingestion'. Initial implementation ran 23 tests with five
+  RepositoryAccessError failures on unchanged nested directories; D-016 records
+  the verified cause. After correction, 23 tests ran with OK, exit zero.
+- .venv\Scripts\python.exe -c "from arctrellis.ingestion import DiscoveredFile, RepositoryInventory, scan_repository, Language, SkippedPath, SkipReason, IngestionError, InvalidRepositoryPathError, RepositoryAccessError, DEFAULT_EXCLUDED_DIRECTORIES; print('Public ingestion imports OK')":
+  printed Public ingestion imports OK; exit zero.
+- .venv\Scripts\python.exe -c "from pathlib import Path; from tempfile import TemporaryDirectory; from arctrellis.ingestion import scan_repository; t=TemporaryDirectory(); r=Path(t.name); (r/'src').mkdir(); (r/'src'/'app.PY').write_text('pass', encoding='utf-8'); (r/'README.md').write_text('demo', encoding='utf-8'); (r/'node_modules').mkdir(); (r/'node_modules'/'dep.js').touch(); i=scan_repository(r); print('Files:', [(f.path, f.size_bytes, f.language) for f in i.files]); print('Counts:', i.file_count, i.supported_file_count, i.language_counts); print('Skipped:', [(s.path, s.reason) for s in i.skipped_paths]); t.cleanup()":
+  printed README.md (4 bytes, None), src/app.PY (4 bytes, python), counts 2/1,
+  python count 1 and node_modules excluded_directory; exit zero.
+- git diff --check: exit zero, no whitespace errors; existing LF-to-CRLF notices.
+- rg --files --hidden -g '!.git/**' -g '!.venv/**' -g '!**/__pycache__/**' -g '!**/*.egg-info/**':
+  inspected project file inventory, including only real ingestion modules/tests.
+- git diff --cached --check: exit zero, no staged whitespace errors.
+- git diff --cached --name-only: twelve intended ingestion/test/documentation paths.
+- Forbidden-path staging check: printed No forbidden files staged, exit zero.
+- Staged-content attribution search: no matches, exit one (normal no-match status).
+- git diff -- src/arctrellis/core src/arctrellis/graph tests/core tests/graph pyproject.toml .gitignore:
+  empty; Phase 0 implementation, tests, dependencies and configuration unchanged.
 
-Rule 10 review: all three root documents were read at startup; meaningful changes
-have decisions and session rows; no package change occurred; the documentation
-correction has a symptom, verified cause and an explicit no-test rationale; real
-names and nested call order are documented; commit references name the real graph
-implementation commit; no secrets or authorship attribution were added; required
-identity was verified; no remote was added and no push occurred; this handoff has
-all twelve sections.
+Rule 10 review: required documents were read first; meaningful changes have
+decisions and session rows; no package change occurred; D-016 records the verified
+bug symptom, cause, fix and regression coverage. Real call names and nested order
+are documented. No secrets or authorship attribution were added. Required identity
+and empty remotes were verified. Nothing was pushed or published. This handoff has
+all twelve sections; implementation references are finalized under D-004.
 
-All 33 Phase 0.1 tests were included in the passing 89-test runs. New graph tests
-compare reversed insertion order across snapshots, adjacency, bounded forward and
-reverse traversal, kind filters and equal-length shortest-path selection.
+Five actual symlink tests were explicitly skipped with WinError 1314: A required
+privilege is not held by the client. Actual symlink traversal behavior therefore
+was not runtime-verified on this host. Simulated symbolic-link metadata and link
+replacement checks passed. One FIFO fixture skipped because os.mkfifo is unavailable.
+Simulated nonregular metadata passed. The actual Windows junction test passed:
+no target file was inventoried, junction/ancestor roots failed, and the outside
+file survived junction cleanup. Other reparse-point behavior is simulated coverage.
 
-The first combined delete/add handoff patch failed with the exact error recorded
-in D-010 and changed no files. The in-place rewrite succeeded.
+Permission errors, vanished-entry errors and enumeration failures were injected;
+real OS permission denial was not tested. The malicious-source test patches content
+opening to fail and confirms no execution marker or __pycache__ appears.
 
-Not tested: other operating systems/Python versions, large-graph benchmarks,
-threaded access or non-editable distribution installs. No formatter, linter or type
-checker ran because none is configured. Source analysis, storage, APIs and product
-modes remain unimplemented.
+Not tested: other operating systems/Python versions, fresh distribution installs,
+large-repository benchmarks, hostile concurrent mutations or later parser reads.
+No formatter/linter/type checker ran because none is configured. No external
+publication or remote operation occurred. Commit and staged audit results are
+finalized after the implementation commit under D-004.
 
 ## 8. Known Issues / Risks
 
-Confirmed: no project defect was observed in executed checks. No license exists;
-licensing remains an explicit future choice before public reuse. Earlier host pip
-invalid-distribution warnings remain in previous handoff history; host pip was not
-inspected or changed in this session.
+Confirmed: no remaining defect observed in executed checks. Actual symlink fixtures
+cannot run under current Windows privileges; six tests are explicitly skipped.
+No license file exists; public reuse terms remain a future decision.
 
-Possible: cross-platform and large-graph behavior remain unverified. Sorted list
-insertion can be expensive for very high-degree nodes. Graph-wide evidence ID
-consistency, parent references, placeholder naming and incremental replacement or
-deletion need deliberate future policies. Queries include all confidence classes;
-CodeGraph is not thread-safe.
+Possible: concurrent hostile path replacement can evade pathname checks; callers
+must keep the tree stable. Cross-platform behavior remains unverified. Explicit
+directory exclusions may omit legitimate source; custom exclusions replace defaults.
+Future parsing must revalidate files and decide how to map filename spaces or other
+inventory syntax into stricter SourceLocation paths.
 
 ## 9. Unfinished Work
 
-No Phase 0.2 functionality remains unfinished. CI, license selection and later
-product capabilities are future work. Commit reference finalization follows D-004
-without modifying implementation or rewriting history.
+No Phase 1.0 functionality remains unfinished. Platform coverage expansion and
+licensing/CI choices are future work. Commit-reference finalization follows D-004.
+No parsing or repository acquisition was begun.
 
 ## 10. Next Subphase
 
-Phase 1.0 — Repository discovery, safe file inventory and language detection.
-Do not begin it during this session. No discovery, crawling, parsing or language
-detection code has been added.
+Phase 1.1 — Tree-sitter parser infrastructure and normalized syntax extraction.
+Introduce parser interfaces/adapters deliberately, using RepositoryInventory as
+input. Do not claim full call resolution or proceed without the next session scope.
 
 ## 11. Critical Context
 
-Phase 0.1's earlier execution failure changed nothing. Its successful retry
-initialized an empty directory and produced e7a2f98 and a3d364e; both were verified
-at this session's start. Old decisions and the Phase 0.1 table are preserved; prior
-handoff details remain available in Git history.
+Previous execution failure changed nothing. Phase 0.1 initialized the repository;
+Phase 0.2 added explicit in-memory graph facts. Their commits and decision/session
+history were verified and preserved. Prior handoffs remain in Git history, including
+earlier host pip warning context; host pip was not inspected or changed here.
 
-TraversalResult presents distinct reachable nodes in BFS discovery order, not a
-route or an induced subgraph. GraphPath validates a local directed walk, not source
-truth. Shortest-path ties use edge IDs, not entity names or confidence. No-path None
-is distinct from unknown-ID errors. Payment fixture evidence is synthetic test
-input, not analyzer output.
+The rejected initial combined patch changed nothing (D-015). Windows DirEntry
+identity differed from lstat identity for the same directory (D-016); do not restore
+that cross-API comparison. Root normalization is lexical, not link resolution.
+RepositoryInventory is metadata, not proof of parsed architecture or a snapshot
+locking the filesystem. Discovery never creates CodeEntity or Relationship values.
 
 ## 12. Agent Instructions
 
-Read decisions.md, flow.md and this handoff completely before changes. Verify
-status, identity, Python and remotes rather than trusting this summary. Respect
-existing decisions; append authorized superseding entries when needed. Document
-meaningful changes and flows in the same step. Preserve immutable records and
-ordering. Run full unittest and public-import checks before completion claims.
-Stage explicit paths, inspect forbidden files and attribution, and verify commit
-identity. Keep everything local; never add a remote or push without explicit
-authorization. Finalize hashes without rewriting history; use one supported file
-update per handoff target and rewrite all twelve sections with observed facts.
+Read decisions.md, flow.md and handoff.md completely first. Verify repository status,
+identity, Python and remotes. Preserve Phase 0 contracts and stable deterministic
+inventories. Never execute target code as part of discovery. Respect the documented
+stable-tree assumption and independently revalidate future content reads.
+Document meaningful changes alongside implementation, append decisions and preserve
+old session rows. Run the entire unittest suite and public import checks; record
+real skips/failures. Stage explicit paths and audit forbidden material, secrets,
+attribution and author/committer identity. Keep everything local. Finalize references
+without rewriting history and rewrite all twelve handoff sections with observed facts.

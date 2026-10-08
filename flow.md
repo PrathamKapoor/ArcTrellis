@@ -14,10 +14,14 @@ from arctrellis.graph import ...           src/arctrellis/graph/__init__.py; pub
  ├─ import .graph                         src/arctrellis/graph/graph.py; load CodeGraph
  │   └─ import .results                   src/arctrellis/graph/results.py; load query records
  └─ import .results                       src/arctrellis/graph/results.py; export immutable results
+from arctrellis.ingestion import ...       src/arctrellis/ingestion/__init__.py; public inventory API
+ ├─ import .discovery                     src/arctrellis/ingestion/discovery.py; metadata-only scan
+ ├─ import .models                        src/arctrellis/ingestion/models.py; immutable inventory
+ └─ import .errors                        src/arctrellis/ingestion/errors.py; explicit discovery failures
 ```
 
-Output: importable in-memory domain types. Installation failures propagate from pip.
-There is no service process, API, persistence or repository analyzer.
+Output: importable domain, graph and ingestion APIs. Installation failures propagate from pip.
+There is no service process, API, persistence or source parser.
 
 ## 2. Source locations and entities
 
@@ -65,7 +69,7 @@ Global IDs, target existence and proof adequacy are not checked by domain constr
 
 ## 4. Unit tests and primitive conversion
 
-Input: installed package and test cases under tests/core/ and tests/graph/.
+Input: installed package and test cases under tests/core/, tests/graph/ and tests/ingestion/.
 
 ```text
 python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__init__.py; discover tests
@@ -77,6 +81,10 @@ python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__in
      │   └─ build_graph()                 tests/graph/fixtures.py; insert explicitly supplied facts
      ├─ build_graph()                     tests/graph/fixtures.py; build smaller contract examples
      └─ CodeGraph / GraphPath APIs         src/arctrellis/graph/; check storage and query contracts
+ └─ ingestion contract test methods        tests/ingestion/test_models.py, test_discovery.py, test_safety.py
+     ├─ tempfile.TemporaryDirectory()      isolate local synthetic trees without network
+     ├─ scan_repository()                 exercise metadata discovery without target execution
+     └─ unittest.mock.patch()             inject access failures and verify exclusion pruning
 ```
 
 Output: test results on stdout/stderr and process exit status. A failing assertion
@@ -187,6 +195,64 @@ to stop cycles and parallel-edge repetition. Queries follow inserted records
 without filtering confidence or asserting new proof. BFS is O(V+E) over explored
 nodes/edges because sorted adjacency is maintained at insertion.
 
+## 8. Local repository discovery
+
+Input: an existing local directory and optional replacement set/frozenset of excluded
+directory names. No Git repository is required. The tree must remain stable.
+
+```text
+scan_repository()                         src/arctrellis/ingestion/discovery.py; inventory metadata only
+ ├─ _excluded_names()                     validate and snapshot explicit name exclusions
+ ├─ _normalize_root()                     establish a lexical absolute runtime boundary
+ │   ├─ os.fspath()                       accept a string or local path object
+ │   ├─ os.path.abspath()                 normalize lexical root without resolving links
+ │   ├─ os.lstat()                        inspect root and ancestors without following final links
+ │   └─ _link_reason()                    reject indirect root components
+ └─ _walk_directory()                     visit ordinary directories with an iterative stack
+     ├─ _check_directory()                detect changed directory identity before descent
+     │   ├─ os.lstat()                    refresh non-following metadata
+     │   └─ _link_reason()                reject new indirection
+     ├─ os.scandir()                      enumerate metadata, never open file contents
+     │   ├─ entry.stat(follow_symlinks=False) distinguish ordinary files, directories and links
+     │   ├─ _link_reason()                classify links, junctions and other reparse omissions
+     │   ├─ SkippedPath()                 record links, exclusions and nonregular objects
+     │   │   └─ SkippedPath.__post_init__() validate relative path and reason
+     │   │       └─ _require_path()        enforce portable path syntax in ingestion/models.py
+     │   ├─ os.lstat()                    obtain directory identity after exclusions and link checks
+     │   ├─ pending.append()              queue only ordinary directories for later inspection
+     │   └─ DiscoveredFile()              retain byte size and extension-derived language
+     │       └─ DiscoveredFile.__post_init__() validate path, size and language
+     │           └─ _require_path()       preserve valid raw relative filenames
+     ├─ _check_directory()                detect directory changes after enumeration
+     ├─ sorted(files)                     make file order independent of enumeration
+     ├─ sorted(skipped)                   make omission order independent of enumeration
+     └─ RepositoryInventory()             retain ordered immutable metadata tuples
+         └─ RepositoryInventory.__post_init__() validate disjoint ordered records
+             └─ _require_ordered_records() enforce tuple types and sorted unique paths
+RepositoryInventory.supported_files       src/arctrellis/ingestion/models.py; filter recognized sources
+RepositoryInventory.file_count            src/arctrellis/ingestion/models.py; count all regular files
+RepositoryInventory.supported_file_count  src/arctrellis/ingestion/models.py; count recognized sources
+RepositoryInventory.language_counts       src/arctrellis/ingestion/models.py; immutable language summary
+ ├─ collections.Counter()                 aggregate only nonempty supported language values
+ ├─ sorted()                             order counts by canonical language value
+ └─ tuple()                              freeze the language summary
+```
+
+Output: RepositoryInventory with files, supported_files, file_count,
+supported_file_count, language_counts and skipped_paths. Language counts sort by
+canonical language value; paths sort by original case-sensitive Python string order.
+Unsupported ordinary files remain visible. Excluded directories are never entered;
+hidden directories are retained unless named in the explicit exclusion policy.
+.gitignore is not parsed. Files are never read, imported, executed or hashed.
+
+Missing/file/linked roots raise InvalidRepositoryPathError. Unexpected filesystem
+errors (including vanished entries) raise RepositoryAccessError with their original
+cause; there is no partial inventory. Invalid argument types/configuration fail
+with TypeError/ValueError. Linked paths inside the tree are intentional skips.
+Directory identity checks detect ordinary changes but are not atomic containment:
+concurrent hostile replacement remains a documented limitation on Windows.
+Expected work is O(visited entries) plus sorting the file and skip records.
+
 ## Changes in this session (Phase 0.1)
 
 | Area | Change | Files | Commit | Decision |
@@ -210,3 +276,16 @@ nodes/edges because sorted adjacency is maintained at insertion.
 | Documentation | Describe actual graph semantics and call order while preserving the Phase 0.1 history. | README.md, decisions.md, flow.md, handoff.md | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-006, D-007, D-008 |
 | Fixture and session traceability | Use named synthetic payment entities, record actual verification, and finalize new commit references without rewriting old history. | tests/graph/fixtures.py, decisions.md, flow.md, handoff.md | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-009 |
 | Documentation review | Correct the constructor/graph validation distinction, explicit placeholder policy and continuous session table; rewrite handoff in place. | README.md, decisions.md, flow.md, handoff.md | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-010 |
+
+## Changes in this session (Phase 1.0)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Test contracts | Add synthetic discovery and immutable inventory tests before implementation. | tests/ingestion/__init__.py, tests/ingestion/test_models.py, tests/ingestion/test_discovery.py | uncommitted | D-011, D-012, D-013, D-014 |
+| Editing recovery | Retry an atomic patch after checking the real Markdown context; rejected attempt changed nothing. | decisions.md, flow.md | uncommitted | D-015 |
+| Inventory | Add validated immutable portable file/skip records, supported subsets and deterministic counts. | src/arctrellis/ingestion/models.py | uncommitted | D-011 |
+| Discovery and errors | Add metadata-only traversal, pruning, language detection, link guards, root checks and explicit incomplete-scan errors. | src/arctrellis/ingestion/discovery.py, src/arctrellis/ingestion/errors.py | uncommitted | D-012, D-013 |
+| Public API | Export intentional ingestion models, scanner, defaults and errors. | src/arctrellis/ingestion/__init__.py | uncommitted | D-011, D-012, D-013 |
+| Windows identity | Use os.lstat for both queued and refreshed directory identities instead of comparing zero DirEntry fields. | src/arctrellis/ingestion/discovery.py, tests/ingestion/test_discovery.py | uncommitted | D-016 |
+| Safety verification | Add real link/junction fixtures, explicit platform skips and simulated link/nonregular classification, metadata, enumeration and replacement failures. | tests/ingestion/test_safety.py | uncommitted | D-012, D-013, D-014 |
+| Documentation | Describe current discovery semantics, security boundary, call order and session continuity. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-011, D-012, D-013, D-014 |

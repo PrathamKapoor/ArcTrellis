@@ -12,8 +12,10 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 0.2, in-memory graph container and deterministic
-traversal. There is no source analyzer, repository ingestion, persistence, API or UI.
+Early implementation: Phase 1.0, safe local repository discovery and language
+detection. There is no source parser, symbol extraction, inferred call relationship,
+GitHub cloning, persistence, embedding retrieval, LLM integration,
+API or frontend.
 
 Current capabilities:
 
@@ -25,8 +27,11 @@ Current capabilities:
 - Incoming/outgoing queries, unique neighbors and relationship-kind filtering.
 - Bounded forward/reverse traversal and deterministic unweighted shortest paths.
 - Immutable path records preserving each original relationship and its evidence.
+- Local filesystem inventory with relative POSIX paths, byte sizes and explicit omissions.
+- Python, JavaScript and TypeScript extension detection, with deterministic supported subsets.
+- Dependency/build/cache pruning and non-following link/reparse-point handling.
 
-Planned capabilities: repository ingestion; lexical, semantic and structural symbol
+Planned capabilities: source parsing and repository acquisition; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
 inspection; reverse dependency impact; retrieval and evidence quality evaluation.
 
@@ -118,6 +123,55 @@ Dictionary lookups average O(1), adjacency queries cost O(degree), and BFS costs
 O(V+E) over the explored subgraph. Sorted adjacency insertion costs O(degree);
 full snapshots and neighbor sorting have sorting costs. The append-oriented graph
 has no removal, caching, persistence or concurrency guarantees.
+
+## Local repository discovery
+
+```python
+from arctrellis.ingestion import scan_repository
+
+inventory = scan_repository("path/to/local/repository")
+for source in inventory.supported_files:
+    print(source.path, source.size_bytes, source.language)
+```
+
+`files` includes every discovered ordinary file, including unsupported files with
+`language=None`. `supported_files` includes Python (`.py`, `.pyi`), JavaScript
+(`.js`, `.jsx`, `.mjs`, `.cjs`) and TypeScript (`.ts`, `.tsx`, `.mts`, `.cts`).
+Extensions match case-insensitively; original path casing is preserved. Files and
+`skipped_paths` sort by repository-relative path. `file_count`,
+`supported_file_count` and immutable `language_counts` provide summaries.
+Records are frozen, hashable and convertible with `dataclasses.asdict()`.
+The scan root is runtime context retained by the caller, not stored identity.
+
+Default directory exclusions apply at any depth: `.git`, `node_modules`, `.venv`,
+`venv`, `env`, `__pycache__`, `dist`, `build`, `coverage`, `.coverage`, `.next`,
+`.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.cache`, and `vendor`. Names match
+case-sensitively. `excluded_directories={"custom"}` replaces defaults; an empty set
+disables name exclusions. Link checks always remain active. Hidden directories
+such as `.github` are retained unless explicitly excluded. **`.gitignore` is not
+interpreted.** Excluded directories are pruned before descent, not filtered later.
+
+Existing readable empty directories are valid; Git is not required. Missing,
+file or linked roots (including linked ancestors) raise `InvalidRepositoryPathError`.
+Unexpected filesystem errors raise `RepositoryAccessError`, retaining the original
+exception; no apparently complete partial inventory is returned. Inputs must use
+portable relative filenames: invalid separators/traversal/control characters fail
+explicitly rather than being silently normalized. Filename spaces are preserved.
+
+### Security boundary
+
+Discovery performs filesystem inspection only. It does not read source contents,
+import repository modules, execute scripts, install target dependencies, execute
+package hooks, hash files or follow symbolic links. Linked files/directories,
+Windows junctions and other reparse points are recorded as skipped. Nonregular
+objects are skipped without opening them.
+
+The target tree must remain stable during scanning. Directory identity checks
+detect ordinary replacements, but Windows pathname operations do not provide an
+atomic sandbox against concurrent hostile replacement. This is metadata discovery,
+not a guarantee of safe later file reads; future parsers must revalidate their inputs.
+Work is linear in visited entries plus sorting file and omission records; there is
+no concurrent or incremental scanner.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.

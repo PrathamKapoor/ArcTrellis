@@ -97,3 +97,60 @@ Append-only record of engineering decisions.
 - Symptom: The Phase 0.2 table was interrupted after its first row, and documentation said target existence was not checked in this phase or awaited a future graph policy.
 - Root cause: A blank line separated Markdown table rows; wording retained the domain-only validation boundary after CodeGraph had implemented endpoint integrity and explicit placeholder insertion.
 - Regression test: none; documentation-only corrections were checked against CodeGraph.add_relationship and reviewed in the final Markdown source.
+
+### D-011: Define immutable portable inventory records
+- Date / phase / commit: 2026-10-08, Phase 1.0, uncommitted
+- Context: Future parsers need filesystem inputs without owning discovery or receiving contents.
+- Decision: Add ingestion DiscoveredFile, SkippedPath, RepositoryInventory, Language and SkipReason. Validate raw relative forward-slash paths, nonnegative sizes and enum types; preserve actual filename spaces. Require sorted unique immutable tuples, disjoint file/skip paths and derived supported subsets and ordered counts. Store no root or contents.
+- Why: Immutable values support reproducibility, hashing and primitive serialization without changing SourceLocation semantics.
+- Alternatives considered: Mutable collections weaken value semantics; path normalization hides malformed inputs; absolute roots tie values to hosts; contents exceed scope.
+- Consequences: Consumers retain the root separately. Unrepresentable portable filenames fail explicitly. Counts include only supported languages with nonzero counts.
+- Files: src/arctrellis/ingestion/models.py, src/arctrellis/ingestion/__init__.py, tests/ingestion/__init__.py, tests/ingestion/test_models.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-012: Inspect metadata with explicit exclusions and no link traversal
+- Date / phase / commit: 2026-10-08, Phase 1.0, uncommitted
+- Context: Untrusted directories may contain dependencies, links, unusual objects and code that must never execute.
+- Decision: Add synchronous standard-library scan_repository with non-following stat, scandir and an iterative directory stack. Prune case-sensitive directory names at every level; optional set/frozenset exclusions replace defaults. Skip links, junctions, other reparse points and nonregular objects with records. Detect ten Python/JavaScript/TypeScript extensions case-insensitively and sort files/skips lexically by original relative path. Defer .gitignore and hashing.
+- Why: Pruning before descent avoids dependency trees; explicit metadata inspection separates filesystem safety from parsing. No additional package is needed.
+- Alternatives considered: Blanket hidden exclusion loses .github; following internal links complicates cycles; third-party crawlers add no required capability; Git ignore semantics need separate design.
+- Consequences: Matching directory names may contain legitimate source; callers can replace exclusions. Link guards remain active with empty exclusions. Unsupported ordinary files remain visible.
+- Files: src/arctrellis/ingestion/discovery.py, src/arctrellis/ingestion/__init__.py, tests/ingestion/test_discovery.py, tests/ingestion/test_safety.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-013: Fail incomplete scans and state concurrent filesystem limits
+- Date / phase / commit: 2026-10-08, Phase 1.0, uncommitted
+- Context: Unexpected filesystem errors must not masquerade as complete inventories. Observed Windows Python lacks O_NOFOLLOW and descriptor-based scandir.
+- Decision: Add IngestionError, InvalidRepositoryPathError and RepositoryAccessError. Normalize the root lexically once, reject linked root ancestors, require an ordinary directory and recheck directory identity before descent. Chain unexpected filesystem errors and return no partial result. Require a stable target tree and document that pathname metadata checks are not an atomic sandbox against concurrent substitution.
+- Why: Explicit failure preserves completeness; available checks avoid static links but cannot make Windows pathname operations atomic.
+- Alternatives considered: Silent skipping hides missing data; resolving linked roots accepts indirection; claiming race-proof containment exceeds verified APIs; native dependencies exceed scope.
+- Consequences: Linked root ancestors are rejected. Callers must prevent concurrent hostile changes; future readers must revalidate paths. Injected access tests do not claim real OS permission-denial coverage.
+- Files: src/arctrellis/ingestion/errors.py, src/arctrellis/ingestion/discovery.py, src/arctrellis/ingestion/__init__.py, tests/ingestion/test_discovery.py, tests/ingestion/test_safety.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-014: Verify discovery with local synthetic fixtures
+- Date / phase / commit: 2026-10-08, Phase 1.0, uncommitted
+- Context: Discovery needs reproducible safety tests without network access or target execution.
+- Decision: Add unittest inventory, discovery and safety suites using temporary directories, explicit skips for unavailable link creation and injected filesystem errors. Preserve Phase 0 implementation and prior documentation history. Finalize references under D-004.
+- Why: The user requires local verification, honest limitations and unchanged domain/graph semantics. The baseline ran 89 tests with OK.
+- Alternatives considered: External fixtures require network; target execution violates the inspection boundary; graph changes are unnecessary.
+- Consequences: Platform skips and simulated error coverage must be reported honestly. No dependency, remote or publishing operations are included.
+- Files: tests/ingestion/__init__.py, tests/ingestion/test_models.py, tests/ingestion/test_discovery.py, tests/ingestion/test_safety.py, README.md, decisions.md, flow.md, handoff.md
+
+### D-015: Retry an atomic documentation patch with verified context
+- Date / phase / commit: 2026-10-08, Phase 1.0, uncommitted
+- Context: A combined initial test/documentation patch failed with `Failed to find expected lines in C:\Projects\ArcTrellis\flow.md: #`; git status --short remained empty.
+- Decision: Read the actual flow document and retry with existing section context rather than a guessed standalone heading.
+- Why: The failed patch changed no repository files; documenting the failed edit avoids repeating it.
+- Alternatives considered: none.
+- Consequences: Patch contexts must match inspected source. This is an editing failure, not a repository defect.
+- Files: decisions.md, flow.md
+
+### D-016: Compare directory identity using the same metadata API
+- Date / phase / commit: 2026-10-08, Phase 1.0, uncommitted
+- Context: The first implementation run failed five nested discovery tests on unchanged Windows directories.
+- Decision: Obtain queued ordinary-directory identities using os.lstat, matching the fresh checks, while retaining non-following DirEntry metadata for classification and file size.
+- Why: A minimal local reproduction printed DirEntry identity 0 0 and nonzero os.lstat device/inode fields for the same directory; comparing these APIs incorrectly reported a replacement.
+- Alternatives considered: Removing identity checks loses useful change detection; treating zero identities as matches weakens checks; using lstat consistently for queued identities fixes the mismatch directly.
+- Consequences: Each entered child directory requires an additional metadata lookup. Excluded directories still require no traversal. This does not make pathname checks atomic.
+- Files: src/arctrellis/ingestion/discovery.py, tests/ingestion/test_discovery.py, decisions.md, flow.md, handoff.md
+- Symptom: RepositoryAccessError: directory changed during discovery on unchanged nested directories; the run reported FAILED (errors=5).
+- Root cause: Windows DirEntry.stat(follow_symlinks=False) yielded zero st_dev/st_ino fields, while os.lstat returned actual identity values; _check_directory compared incompatible values.
+- Regression test: tests/ingestion/test_discovery.py::DiscoveryTests.test_nested_files_have_relative_posix_paths_and_sizes and test_creation_order_and_repeated_scans_are_equal.
