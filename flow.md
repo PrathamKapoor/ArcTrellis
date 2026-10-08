@@ -399,6 +399,48 @@ TypeError/ValueError for programmer-supplied invalid result data. No native pars
 objects, filesystem reads, relationships, variables or reference entities emerge.
 Traversal/recovery work is linear in syntax size; final entity sorting costs O(E log E).
 
+## 11. JavaScript and TypeScript semantic entities
+
+Input: one JS/JSX or TS/TSX ParsedSource. No file reads or target execution occur.
+
+```text
+extract_entities()                       src/arctrellis/extraction/__init__.py; select canonical language
+ ├─ extract_python_entities()            extraction/python.py; retain the existing Python contract
+ ├─ extract_javascript_entities()        extraction/javascript.py; enforce JavaScript input
+ └─ extract_typescript_entities()        extraction/javascript.py; enforce TypeScript/TSX input
+     └─ _extract()                       validate program root/path and strict UTF-8 bytes
+         ├─ _recovery()                  precompute unsafe subtrees once, without recursion
+         ├─ SyntaxNode.walk()            index direct class-body method membership; exclude object methods
+         ├─ _make()                      create MODULE and revision-deterministic canonical entities
+         │   ├─ make_entity_id()         extraction/ids.py; reuse the versioned identity contract
+         │   ├─ _location()              extraction/source.py; inclusive source lines
+         │   └─ _span_metadata()         retain all six exact coordinates
+         └─ iterative stack              carry nearest represented semantic parent
+             ├─ export_statement         forward declarations and inexpensive export flags
+             ├─ _es_imports()            extraction/es_imports.py; one entity per static ES binding/site
+             │   ├─ _literal()           retain exact module spelling without evaluation
+             │   └─ _binding()           preserve immutable import metadata
+             ├─ _require_import()        extraction/es_imports.py; simple static syntactic require site
+             ├─ _declaration()           interpret fields, headers and modifiers; enter body scope
+             ├─ _cover()                 include preceding TS class-body decorators in member spans
+             └─ other syntax             retain scope; omit unrepresented anonymous/object/type scopes
+ExtractionResult()                       extraction/models.py; validate module, spans, parents and ordering
+```
+
+Output: the existing immutable ExtractionResult and CodeEntity vocabulary. All
+JS/TS callable declarations use FUNCTION except class member syntax/callable fields,
+which use METHOD. A function nested inside a method remains FUNCTION. Binding names
+are lexical abstractions, not claims about runtime identity. Interfaces/type aliases/
+enums, anonymous unbound scopes and object methods are deliberately omitted.
+
+UTF-8 decoding is strict and chained as SourceDecodingError. Wrong language raises
+UnsupportedExtractionLanguageError and an invalid root/path raises SemanticExtractionError.
+Recovery anywhere in a candidate suppresses its whole represented scope and marks
+partial; unaffected siblings survive. Signatures end at the body's start; callable
+bindings begin at the identifier, excluding the variable keyword. Module strings
+retain source spelling and quoted literals; no escapes, imports or require calls
+are evaluated/resolved. No relationships or automatic repository-wide pass exists.
+
 ## Changes in this session (Phase 0.1)
 
 | Area | Change | Files | Commit | Decision |
@@ -475,3 +517,18 @@ Traversal/recovery work is linear in syntax size; final entity sorting costs O(E
 | Coordinate correction | Align signature character offsets with tokenizer newline-only rows. | src/arctrellis/extraction/source.py, tests/extraction/test_python.py | 4981f258ea312e254e9c4de4b34f3f3068e71a03 | D-042 |
 | Documentation and verification | Document implemented semantics, identity/security limits, reviewed corrections and real regression results in the twelve-section handoff. | README.md, decisions.md, flow.md, handoff.md | 4981f258ea312e254e9c4de4b34f3f3068e71a03 | D-032, D-033, D-034, D-035, D-038, D-040, D-041, D-042, D-043 |
 | Commit traceability | Finalize feature commit references separately without embedding a self-referential hash or rewriting history. | decisions.md, flow.md, handoff.md | 4981f258ea312e254e9c4de4b34f3f3068e71a03 | D-004, D-043 |
+
+## Changes in this session (Phase 1.3)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Contracts | Add normalized JS/TS declaration, binding, import, recovery and pipeline tests before implementation. | tests/extraction/test_javascript.py | uncommitted | D-044 |
+
+| JS/TS semantics | Add common normalized declaration traversal, strict decoding, signatures, decorators and exports without changing Python. | src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/__init__.py | uncommitted | D-044, D-045 |
+| Import sites | Record ES bindings/type-only/side-effect imports and conservative static require sites, retaining literal spelling. | src/arctrellis/extraction/es_imports.py | uncommitted | D-045 |
+| Flow and capability documentation | Describe actual JS/TS transformation, omissions and unresolved import spelling. | README.md, decisions.md, flow.md | uncommitted | D-044, D-045 |
+| Modifier correction | Scan actual field containers and exclude decorator arguments after failing regressions. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | uncommitted | D-046 |
+| Empty import correction | Preserve an unbound module site for an empty named clause instead of reporting false partial state. | src/arctrellis/extraction/es_imports.py, tests/extraction/test_javascript.py, README.md | uncommitted | D-047 |
+| Decision-history correction | Restore historical entry boundaries from HEAD after an uncommitted insertion error. | decisions.md, flow.md | uncommitted | D-048 |
+| Scope correction | Require direct class-body membership before class method extraction, excluding embedded object methods. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | uncommitted | D-049 |
+| Phase gate and handoff | Record passing regressions, reviewed corrections and local-only continuation; finalize references separately. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-050, D-004 |

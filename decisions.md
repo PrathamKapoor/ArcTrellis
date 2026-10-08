@@ -450,3 +450,78 @@ Append-only record of engineering decisions.
 - Alternatives considered: Reporting only successes loses debugging context; claiming arbitrary encoding support exceeds the tested parser; moving to Phase 1.3 now exceeds scope.
 - Consequences: Six symlink and one FIFO tests remain platform skips from previous phases. Conservative recovery can omit enclosing scopes; identities are not edit-stable or repository-global. All work remains local.
 - Files: README.md, decisions.md, flow.md, handoff.md
+
+### D-044: Extend canonical extraction through one normalized JS/TS engine
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: All v1 languages need common entities before lexical graph assembly; inspected normalized samples expose common declaration, binding and method fields.
+- Decision: Add JS/TS entry points and a small canonical-language dispatcher, reusing ExtractionResult, UUID5 identity and six-coordinate metadata. Use iterative nearest-scope traversal and strict UTF-8 decoding. Keep Python behavior and dependency pins unchanged.
+- Why: Actual samples verified declarations, async/generators, callable bindings, class fields, export wrappers and TS decorator siblings without target execution. Baseline: 196 tests, OK (skipped=7).
+- Alternatives considered: Separate duplicated TS traversal adds maintenance cost; raw parser types violate isolation; a large Python refactor is unnecessary.
+- Consequences: Single-file transformation only; no variables, object methods, anonymous unbound scopes, framework semantics or resolution. Interfaces/type aliases/enums remain syntax-only. IDs remain revision-deterministic and not repository-namespaced.
+- Files: src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/__init__.py, tests/extraction/test_javascript.py, README.md, decisions.md, flow.md
+
+### D-045: Preserve callable declarations, modifiers and static import sites
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: JS/TS use callable variable/class-field bindings, anonymous expressions, export wrappers and ES import clauses that differ from Python.
+- Decision: Add a shared iterative JS/TS engine with simple identifier-bound functions/classes and class callable fields. Preserve signatures as exact binding/declaration headers before body, numbered decorators and export/modifier metadata. Anonymous unbound scopes and object methods are omitted without traversing their bodies. Type declarations remain syntax-only. Import bindings preserve default/named/namespace/side-effect/type-only forms. Statically obvious simple require calls are recorded as unresolved syntactic import sites.
+- Why: Normalized inspections verified fields and TS class-body decorator siblings. The test-first public API assertion failed because extract_entities was absent; the initial implemented JS/TS suite ran 24 tests, OK.
+- Alternatives considered: Inventing anonymous names or classes for object literals creates unsupported semantic claims; collapsing import statements loses bindings; duplicate JS/TS traversals add maintenance; dynamic require needs resolution outside scope.
+- Consequences: ES module metadata retains exact string interior plus quoted module_literal with module_format=source_spelling, not evaluated escape sequences. Require accepts one unescaped static quoted string and a simple identifier callee/binding only; no assertion is made that require is unshadowed at runtime. Callable binding headers omit const/let/var; bodies and decorators are excluded. Shared coordinate helpers are reused without changing Python semantics.
+- Files: src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/es_imports.py, src/arctrellis/extraction/__init__.py, tests/extraction/test_javascript.py, README.md, decisions.md, flow.md
+
+### D-046: Limit modifier scans to their actual declaration prefixes
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: Independent review reproduced static callable-field and decorated export metadata errors in cleanly parsed source.
+- Decision: Scan static field modifiers on the field container and retain its header prefix; exclude decorator nodes from export/member modifier prefixes.
+- Why: Both focused regressions initially failed; after correction the JS/TS suite ran 26 tests, OK.
+- Alternatives considered: Searching entire source snippets can confuse decorator arguments and bodies with declaration modifiers; removing metadata loses useful source facts.
+- Consequences: Callable-field signatures preserve static/access modifiers; async/generator still come from the callable initializer. No runtime decorator evaluation occurs.
+- Files: src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py, README.md, decisions.md, flow.md
+- Symptom: static run = () => {} reported is_static=false; @dec(default) export class C reported is_default_export=true.
+- Root cause: Static metadata inspected only the initializer, while export scanning included the decorator argument prefix.
+- Regression test: tests/extraction/test_javascript.py::JavaScriptExtractionTests.test_static_callable_field_preserves_member_modifiers and test_export_modifier_scan_excludes_decorator_arguments.
+
+### D-047: Retain empty named import sites without false partial status
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: Review reproduced import {} from "m" returning partial=True despite clean syntax.
+- Decision: Represent an empty named clause as one unbound side_effect import site, retaining type-only state if present, and no fabricated binding. Add literal-spelling coverage.
+- Why: The focused empty-import regression failed before this correction. A static module import site remains present even when there are no named bindings.
+- Alternatives considered: Omitting the site with a complete result loses the module declaration; treating valid empty syntax as malformed is inaccurate; inventing a local binding is false.
+- Consequences: side_effect describes an unbound source import site, not a guarantee of runtime execution, especially for type-only TS clauses.
+- Files: src/arctrellis/extraction/es_imports.py, tests/extraction/test_javascript.py, README.md, decisions.md, flow.md
+- Symptom: Clean empty named import returned partial=True and no IMPORT entity.
+- Root cause: _es_imports used tuple(bindings) or None, conflating a valid zero-binding clause with invalid structure.
+- Regression test: tests/extraction/test_javascript.py::JavaScriptImportTests.test_empty_named_import_is_a_complete_unbound_site.
+
+### D-048: Restore historical decision boundaries after an insertion-context error
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: Documentation review found D-044 insertion had split D-010, and moving the entry also moved D-010's three bug-detail lines.
+- Decision: Restore the complete historical prefix from HEAD and append only the new entries; inspect the resulting diff before commit.
+- Why: Previous decisions must remain unchanged. The editing error affected only uncommitted documentation, not source behavior or Git history.
+- Alternatives considered: Manually rewriting historical entries risks further changes; retaining misplaced bug context is inaccurate.
+- Consequences: Append-only history remains intact; patch contexts must use the actual end of the decisions file.
+- Files: decisions.md, flow.md
+- Symptom: D-044 incorrectly contained the Phase 0.2 table bug's symptom/root cause/regression lines.
+- Root cause: An ambiguous Files context inserted D-044 before D-010's trailing lines; moving through the next heading included those lines.
+- Regression test: none; documentation-only correction checked by git diff against HEAD.
+
+### D-049: Require actual class-body membership before extracting methods
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: Review found clean JS/TS object methods inside class static blocks incorrectly emitted as class methods.
+- Decision: Index direct normalized class-body method members iteratively and require membership as well as CLASS semantic parent before emitting METHOD. Continue omitting object methods and their bodies.
+- Why: The focused regression failed with extra METHOD/FUNCTION entities before correction; the updated JS/TS suite ran 29 tests, OK.
+- Alternatives considered: Nearest semantic scope alone is insufficient to distinguish class syntax from object syntax; representing object/value ownership needs a future model.
+- Consequences: Static blocks may retain represented declarations, but embedded object methods never fabricate class membership. The membership pass is linear and stores only temporary identities.
+- Files: src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py, decisions.md, flow.md
+- Symptom: class C { static { use({ run() { function hidden() {} } }); } } produced METHOD C.run and FUNCTION C.run.hidden, partial=False.
+- Root cause: Method recognition checked parent.kind=CLASS without checking the actual normalized method's class-body membership.
+- Regression test: tests/extraction/test_javascript.py::JavaScriptExtractionTests.test_object_methods_inside_class_static_blocks_are_not_class_methods.
+
+### D-050: Close the verified JS/TS gate before lexical graph work
+- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Context: Phase 1.4 is authorized only after Phase 1.3 passes its full regression gate and local commit finalization.
+- Decision: Preserve unchanged dependencies/stable layers, record review regressions and actual verification, and finalize local feature references separately under D-004 before starting the graph builder.
+- Why: JS/TS tests ran 29 tests, OK; full suite ran 225 tests, OK (skipped=7). Public imports and JS/TSX scan/parse/extract smoke succeeded, pip check reported no broken requirements, and extraction native-import search had no matches. Focused review recheck found no unresolved important issue.
+- Alternatives considered: Continuing with an unverified feature risks propagating semantic mistakes; publishing is explicitly prohibited.
+- Consequences: Existing platform skips, native parser resource limits and revision/repository identity limitations remain. Only single-file lexical assembly may follow.
+- Files: README.md, decisions.md, flow.md, handoff.md

@@ -12,9 +12,9 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.2, Python semantic entity extraction from normalized
-syntax. Python declarations and import bindings become canonical CodeEntity values.
-JavaScript/TypeScript semantic extraction, import/call/inheritance resolution,
+Early implementation: Phase 1.3, Python/JavaScript/TypeScript semantic entity extraction
+from normalized syntax. Declarations and import sites become canonical CodeEntity values.
+Import/call/inheritance resolution,
 routes, middleware, tests and database semantics are not implemented. There is no
 repository-wide indexing, GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
@@ -35,11 +35,11 @@ Current capabilities:
 - Tree-sitter parsing for Python, JavaScript, TypeScript and TSX.
 - Immutable normalized syntax with exact bytes, grammar fields and recovery diagnostics.
 - Bounded single-file reads with current-path checks and a default 2 MiB limit.
-- Python MODULE/CLASS/FUNCTION/METHOD/IMPORT extraction with lexical ownership.
+- Python/JavaScript/TypeScript MODULE/CLASS/FUNCTION/METHOD/IMPORT extraction with lexical ownership.
 - Revision-deterministic IDs, exact locations, signatures and retained decorators.
 - Explicit partial results that conservatively omit malformed semantic declarations.
 
-Planned capabilities: additional language extraction and repository acquisition; lexical, semantic and structural symbol
+Planned capabilities: repository acquisition and indexing; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
 inspection; reverse dependency impact; retrieval and evidence quality evaluation.
 
@@ -63,8 +63,8 @@ No formatter, linter or type checker is configured in this phase.
 ## Architecture and invariants
 
 `src/arctrellis/core/models.py` defines the domain; `arctrellis.core` is the public
-import boundary. Python extraction translates normalized language syntax into
-these records. Future language extractors and storage use the same vocabulary.
+import boundary. Language extraction translates normalized syntax into these
+records. All supported languages and future storage share the same vocabulary.
 
 Relationships read **source → kind → target**: a source method `CALLS` a target
 method. They embed an immutable tuple of evidence records. Each evidence record
@@ -204,7 +204,7 @@ canonical `typescript`. JavaScript's grammar also accepts JSX.
 `ParsedSource` owns the original immutable bytes, a `SyntaxNode` root and a tuple
 of `ParseDiagnostic` records. No native Tree/Node/Parser/Language/Point object leaves
 the adapter. Tree-sitter kinds and field names are grammar vocabulary, not resolved
-symbols or architecture facts. The output cannot populate CodeGraph yet.
+symbols or architecture facts. Syntax alone is not a semantic graph; extraction produces canonical entities.
 
 Nodes retain named syntax plus ERROR/MISSING constructs, including anonymous missing
 punctuation. Ordinary punctuation is omitted. Children retain grammar/source order;
@@ -324,6 +324,47 @@ executes source, installs target dependencies, runs target tests or performs fil
 reads. It imports no native parser types and outputs only canonical entities.
 It does not create relationships, populate a graph, resolve dependencies or process
 an entire repository. Traversal is iterative; final entity ordering adds sorting cost.
+
+## JavaScript and TypeScript semantic entity extraction
+
+```python
+from arctrellis.extraction import extract_entities
+result = extract_entities(parsed)  # One ParsedSource; dispatch by canonical language.
+```
+
+The language-specific extract_javascript_entities and extract_typescript_entities
+entry points are also public. TSX uses TypeScript extraction. Each file has one
+path-qualified MODULE. Named classes, function declarations, simple identifier-bound
+arrow/function expressions and class methods become canonical entities. Bound class
+expressions use the binding's name. Callable class fields become METHOD, with
+declaration_form distinguishing them from method syntax. Nearest represented
+lexical parents govern nested declarations; no runtime module identity is inferred.
+
+Signatures retain exact declaration/binding headers before the body, including
+TypeScript generics, annotations and class heritage. Callable binding headers begin
+at the binding identifier, excluding const/let/var; callable fields retain member
+modifiers. Async/generator/static/getter/
+setter/constructor state and export/default-export state are metadata. Decorators
+retain ordered snippets and are included in declaration locations when exposed by
+the grammar. JSX/TSX elements produce no separate entities.
+
+ES imports produce one IMPORT per default/named/namespace binding. Side-effect
+imports (including empty named clauses) produce one site with an empty binding, named by the module spelling (or
+its quoted literal for empty/padded names). Type-only imports retain is_type_only.
+Metadata preserves module as the exact source interior and module_literal as the
+quoted syntax, with module_format=source_spelling; escape sequences are not evaluated.
+Simple identifier-bound require calls with one unescaped static string also become
+IMPORT sites. They are syntactic sites, without proof that require is unshadowed or
+resolution to a runtime dependency. Dynamic/destructured/escaped require forms are
+omitted. Import sites retain their nearest semantic parent.
+
+Unbound anonymous expressions, arbitrary object methods, computed member names,
+TypeScript interfaces/type aliases/enums and ambient/type-only declarations do not
+become canonical declarations. Omitted callable scopes are not traversed into a
+false outer parent. No VARIABLES, EXPORTS, JSX entities or framework classifications
+are invented. Strict UTF-8 decoding raises SourceDecodingError on invalid bytes.
+Recovery suppresses affected declarations/scopes and marks partial; unaffected
+siblings survive. Existing revision-deterministic ID/coordinate contracts apply.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.
