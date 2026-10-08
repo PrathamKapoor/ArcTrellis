@@ -111,7 +111,8 @@ Initial lint errors were formatting/import/line issues, fixed using Ruff and exa
 Two atomic patch attempts failed on already-formatted contexts and changed no files; inspected contexts were used to retry.
 
 Source search found execution/native mechanisms only in parsing's fixed installed-grammar loader;
-no target execution mechanism was introduced. git diff -- pyproject.toml is empty; normal diff check passed.
+no target execution mechanism was introduced. git diff -- pyproject.toml is empty; normal and staged diff checks passed.
+Before the feature commit, git var verified both author and committer as the required identity. The staged audit covered 19 files with no forbidden paths or attribution. Historical decisions prefix matched c3ee560; D-001 through D-089 were sequential and handoff had twelve sections. Feature commit identities/trailers were checked; the working tree was clean immediately after that commit, before this reference finalization. Remotes remained empty.
 Six symlink tests skipped for Windows WinError1314; one FIFO test for absent os.mkfifo. Junction tests passed.
 Other operating systems, real hostile filesystem races, installed framework runtime validity and exhaustive dynamic semantics were not tested.
 
@@ -126,7 +127,7 @@ Frozen summaries own mutable graphs; caller mutation can invalidate snapshot sum
 
 ## 9. Unfinished Work
 
-No required Phase 1.8 implementation remains. Local implementation/reference finalization follows the verified gate.
+No required Phase 1.8 implementation remains. Feature commit 023b7922f15f4a31beec3c62d498044f13c980bf exists locally; current decision/table references are finalized separately under D-004/D-067.
 Intentional omissions are not unresolved defects. Phase 1.9 was not started.
 
 ## 10. Next Subphase
@@ -143,6 +144,7 @@ Evidence points to the decorator/registration and retains six syntax coordinates
 Unsupported paths/methods/provenance produce no endpoint. Unknown/ambiguous handlers retain static endpoints but no EXPOSES.
 No framework CALLS or APPLIES_MIDDLEWARE. Existing call confidence is never elevated.
 Class imports and exact complete decorated spans matter for receiver/handler association.
+Local feature commit: 023b7922f15f4a31beec3c62d498044f13c980bf (feat(frameworks): add evidence-backed static HTTP endpoints).
 Preserve parser pins and all previous ingestion/parsing/extraction/graph/call/import contracts.
 
 ## 12. Agent Instructions
