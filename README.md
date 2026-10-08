@@ -12,10 +12,11 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.0, safe local repository discovery and language
-detection. There is no source parser, symbol extraction, inferred call relationship,
-GitHub cloning, persistence, embedding retrieval, LLM integration,
-API or frontend.
+Early implementation: Phase 1.1, Tree-sitter syntax infrastructure and normalized
+syntax extraction. No symbols are extracted into CodeEntity; imports/calls are not
+resolved, and routes, middleware, tests and database operations are not semantically
+detected. There is no GitHub cloning, index persistence, BM25/vector retrieval,
+LLM integration, API or frontend.
 
 Current capabilities:
 
@@ -30,8 +31,11 @@ Current capabilities:
 - Local filesystem inventory with relative POSIX paths, byte sizes and explicit omissions.
 - Python, JavaScript and TypeScript extension detection, with deterministic supported subsets.
 - Dependency/build/cache pruning and non-following link/reparse-point handling.
+- Tree-sitter parsing for Python, JavaScript, TypeScript and TSX.
+- Immutable normalized syntax with exact bytes, grammar fields and recovery diagnostics.
+- Bounded single-file reads with current-path checks and a default 2 MiB limit.
 
-Planned capabilities: source parsing and repository acquisition; lexical, semantic and structural symbol
+Planned capabilities: semantic extraction and repository acquisition; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
 inspection; reverse dependency impact; retrieval and evidence quality evaluation.
 
@@ -48,7 +52,8 @@ python -m venv .venv
 .venv\Scripts\python.exe -c "from arctrellis.graph import CodeGraph, GraphPath, TraversalResult"
 ```
 
-The domain has no runtime dependencies. Setuptools is only the packaging backend.
+Core, graph and discovery use the standard library. Parsing uses pinned Tree-sitter
+and dedicated language grammars; setuptools is only the packaging backend.
 No formatter, linter or type checker is configured in this phase.
 
 ## Architecture and invariants
@@ -169,9 +174,75 @@ objects are skipped without opening them.
 The target tree must remain stable during scanning. Directory identity checks
 detect ordinary replacements, but Windows pathname operations do not provide an
 atomic sandbox against concurrent hostile replacement. This is metadata discovery,
-not a guarantee of safe later file reads; future parsers must revalidate their inputs.
+not a guarantee of atomic safe reads; parsing performs its own revalidation below.
 Work is linear in visited entries plus sorting file and omission records; there is
 no concurrent or incremental scanner.
+
+## Single-file syntax parsing
+
+```python
+from arctrellis.ingestion import scan_repository
+from arctrellis.parsing import parse_discovered_file, parse_source
+
+root = "path/to/local/repository"
+inventory = scan_repository(root)
+if inventory.supported_files:
+    parsed = parse_discovered_file(root, inventory.supported_files[0])
+    print(parsed.root.kind, parsed.diagnostic_count)
+```
+
+`parse_source(path, language, source_bytes)` provides the same normalized result
+without filesystem access. Language is the ingestion `Language` enum. All ten
+supported extensions match case-insensitively; extension/language contradictions
+raise `UnsupportedLanguageError`. `.tsx` uses the dedicated TSX grammar, retaining
+canonical `typescript`. JavaScript's grammar also accepts JSX.
+
+`ParsedSource` owns the original immutable bytes, a `SyntaxNode` root and a tuple
+of `ParseDiagnostic` records. No native Tree/Node/Parser/Language/Point object leaves
+the adapter. Tree-sitter kinds and field names are grammar vocabulary, not resolved
+symbols or architecture facts. The output cannot populate CodeGraph yet.
+
+Nodes retain named syntax plus ERROR/MISSING constructs, including anonymous missing
+punctuation. Ordinary punctuation is omitted. Children retain grammar/source order;
+`walk()` yields iterative preorder and `child_by_field(name)` returns the first
+direct match or `None`. `parsed.bytes_for(node)` returns exact bounded bytes without
+decoding or claiming that a caller-supplied node belongs to this tree.
+
+`SyntaxSpan` uses inclusive start/exclusive end byte offsets, 1-based lines and
+0-based **byte** columns. End points are exclusive, including the next line's
+column zero. These differ from core `SourceLocation` inclusive line ranges.
+Malformed source returns syntax and ERROR/MISSING diagnostics without invented
+compiler messages. Hard initialization/execution failures use typed parsing errors.
+Bytes remain exact, including undecodable inputs; no decoded copy is stored.
+
+Both entry points accept `max_source_bytes=` with a positive integer override.
+The default is `DEFAULT_MAX_SOURCE_BYTES = 2 * 1024 * 1024`; equality is permitted.
+Oversized sources raise `SourceTooLargeError`; truncated bytes are never parsed.
+Current file size, rather than discovery metadata, is checked. Reads are bounded
+to limit+1 bytes, and observed path/descriptor identity, size and mtime changes
+raise `SourceReadError`. Observed linked or nonregular paths raise its subtype
+`UnsafeSourceError`. Root ancestors and final target containment are revalidated.
+
+### Parsing security and resource boundary
+
+Discovery reads metadata only. Parsing deliberately reads supported source bytes
+for syntax analysis. Neither executes/imports target code, installs target
+dependencies, runs package hooks/scripts/tests or loads repository plugins. File
+parsing rejects observed symlinks, junctions and reparse points, with available
+non-following open flags. Pathname checks still require a stable tree and are not
+an atomic sandbox against hostile concurrent replacement.
+
+Fresh parser instances avoid shared mutable parser state; there is no pooling,
+parallel parsing, repository-wide parse job or incremental cache. Normalized syntax
+and retained source consume extra memory. The byte limit bounds input size, not
+native execution time or total tree memory. Iterative conversion, walking, equality
+and hashing support deep syntax. Native parser errors are not all Python exceptions;
+syntax parsing is not a process sandbox.
+
+Verified pins: tree-sitter 0.25.2, tree-sitter-python 0.25.0,
+tree-sitter-javascript 0.25.0 and tree-sitter-typescript 0.23.2. Runtime 0.26.0 was
+tested and rejected after reproducible native point-access crashes on this Windows
+environment; see D-027. Upgrades require grammar and deep-input regression checks.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.

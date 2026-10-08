@@ -18,10 +18,14 @@ from arctrellis.ingestion import ...       src/arctrellis/ingestion/__init__.py;
  ├─ import .discovery                     src/arctrellis/ingestion/discovery.py; metadata-only scan
  ├─ import .models                        src/arctrellis/ingestion/models.py; immutable inventory
  └─ import .errors                        src/arctrellis/ingestion/errors.py; explicit discovery failures
+from arctrellis.parsing import ...         src/arctrellis/parsing/__init__.py; owned syntax API
+ ├─ import .models                        src/arctrellis/parsing/models.py; native-independent values
+ ├─ import .errors                        src/arctrellis/parsing/errors.py; typed infrastructure failures
+ └─ import .parser                        src/arctrellis/parsing/parser.py; single-file entry points
 ```
 
 Output: importable domain, graph and ingestion APIs. Installation failures propagate from pip.
-There is no service process, API, persistence or source parser.
+There is no service process, API, persistence or semantic extraction.
 
 ## 2. Source locations and entities
 
@@ -69,7 +73,7 @@ Global IDs, target existence and proof adequacy are not checked by domain constr
 
 ## 4. Unit tests and primitive conversion
 
-Input: installed package and test cases under tests/core/, tests/graph/ and tests/ingestion/.
+Input: installed package and tests under tests/core/, tests/graph/, tests/ingestion/ and tests/parsing/.
 
 ```text
 python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__init__.py; discover tests
@@ -85,6 +89,10 @@ python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__in
      ├─ tempfile.TemporaryDirectory()      isolate local synthetic trees without network
      ├─ scan_repository()                 exercise metadata discovery without target execution
      └─ unittest.mock.patch()             inject access failures and verify exclusion pruning
+ └─ parsing test methods                  tests/parsing/test_models.py, test_registry.py, test_parser.py
+     ├─ parse_source()                    exercise grammar recovery, isolation and normalized models
+     ├─ scan_repository()                 obtain real DiscoveredFile fixtures
+     └─ parse_discovered_file()           verify content reads, limits and non-execution
 ```
 
 Output: test results on stdout/stderr and process exit status. A failing assertion
@@ -253,6 +261,84 @@ Directory identity checks detect ordinary changes but are not atomic containment
 concurrent hostile replacement remains a documented limitation on Windows.
 Expected work is O(visited entries) plus sorting the file and skip records.
 
+## 9. Single-file parsing and normalization
+
+Input: source bytes with a compatible relative path/language, or one DiscoveredFile
+and its local repository root. No entire-inventory automatic parse is performed.
+
+```text
+parse_discovered_file()                   src/arctrellis/parsing/parser.py; connect inventory to syntax
+ ├─ _validate_limit()                     parsing/source.py; require a positive integer resource limit
+ ├─ _grammar_for()                        parsing/registry.py; reject unsupported or contradictory metadata
+ │   └─ DiscoveredFile()                  ingestion/models.py; reuse public portable-path validation
+ ├─ _read_source()                        parsing/source.py; read current bounded bytes
+ │   ├─ os.fspath()                       accept local runtime root context
+ │   ├─ os.path.abspath()                 normalize lexical root without resolving links
+ │   ├─ PureWindowsPath()                 reject nested drive-bearing source components
+ │   ├─ Path.relative_to()                verify constructed target containment before filesystem access
+ │   ├─ os.lstat()                        inspect all ancestors and current target
+ │   ├─ _ordinary()                       reject observed links, reparse points and wrong kinds
+ │   ├─ _check_size()                     reject current size above the inclusive maximum
+ │   ├─ os.open()                         open read-only with available non-following/nonblocking flags
+ │   ├─ os.fstat()                        inspect the actual descriptor identity and kind
+ │   ├─ _identity()                       compare descriptor with checked target
+ │   ├─ os.read()                         read chunks totaling at most limit+1 bytes
+ │   ├─ _check_size()                     reject oversized bytes instead of parsing truncation
+ │   ├─ os.fstat()                        detect observed size/mtime change during read
+ │   ├─ os.close()                        release descriptor even on failure
+ │   ├─ os.lstat()                        recheck target and ancestor identities
+ │   └─ _ordinary()                       reject observed post-read indirection
+ └─ parse_source()                        delegate to the bytes-only boundary below
+parse_source()                           src/arctrellis/parsing/parser.py; parse one immutable byte value
+ ├─ _validate_limit()                     validate direct-call resource configuration
+ ├─ _grammar_for()                        select Python, JavaScript, TypeScript or TSX
+ ├─ _check_size()                         enforce resource bound before native parsing
+ ├─ _new_parser()                         parsing/registry.py; construct fresh private native parser
+ │   ├─ import_module()                   load only the selected installed official grammar
+ │   └─ tree_sitter.Parser()              initialize a compatible grammar wrapper
+ ├─ Parser.parse()                       treat bytes as syntax data, never execute them
+ ├─ _normalize_tree()                     parsing/normalization.py; iterative native child-object conversion
+ │   ├─ _span()                          convert rows to 1-based lines, retain byte offsets/columns
+ │   ├─ children()                       preserve native child order and actual grammar field names
+ │   ├─ _capture()                       copy native metadata immediately into owned values
+ │   ├─ SyntaxNode()                     retain named/recovery nodes, fields and source order
+ │   ├─ SyntaxNode.walk()                inspect normalized nodes in iterative preorder
+ │   └─ ParseDiagnostic()                retain real ERROR/MISSING categories without invented messages
+ └─ ParsedSource()                       parsing/models.py; own bytes, syntax and diagnostics
+```
+
+Output: immutable ArcTrellis values with no native objects. Syntax spans have
+inclusive start/exclusive end bytes and points, 1-based lines and 0-based byte
+columns. Ordinary anonymous punctuation is omitted; error/missing constructs are
+retained even when anonymous. Rare anonymous wrappers promote their retained
+descendants in source order. Field names describe the original immediate native
+parent. child_by_field returns the first direct match, or None; walk is preorder;
+bytes_for slices a bounded supplied node without claiming membership in this tree.
+
+Malformed syntax returns diagnostics, not a hard failure. UnsupportedLanguageError
+means no compatible extension/language; ParserConfigurationError and
+ParserExecutionError identify infrastructure failures. SourceReadError chains OS
+errors, with UnsafeSourceError for observed indirect/nonregular targets.
+SourceTooLargeError reports actual observed size and configured limit. The default
+2 MiB maximum permits equality and never sends a truncated source to the parser.
+The input tree must remain stable: checks are not atomic hostile-race containment.
+No source is imported/executed and no target dependencies/hooks/tests run.
+Extra memory retains both source bytes and normalized syntax. No parser cache,
+workers, semantic entities, relationships or graph mutation exists.
+
+```text
+SyntaxNode.__eq__()                       parsing/models.py; compare corresponding trees without recursion
+ └─ SyntaxNode._signature()               compare kind, span, flags, field and child count
+SyntaxNode.__hash__()                     parsing/models.py; hash iterative preorder signatures
+ ├─ SyntaxNode.walk()                     visit grammar order without recursion
+ └─ SyntaxNode._signature()               include child counts to preserve tree structure
+SyntaxNode.child_by_field()               parsing/models.py; return first direct field or None
+ParsedSource.bytes_for()                  parsing/models.py; validate bounds and slice exact bytes
+ParsedSource.size_bytes                   parsing/models.py; derive retained source length
+ParsedSource.has_errors                   parsing/models.py; derive diagnostic presence
+ParsedSource.diagnostic_count             parsing/models.py; derive diagnostic count
+```
+
 ## Changes in this session (Phase 0.1)
 
 | Area | Change | Files | Commit | Decision |
@@ -290,3 +376,22 @@ Expected work is O(visited entries) plus sorting the file and skip records.
 | Safety verification | Add real link/junction fixtures, explicit platform skips and simulated link/nonregular classification, metadata, enumeration and replacement failures. | tests/ingestion/test_safety.py | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-012, D-013, D-014 |
 | Documentation | Describe current discovery semantics, security boundary, call order and session continuity. | README.md, decisions.md, flow.md, handoff.md | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-011, D-012, D-013, D-014 |
 | Commit traceability | Finalize the implementation references and verified handoff in a separate documentation commit. | decisions.md, flow.md, handoff.md | d02524700240e8a37b15f01e7138b7dbb3a70e8a | D-004, D-014 |
+
+## Changes in this session (Phase 1.1)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Parser dependencies | Pin Tree-sitter and three explicit grammar packages; editable installation loads only declared parser dependencies. | pyproject.toml, decisions.md, flow.md | uncommitted | D-017, D-018, D-019, D-020 |
+| Test contracts | Add normalized model, grammar and scan-to-parse safety contracts before implementation. | tests/parsing/__init__.py, tests/parsing/test_models.py, tests/parsing/test_registry.py, tests/parsing/test_parser.py | uncommitted | D-021, D-022, D-023 |
+| Normalized syntax | Add immutable syntax/spans/diagnostics and iterative native-to-owned conversion. | src/arctrellis/parsing/models.py, src/arctrellis/parsing/normalization.py | uncommitted | D-021 |
+| Parsing API | Add fresh explicit grammar selection, bytes/file entry points and typed failures. | src/arctrellis/parsing/registry.py, src/arctrellis/parsing/parser.py, src/arctrellis/parsing/errors.py, src/arctrellis/parsing/__init__.py | uncommitted | D-022 |
+| Source safety | Add bounded current-file reads and path/descriptor checks; preserve the stable-tree assumption. | src/arctrellis/parsing/source.py | uncommitted | D-023 |
+| Annotation correction | Postpone recursive and type-only annotations to make imports work on Python 3.13. | src/arctrellis/parsing/models.py, src/arctrellis/parsing/registry.py | uncommitted | D-024 |
+| Recovery and safety tests | Verify anonymous missing tokens, deep normalization, exact-limit reads, dependency isolation, typed failures and real junction replacement. | tests/parsing/test_parser.py | uncommitted | D-021, D-022, D-023 |
+| Native traversal correction | Replace cursor access with native child objects after reproducing invalid coordinates and a Windows access violation. | src/arctrellis/parsing/normalization.py, tests/parsing/test_parser.py | uncommitted | D-025, D-026 |
+| Runtime compatibility | Compare runtime 0.25.2 after reproducing point-access crashes independently of traversal strategy under 0.26.0. | pyproject.toml, decisions.md, flow.md | uncommitted | D-027 |
+| Review regressions | Add deep equality, Windows nested-drive containment and missing-runtime contract regressions. | tests/parsing/test_parser.py | uncommitted | D-028, D-029, D-030 |
+| Review corrections | Add iterative value comparison/hash, final target containment and lazy annotation-only native imports after reproducing all three failures. | src/arctrellis/parsing/models.py, src/arctrellis/parsing/source.py, src/arctrellis/parsing/normalization.py | uncommitted | D-028, D-029, D-030 |
+| Read-change tests | Verify growth past the limit, descriptor identity change, cleanup and mtime change fail without parsing. | tests/parsing/test_parser.py | uncommitted | D-023 |
+| Documentation | Describe actual syntax capabilities, installed pins, resource limits, isolation and discovery-versus-parsing security. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-021, D-022, D-023, D-027 |
+| Verification and handoff | Record final compatibility evidence, correct containment call placement, and retain failed-approach history in the session handoff. | decisions.md, flow.md, handoff.md | uncommitted | D-031 |
