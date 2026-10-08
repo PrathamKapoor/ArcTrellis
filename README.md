@@ -12,11 +12,12 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.1, Tree-sitter syntax infrastructure and normalized
-syntax extraction. No symbols are extracted into CodeEntity; imports/calls are not
-resolved, and routes, middleware, tests and database operations are not semantically
-detected. There is no GitHub cloning, index persistence, BM25/vector retrieval,
-LLM integration, API or frontend.
+Early implementation: Phase 1.2, Python semantic entity extraction from normalized
+syntax. Python declarations and import bindings become canonical CodeEntity values.
+JavaScript/TypeScript semantic extraction, import/call/inheritance resolution,
+routes, middleware, tests and database semantics are not implemented. There is no
+repository-wide indexing, GitHub cloning, persistence, BM25/vector retrieval,
+LLM integration, API, frontend or change-impact product mode.
 
 Current capabilities:
 
@@ -34,8 +35,11 @@ Current capabilities:
 - Tree-sitter parsing for Python, JavaScript, TypeScript and TSX.
 - Immutable normalized syntax with exact bytes, grammar fields and recovery diagnostics.
 - Bounded single-file reads with current-path checks and a default 2 MiB limit.
+- Python MODULE/CLASS/FUNCTION/METHOD/IMPORT extraction with lexical ownership.
+- Revision-deterministic IDs, exact locations, signatures and retained decorators.
+- Explicit partial results that conservatively omit malformed semantic declarations.
 
-Planned capabilities: semantic extraction and repository acquisition; lexical, semantic and structural symbol
+Planned capabilities: additional language extraction and repository acquisition; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
 inspection; reverse dependency impact; retrieval and evidence quality evaluation.
 
@@ -52,15 +56,15 @@ python -m venv .venv
 .venv\Scripts\python.exe -c "from arctrellis.graph import CodeGraph, GraphPath, TraversalResult"
 ```
 
-Core, graph and discovery use the standard library. Parsing uses pinned Tree-sitter
+Core, graph, discovery and extraction use the standard library. Parsing uses pinned Tree-sitter
 and dedicated language grammars; setuptools is only the packaging backend.
 No formatter, linter or type checker is configured in this phase.
 
 ## Architecture and invariants
 
 `src/arctrellis/core/models.py` defines the domain; `arctrellis.core` is the public
-import boundary. Future parsers translate language-specific syntax into these
-records. Future storage and query layers consume the same records.
+import boundary. Python extraction translates normalized language syntax into
+these records. Future language extractors and storage use the same vocabulary.
 
 Relationships read **source → kind → target**: a source method `CALLS` a target
 method. They embed an immutable tuple of evidence records. Each evidence record
@@ -243,6 +247,83 @@ Verified pins: tree-sitter 0.25.2, tree-sitter-python 0.25.0,
 tree-sitter-javascript 0.25.0 and tree-sitter-typescript 0.23.2. Runtime 0.26.0 was
 tested and rejected after reproducible native point-access crashes on this Windows
 environment; see D-027. Upgrades require grammar and deep-input regression checks.
+
+## Python semantic entity extraction
+
+```python
+from arctrellis.extraction import extract_python_entities
+from arctrellis.ingestion import Language, scan_repository
+from arctrellis.parsing import parse_discovered_file
+
+root = "path/to/local/repository"
+inventory = scan_repository(root)
+python_file = next((file for file in inventory.supported_files
+                    if file.language is Language.PYTHON), None)
+if python_file is not None:
+    result = extract_python_entities(parse_discovered_file(root, python_file))
+    for entity in result.entities:
+        print(entity.kind, entity.qualified_name, entity.signature)
+```
+
+Extraction is a pure transformation of one Python `ParsedSource`; it performs no
+filesystem access. `ExtractionResult` is frozen and hashable, with a module-first
+entity tuple, `partial`, `module` and `entities_of_kind()`. It validates unique IDs,
+consistent file/language/span metadata and parents already present in the result.
+Remaining entities sort by start byte, end byte, kind and ID.
+
+MODULE uses the file stem as its name and the repository-relative path as its
+qualified name, without guessing a Python package root. Classes/functions use
+`path::Outer.inner` lexical names. A function whose nearest semantic parent is CLASS
+is METHOD, including definitions inside class control flow and decorated descriptors.
+A nested function inside a method is FUNCTION. Async definitions retain `is_async`.
+Variables, lambdas and referenced external names are not extracted. Names beginning
+with `test_` remain ordinary functions; route decorators do not create endpoints.
+
+`CodeEntity.signature` is an optional final field preserving existing positional
+constructor arguments. Classes, functions and methods retain exact multiline
+headers without the final colon, body or decorators, including lambda annotations.
+Decorated entities include the wrapper in their source range and store ordered
+exact snippets under `decorator.0`, `decorator.1`, etc. Metadata preserves all six
+syntax coordinates as decimal strings; SourceLocation keeps inclusive lines.
+
+Imports produce one IMPORT per local binding, including future imports. Direct
+dotted imports bind their first component unless aliased. From-imports retain
+their module, imported name, alias, binding, relative level and wildcard flag.
+Relative dots are preserved and wildcards remain a single `*`; no names are resolved
+or expanded. Import qualified names use `scope::import:binding@start_byte`.
+Imports inside functions/classes/methods retain the nearest semantic parent.
+
+### Identity and partial-result contracts
+
+UUID5 with NAMESPACE_URL hashes compact canonical JSON of the versioned marker,
+language, repository-relative path, kind, lexical qualified name, start byte and
+end byte. Identical input reproduces IDs. Duplicate declarations retain separate
+IDs through their positions, even when human-readable names match. These IDs are
+**revision-deterministic, not edit-stable**: moving/editing declarations can change
+them. Repository identity is not yet part of the key; independent repositories
+with identical components can produce the same IDs.
+
+Recovery anywhere in a declaration/import/decorated wrapper suppresses that whole
+semantic scope and its descendants. Unaffected sibling declarations survive.
+`partial=True` records parser problems or structural omissions, including empty
+suites that the grammar can return without diagnostics. This policy favors reliable
+identity over recall and does not certify full Python compiler validity.
+
+Encoding detection uses `tokenize.detect_encoding`; exact slices use that encoding
+without executing code. UTF-8 identifiers, UTF-8 BOM and Latin-1 string literals
+are tested. Non-UTF-8 identifiers can still produce native-parser recovery and a
+partial result: the parser's original bytes are not rewritten. Unknown encodings
+or undecodable source raise chained `SourceDecodingError`; wrong-language inputs
+raise `UnsupportedExtractionLanguageError`.
+
+### Extraction security boundary
+
+Discovery reads metadata; parsing reads bytes; extraction interprets normalized
+syntax and those already-owned bytes. Extraction never imports target modules,
+executes source, installs target dependencies, runs target tests or performs file
+reads. It imports no native parser types and outputs only canonical entities.
+It does not create relationships, populate a graph, resolve dependencies or process
+an entire repository. Traversal is iterative; final entity ordering adds sorting cost.
 
 See [decisions.md](decisions.md), [flow.md](flow.md) and [handoff.md](handoff.md)
 for rationale, call order and continuation state.

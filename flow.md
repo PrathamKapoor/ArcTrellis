@@ -22,10 +22,15 @@ from arctrellis.parsing import ...         src/arctrellis/parsing/__init__.py; o
  ├─ import .models                        src/arctrellis/parsing/models.py; native-independent values
  ├─ import .errors                        src/arctrellis/parsing/errors.py; typed infrastructure failures
  └─ import .parser                        src/arctrellis/parsing/parser.py; single-file entry points
+from arctrellis.extraction import ...      src/arctrellis/extraction/__init__.py; canonical entity output
+ ├─ import .models                        src/arctrellis/extraction/models.py; immutable local ownership
+ ├─ import .ids                           src/arctrellis/extraction/ids.py; reproducible identity
+ ├─ import .errors                        src/arctrellis/extraction/errors.py; caller-facing failures
+ └─ import .python                        src/arctrellis/extraction/python.py; normalized semantic transformation
 ```
 
-Output: importable domain, graph and ingestion APIs. Installation failures propagate from pip.
-There is no service process, API, persistence or semantic extraction.
+Output: importable domain, graph, ingestion, parsing and extraction APIs. Installation failures propagate from pip.
+There is no service process, API or persistence.
 
 ## 2. Source locations and entities
 
@@ -46,6 +51,8 @@ CodeEntity(...)                           src/arctrellis/core/models.py; represe
 Output: frozen, hashable records retained by the caller. Lines are inclusive and
 1-based. Paths use forward slashes; no file access or silent normalization occurs.
 Wrong types raise TypeError; invalid values raise ValueError during construction.
+Phase 1.2 adds optional signature as the last CodeEntity constructor field; validation
+uses _require_text and preserves internal newlines and prior positional metadata.
 
 ## 3. Evidence and directional relationships
 
@@ -73,7 +80,7 @@ Global IDs, target existence and proof adequacy are not checked by domain constr
 
 ## 4. Unit tests and primitive conversion
 
-Input: installed package and tests under tests/core/, tests/graph/, tests/ingestion/ and tests/parsing/.
+Input: installed package and tests under tests/core/, tests/graph/, tests/ingestion/, tests/parsing/ and tests/extraction/.
 
 ```text
 python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__init__.py; discover tests
@@ -93,6 +100,10 @@ python -m unittest discover -s tests -v    tests/__init__.py and tests/core/__in
      ├─ parse_source()                    exercise grammar recovery, isolation and normalized models
      ├─ scan_repository()                 obtain real DiscoveredFile fixtures
      └─ parse_discovered_file()           verify content reads, limits and non-execution
+ └─ extraction test methods               tests/extraction/test_ids.py, test_models.py, test_python.py, test_imports.py
+     ├─ parse_source()                    supply normalized syntax fixtures, not native objects
+     ├─ extract_python_entities()         verify lexical entities, identity, encoding and conservative recovery
+     └─ scan_repository()/parse_discovered_file() verify the real local pipeline and non-execution
 ```
 
 Output: test results on stdout/stderr and process exit status. A failing assertion
@@ -323,8 +334,8 @@ SourceTooLargeError reports actual observed size and configured limit. The defau
 2 MiB maximum permits equality and never sends a truncated source to the parser.
 The input tree must remain stable: checks are not atomic hostile-race containment.
 No source is imported/executed and no target dependencies/hooks/tests run.
-Extra memory retains both source bytes and normalized syntax. No parser cache,
-workers, semantic entities, relationships or graph mutation exists.
+Extra memory retains both source bytes and normalized syntax. Parsing itself has no
+cache/workers and creates no semantic entities, relationships or graph mutations.
 
 ```text
 SyntaxNode.__eq__()                       parsing/models.py; compare corresponding trees without recursion
@@ -338,6 +349,55 @@ ParsedSource.size_bytes                   parsing/models.py; derive retained sou
 ParsedSource.has_errors                   parsing/models.py; derive diagnostic presence
 ParsedSource.diagnostic_count             parsing/models.py; derive diagnostic count
 ```
+
+## 10. Python semantic entities
+
+Input: one Python ParsedSource; extraction does not open files or call a parser.
+
+```text
+extract_python_entities()                 src/arctrellis/extraction/python.py; validate input language/root/path
+ ├─ _PythonSource.from_parsed()           extraction/source.py; establish Python encoding without execution
+ │   ├─ tokenize.detect_encoding()       inspect BOM/cookie in already-owned bytes
+ │   └─ bytes.decode()                   reject unsafe/unknown decoding with a chained error
+ ├─ _recovery_subtrees()                  iterative postorder; mark recovery once per syntax node
+ ├─ _entity()                            create the unique MODULE lexical root
+ │   ├─ make_entity_id()                  extraction/ids.py; UUID5 over versioned canonical JSON
+ │   │   ├─ json.dumps()                 encode delimiter-safe identity components
+ │   │   └─ uuid5()                      reproduce identity within a source revision
+ │   ├─ _location()                      extraction/source.py; convert exclusive syntax end to inclusive lines
+ │   ├─ _span_metadata()                 preserve all six exact coordinates as strings
+ │   └─ CodeEntity()                     core/models.py; enforce canonical immutable records
+ └─ iterative pending stack              preserve nearest semantic scope through control syntax
+     ├─ decorated_definition             unwrap definition once, retaining decorator order/wrapper span
+     ├─ _declaration()                   create CLASS or FUNCTION/METHOD according to immediate scope
+     │   ├─ _PythonSource.signature()     select final depth-zero header colon, including lambda annotations
+     │   ├─ _PythonSource.text()          decode exact name/decorator byte slices
+     │   ├─ _lexical_name()               build path::scope.names without guessing package roots
+     │   └─ _entity()                     create declaration, then queue its body under the new scope
+     ├─ _import_bindings()               extraction/imports.py; retain ordinary/from/future binding clauses
+     │   └─ _module_text()               preserve identifier components and leading relative dots
+     ├─ _entity()                        caller creates each IMPORT using binding span and current parent
+     └─ remaining syntax                 queue children under the unchanged semantic parent
+sorted(..., key=_entity_order)            extraction/models.py; stable span/kind/ID order after MODULE
+ExtractionResult()                       extraction/models.py; validate per-file ownership and unique IDs
+ └─ ExtractionResult.__post_init__()      reject invalid module/path/language/parent/order/span states
+     └─ _entity_span()                   validate exact canonical span metadata
+```
+
+Output: frozen ExtractionResult with MODULE first and source-ordered CodeEntity
+records. Methods are functions whose nearest semantic parent is CLASS; nested
+functions under methods remain FUNCTION. Imports retain bindings, not resolved
+dependencies. Signature is an optional canonical field; decorators use numbered
+metadata keys. Result.module and entities_of_kind return immutable values.
+
+Any recovery within a declaration/import/wrapper suppresses that whole semantic
+scope; unaffected siblings survive and partial is true. Structurally incomplete
+candidates are skipped and also mark partial. Wrong language raises
+UnsupportedExtractionLanguageError; decode errors chain SourceDecodingError;
+invalid normalized boundaries raise SemanticExtractionError. Constructors retain
+TypeError/ValueError for programmer-supplied invalid result data. No native parser
+objects, filesystem reads, relationships, variables or reference entities emerge.
+Traversal/recovery work is linear in syntax size; final entity sorting costs O(E log E).
 
 ## Changes in this session (Phase 0.1)
 
@@ -396,3 +456,21 @@ ParsedSource.diagnostic_count             parsing/models.py; derive diagnostic c
 | Documentation | Describe actual syntax capabilities, installed pins, resource limits, isolation and discovery-versus-parsing security. | README.md, decisions.md, flow.md, handoff.md | 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168 | D-021, D-022, D-023, D-027 |
 | Verification and handoff | Record final compatibility evidence, correct containment call placement, and retain failed-approach history in the session handoff. | decisions.md, flow.md, handoff.md | 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168 | D-031 |
 | Commit traceability | Finalize implementation references in a separate documentation commit without rewriting history. | decisions.md, flow.md, handoff.md | 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168 | D-004, D-031 |
+
+## Changes in this session (Phase 1.2)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Contracts | Add test-first canonical signature, identity, result, Python and import contracts. | tests/core/test_models.py, tests/extraction/__init__.py, tests/extraction/test_ids.py, tests/extraction/test_models.py, tests/extraction/test_python.py, tests/extraction/test_imports.py | uncommitted | D-032, D-033, D-034, D-035, D-036 |
+| Inspection | Use a literal stdin script after an inline quoting failure; verify normalized Python grammar shapes. | decisions.md, flow.md | uncommitted | D-036 |
+| Canonical signature | Add a final optional signature field without moving existing positional arguments. | src/arctrellis/core/models.py, tests/core/test_models.py | uncommitted | D-032 |
+| Identity and results | Add versioned UUID5 identity, validated immutable per-file ownership and public extraction errors/API. | src/arctrellis/extraction/__init__.py, src/arctrellis/extraction/ids.py, src/arctrellis/extraction/models.py, src/arctrellis/extraction/errors.py | uncommitted | D-033 |
+| Python semantics | Add iterative scoped declarations, decorators and unresolved per-binding imports. | src/arctrellis/extraction/python.py, src/arctrellis/extraction/imports.py | uncommitted | D-034 |
+| Encoding and recovery | Decode owned Python bytes, slice declaration headers, retain exact spans and suppress ambiguous semantic scopes. | src/arctrellis/extraction/source.py, src/arctrellis/extraction/python.py | uncommitted | D-035 |
+| Annotation correction | Postpone a self-referential classmethod annotation after a verified import failure. | src/arctrellis/extraction/source.py | uncommitted | D-037 |
+| Recovery verification | Test diagnostic-free empty suites, missing identities, canonical output and the non-UTF-8 identifier limitation. | tests/extraction/test_python.py, README.md | uncommitted | D-038 |
+| Patch recovery | Retry an atomic edit after checking actual README context; the rejected attempt changed nothing. | decisions.md, flow.md, README.md | uncommitted | D-039 |
+| Review regressions | Reproduce future-import omission and lambda signature truncation with literal syntax samples. | tests/extraction/test_imports.py, tests/extraction/test_python.py | uncommitted | D-040, D-041 |
+| Review fixes | Retain complete lambda headers and grammar-defined future-import module/bindings without native imports. | src/arctrellis/extraction/source.py, src/arctrellis/extraction/imports.py, src/arctrellis/extraction/python.py | uncommitted | D-040, D-041 |
+| Coordinate correction | Align signature character offsets with tokenizer newline-only rows. | src/arctrellis/extraction/source.py, tests/extraction/test_python.py | uncommitted | D-042 |
+| Documentation and verification | Document implemented semantics, identity/security limits, reviewed corrections and real regression results in the twelve-section handoff. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-032, D-033, D-034, D-035, D-038, D-040, D-041, D-042, D-043 |

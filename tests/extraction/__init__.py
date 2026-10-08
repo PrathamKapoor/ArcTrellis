@@ -1,0 +1,1 @@
+"""Semantic extraction contract tests."""

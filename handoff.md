@@ -2,219 +2,238 @@
 
 ## 1. Current Phase
 
-Phase 1 — Repository Understanding. Subphase 1.1 — Tree-sitter parser infrastructure
-and normalized syntax extraction. Objective: parse one supported source file into
-immutable ArcTrellis syntax values without executing it. Status: complete after
-observed parser and regression verification. Phase 1.2 has not begun.
+Phase 1 — Repository Understanding. Subphase 1.2 — Python semantic entity extraction.
+Objective: convert one normalized Python ParsedSource into canonical CodeEntity
+values with deterministic identity, lexical scope, locations, signatures and import
+bindings. Status: complete after observed verification. Phase 1.3 has not begun.
 
 ## 2. Work Completed
 
-Verified the clean master starting tree, root, historical commits, Python 3.13.14,
-required Git identity and empty remotes. Read the required documents and existing
-core/ingestion conventions. Compared available parser packages using pip index.
-Installed the project into the existing environment with four explicit dependencies.
+Verified clean master, C:/Projects/ArcTrellis, Python 3.13.14, required Git identity,
+historical commits and empty remotes. Read all three state documents, public core,
+parsing and ingestion contracts, relevant tests and README/configuration. Inspected
+actual normalized Python trees through literal-byte samples, without target execution.
 
-Added bytes/file parsing entry points, private grammar selection, bounded file reads,
-iterative native normalization and immutable syntax/spans/diagnostics. Native objects
-stop at the adapter. TSX uses its own grammar but reports canonical typescript.
-Malformed syntax returns ERROR/MISSING diagnostics; infrastructure/read failures
-raise typed chained errors. Anonymous missing punctuation is preserved.
+Created a dependency-free extraction package, immutable ExtractionResult, UUID5 ID
+helper, typed errors and a pure iterative Python extractor. MODULE, CLASS, FUNCTION,
+METHOD and per-binding IMPORT values are produced. Decorators, async state, signatures,
+exact syntax coordinates and nearest semantic parents are retained. No relationships,
+variables, reference entities, lambdas or framework/test classifications are emitted.
 
-Deep nesting exposed native point-access crashes under runtime 0.26.0. Cursor-entry
-snapshots and direct-child traversal did not solve them; minimal native point loops
-also crashed. Runtime 0.25.2 passed the same regression with unchanged grammars.
-Independent read-only review identified deep recursive equality/hash, nested Windows
-drive escape and an eager annotation import. Each was reproduced and corrected;
-review recheck reported no remaining important finding and did not run tests.
+CodeEntity lacked the signature field assumed by this phase. Added a final optional
+signature field with default None, preserving prior positional metadata arguments;
+compatibility and validation tests pass. No other core semantics changed.
 
-Core, graph, ingestion and their existing tests remain unchanged. No semantic
-entities, relationships, automatic inventory parsing or target execution exists.
+Recovery state is computed once per normalized subtree. Any recovery inside a
+candidate/wrapper suppresses that whole semantic scope, including its descendants.
+Unaffected siblings survive. Structural omissions such as empty suites also mark
+partial, even where the grammar reports no diagnostics. Imports remain unresolved.
+
+Independent read-only review reproduced omitted future imports, lambda annotation
+signature truncation and newline-coordinate mismatch. Each gained a failing regression
+and a focused correction. Final review recheck found no remaining actionable finding;
+review used literal-byte probes and did not run the full suite.
 
 ## 3. Files Changed
 
-- src/arctrellis/parsing/__init__.py: deliberate normalized public API and errors.
-- src/arctrellis/parsing/models.py: immutable validated spans, nodes and parsed bytes.
-- src/arctrellis/parsing/errors.py: meaningful caller-facing parsing failures.
-- src/arctrellis/parsing/registry.py: compatible extensions and fresh private grammars.
-- src/arctrellis/parsing/normalization.py: iterative owned tree and diagnostics.
-- src/arctrellis/parsing/source.py: bounded reads, containment and metadata checks.
-- src/arctrellis/parsing/parser.py: bytes and discovered-file entry points.
-- tests/parsing/__init__.py: unittest discovery package.
-- tests/parsing/test_models.py: value validation, coordinates and immutable ownership.
-- tests/parsing/test_registry.py: all supported extensions and mismatch behavior.
-- tests/parsing/test_parser.py: languages, recovery, deep trees, isolation and read safety.
-- pyproject.toml: exact verified runtime/grammar pins.
-- README.md: implemented syntax capabilities, limits and security boundaries.
-- decisions.md: append D-017 through D-031 while preserving earlier decisions.
-- flow.md: parsing call order and session table; correct containment ownership.
-- handoff.md: verified session state and continuation instructions.
+- src/arctrellis/extraction/__init__.py: intentional public extraction API.
+- src/arctrellis/extraction/models.py: validated immutable per-file entity ownership.
+- src/arctrellis/extraction/ids.py: versioned canonical JSON/UUID5 identity.
+- src/arctrellis/extraction/errors.py: wrong-language, decoding and semantic failures.
+- src/arctrellis/extraction/source.py: encoding-aware slices, spans and exact headers.
+- src/arctrellis/extraction/imports.py: unresolved per-binding import metadata.
+- src/arctrellis/extraction/python.py: iterative semantic scope/recovery transformation.
+- tests/extraction/__init__.py: unittest discovery.
+- tests/extraction/test_ids.py: determinism and component validation.
+- tests/extraction/test_models.py: module, ownership, uniqueness and immutable result contracts.
+- tests/extraction/test_python.py: semantic scope, signatures, encoding, partial safety and pipeline.
+- tests/extraction/test_imports.py: direct/from/future/relative/wildcard binding semantics.
+- src/arctrellis/core/models.py: final optional signature field.
+- tests/core/test_models.py: signature compatibility and validation regression.
+- README.md: current capabilities, identity/encoding limits and security boundary.
+- decisions.md: append D-032 through D-043; preserve prior entries.
+- flow.md: actual extraction call order, current test flow and session rows.
+- handoff.md: verified state and all twelve continuation sections.
 
 ## 4. Current Architecture / State
 
-Repository root: C:/Projects/ArcTrellis. Environment: Python 3.13.14.
-Git identity: PrathamKapoor <prathamkapoor027@gmail.com>. Remotes are empty.
+Repository root: C:/Projects/ArcTrellis. Python: 3.13.14. Git author/committer identity:
+PrathamKapoor <prathamkapoor027@gmail.com>. git remote -v remains empty.
 
-Local directory -> scan_repository -> RepositoryInventory -> DiscoveredFile ->
-parse_discovered_file -> private Tree-sitter grammar/parser -> normalized ParsedSource
--> future semantic extractor. No CodeGraph population from source is implemented.
+Local directory -> scan_repository -> DiscoveredFile -> parse_discovered_file ->
+ParsedSource -> extract_python_entities -> ExtractionResult -> future graph builder.
+Extraction does not read files or invoke parsing; no repository-wide extraction exists.
+Core, graph, ingestion and parsing remain separate. No native parser types are imported
+or exposed by extraction. Public entities are existing immutable CodeEntity values.
 
-Runtime pins and installed versions: tree-sitter==0.25.2,
-tree-sitter-python==0.25.0, tree-sitter-javascript==0.25.0,
-tree-sitter-typescript==0.23.2. Existing Python >=3.13 and packaging backend remain.
-No formatter, linter or type checker is configured.
+Result language uses the existing Language enum, permitting future supported-language
+results; the Python entry point explicitly rejects non-Python input. One parentless
+MODULE is first. Remaining entities sort by start byte, end byte, kind and ID. Parent
+scopes must precede children, preventing dangling parents/cycles. Coordinates are
+six canonical decimal metadata strings; SourceLocation uses inclusive 1-based lines.
 
-SyntaxSpan has inclusive start/exclusive end bytes and points, 1-based lines and
-0-based byte columns. SyntaxNode owns ordered tuple children, fields and recovery
-flags. Ordinary anonymous punctuation is omitted; recovery nodes remain. walk is
-iterative preorder; child_by_field returns the first direct match or None.
-ParsedSource owns exact bytes and diagnostics; bytes_for performs bounded slicing
-without a membership claim. Equality/hash avoid recursive tree traversal.
+MODULE name is the file stem; its qualified name is the relative path, not an inferred
+Python import name. Declarations use path::Outer.inner lexical names. Imports use
+scope::import:binding@start_byte, binding names and structured unresolved metadata.
+Decorators use decorator.0, decorator.1, etc. Async functions/methods use is_async.
+Classes/functions/methods have exact multiline signatures without decorators/body/
+final declaration colon. CodeEntity.signature is an optional last field.
 
-Both entry points permit positive max_source_bytes overrides. Default is 2 MiB;
-size <= limit is accepted. Files are rechecked against current metadata, not stale
-inventory size. Reads take at most limit+1 bytes and never parse truncated data.
-Fresh parsers avoid shared mutable instance state; no thread-safety claim is made.
+UUID5/NAMESPACE_URL key is compact JSON of arctrellis-entity-v1, language, path, kind,
+qualified name and start/end bytes. IDs reproduce identical revisions, not arbitrary
+edits. No repository identity is included yet; independent repositories can collide
+when all components match. Human-readable qualified names need not be unique.
 
-Implementation commit: 594ae41b7d78e9a5f7d43492eb7d9ddbfb134168,
-feat(parsing): add normalized Tree-sitter parser infrastructure.
-Required author and committer were verified; git status --short after this commit
-was empty. The reference finalization changes documentation only. Commit references follow D-004: finalize the
-implementation hash in a separate documentation commit; do not embed that final
-commit's own hash or rewrite history. Obtain finalization history from git log.
+Dependency pins unchanged: tree-sitter==0.25.2, tree-sitter-python==0.25.0,
+tree-sitter-javascript==0.25.0, tree-sitter-typescript==0.23.2. No installation or
+upgrade was needed. No formatter/linter/type checker is configured.
+Implementation commit: uncommitted. Finalize its reference separately under D-004;
+obtain the later documentation commit from git log without rewriting history.
 
 ## 5. Decisions Made
 
-- D-017 through D-020: explicit runtime and grammar ownership/package comparison.
-- D-021: normalized immutable syntax, spans, fields and recovery ownership.
-- D-022: fresh synchronous grammars/parsers and intentional entry points.
-- D-023: bounded current-source reads, typed errors and stable-tree limitation.
-- D-024: postpone recursive/type-only annotations after verified import failure.
-- D-025 and D-026: failed native traversal approaches; retained as truthful history.
-- D-027: supersede the 0.26.0 runtime choice after minimal native crashes.
-- D-028: iterative normalized equality/hash after deep comparison regression.
-- D-029: reject nested Windows drives and enforce containment before I/O.
-- D-030: defer annotation-only native imports inside configuration handling.
-- D-031: final compatibility evidence and correct documentation call ownership.
-- Earlier decisions remain in force except explicit supersessions; D-004 governs hashes.
+- D-032: add missing optional canonical signature compatibly.
+- D-033: reusable revision-deterministic UUID5 IDs and immutable extraction results.
+- D-034: verified normalized grammar and nearest semantic lexical scope.
+- D-035: Python encoding/header interpretation and conservative recovery suppression.
+- D-036: local tests first and literal stdin grammar inspection.
+- D-037: postpone the source helper's self-referential annotation.
+- D-038: verify diagnostic-free empty suites and native encoding limits.
+- D-039: retry a rejected atomic documentation patch with real context.
+- D-040: retain lambda annotation colons in signatures.
+- D-041: include future-import binding declarations.
+- D-042: align header offsets with tokenizer newline coordinates.
+- D-043: verified handoff, unchanged dependencies and local continuity.
+- Prior decisions remain in force; D-004 governs commit-reference finalization.
 
 ## 6. Requirements and Constraints
 
-Remain local: no remote changes, push, GitHub API operations, uploads, publication
-or releases. Required author/committer: PrathamKapoor <prathamkapoor027@gmail.com>,
-without attribution trailers. Never commit paper/, research/ or *.tex.
+Treat target source as untrusted data. Never execute/import target source, use runtime
+reflection, install target dependencies, invoke target hooks/scripts/tests or load
+target plugins. Extraction consumes normalized values and already-owned bytes only.
+No filesystem access, raw native parser imports, relationships or resolution belongs
+in this extractor. Do not add JS/TS extraction until its next authorized phase.
 
-Discovery reads metadata only. Parsing reads supported bytes as data, never imports
-or executes target modules, scripts, hooks or tests, and never installs target
-dependencies. Reject observed linked/reparse/nonregular source paths. Require a
-stable filesystem; pathname checks are not atomic containment against hostile races.
-Do not add semantics, import/call resolution, frameworks, graph inference, storage,
-retrieval, explanations, frontend, workers or incremental indexing in this phase.
+Keep everything local: no remote changes, push, GitHub API, uploads, releases or
+publication. Required author and committer are PrathamKapoor with the specified email,
+without attribution trailers. Never commit paper/, research/ or *.tex. Append decisions,
+preserve historical session rows and update documentation alongside implementation.
 
 ## 7. Testing and Verification
 
-Observed commands and results from the repository root:
+Observed commands/results from the repository root:
 
 - git rev-parse --show-toplevel: C:/Projects/ArcTrellis.
-- git status at start: master, clean; git log --oneline --decorate -10 showed
-  db275b1, d025247, 83cc9fc, 7c9b428, a3d364e and e7a2f98.
+- git status at start: master, clean. git log --oneline --decorate -10 showed dc25589,
+  594ae41, db275b1, d025247, 83cc9fc, 7c9b428, a3d364e and e7a2f98.
 - git config user.name / git config user.email: required identity.
-- git remote -v: empty at start and after implementation verification.
+- git remote -v: empty at start; no remote operation was performed.
 - .venv\Scripts\python.exe --version: Python 3.13.14.
-- .venv\Scripts\python.exe -m pip index versions tree-sitter: available 0.26.0/0.25.2.
-  Equivalent commands for tree-sitter-python, tree-sitter-javascript and
-  tree-sitter-typescript reported 0.25.0, 0.25.0 and 0.23.2 respectively.
-  tree-sitter-languages failed: ERROR: No matching distribution found for
-  tree-sitter-languages in this environment; not a global availability claim.
-- .venv\Scripts\python.exe -m pip install -e .: succeeded initially with runtime
-  0.26.0; succeeded again after changing its pin to 0.25.2. Existing environment reused.
-- .venv\Scripts\python.exe -m pip show tree-sitter tree-sitter-python tree-sitter-javascript tree-sitter-typescript:
-  verified installed versions 0.25.2, 0.25.0, 0.25.0, 0.23.2.
-- .venv\Scripts\python.exe -m pip check: No broken requirements found.
-- .venv\Scripts\python.exe -m unittest discover -s tests/parsing -v:
-  latest run 37 tests, OK (skipped=1), exit zero.
+- .venv\Scripts\python.exe -m unittest discover -s tests/extraction -v:
+  initial test-first run FAILED (errors=4), ModuleNotFoundError for arctrellis.extraction.
+  First implementation FAILED (errors=4), NameError for _PythonSource; D-037 fixed it.
+  Then 24 tests OK; final run 31 tests OK, zero skips, exit zero.
+- .venv\Scripts\python.exe -m unittest tests.core.test_models.DomainRecordTests.test_optional_signature_preserves_existing_positions_and_validates_text -v:
+  test-first AttributeError: 'CodeEntity' object has no attribute 'signature'; after
+  the compatible addition, one test OK.
+- .venv\Scripts\python.exe -m unittest tests.extraction.test_python.PythonExtractionTests.test_lambda_return_annotation_keeps_internal_top_level_colons tests.extraction.test_imports.ImportTests.test_future_imports_use_their_anonymous_module_token_without_resolution -v:
+  both initially FAILED (failures=2); corrected and included in final passing suite.
+- .venv\Scripts\python.exe -m unittest tests.extraction.test_python.PythonExtractionTests.test_signature_rows_use_only_newlines_not_unicode_separators_or_formfeeds -v:
+  initially FAILED (failures=2 subtests); corrected and included in passing suite.
 - .venv\Scripts\python.exe -m unittest discover -s tests -v:
-  baseline 127 tests, OK (skipped=6); latest run 164 tests, OK (skipped=7), exit zero.
-  Existing 127 tests remain included, with their original platform skips.
-- .venv\Scripts\python.exe -c "from arctrellis.parsing import ParsedSource, SyntaxNode, SyntaxSpan, ParseDiagnostic, parse_source, parse_discovered_file; print('Parsing public API OK')":
-  printed Parsing public API OK, exit zero.
-- .venv\Scripts\python.exe -c "from tempfile import TemporaryDirectory; from pathlib import Path; from arctrellis.ingestion import scan_repository; from arctrellis.parsing import parse_discovered_file; t=TemporaryDirectory(); p=Path(t.name); (p/'app.py').write_bytes(b'def f():\n    pass\n'); item=scan_repository(p).supported_files[0]; parsed=parse_discovered_file(p,item); print(parsed.path, parsed.root.kind, parsed.diagnostic_count); t.cleanup()":
-  printed app.py module 0, exit zero.
-- git diff -- src/arctrellis/core src/arctrellis/graph src/arctrellis/ingestion tests/core tests/graph tests/ingestion .gitignore:
-  empty; existing implementation/test semantics and ignore rules unchanged.
+  baseline 164 tests OK (skipped=7); interim 189 tests OK (skipped=7);
+  final 196 tests OK (skipped=7), exit zero. All previous tests remain included.
+- .venv\Scripts\python.exe -c "from arctrellis.extraction import ExtractionResult, extract_python_entities, make_entity_id, ExtractionError, SourceDecodingError, UnsupportedExtractionLanguageError, SemanticExtractionError; print('Public extraction imports OK')":
+  Public extraction imports OK, exit zero.
+- .venv\Scripts\python.exe -c "from tempfile import TemporaryDirectory; from pathlib import Path; from arctrellis.ingestion import scan_repository; from arctrellis.parsing import parse_discovered_file; from arctrellis.extraction import extract_python_entities; t=TemporaryDirectory(); p=Path(t.name); (p/'service.py').write_bytes(b'import os\nclass Service:\n    def create(self):\n        pass\n'); item=scan_repository(p).supported_files[0]; result=extract_python_entities(parse_discovered_file(p,item)); print('partial:',result.partial); print([(e.kind.value,e.qualified_name,e.parent_id is None or any(p.id==e.parent_id for p in result.entities)) for e in result.entities]); t.cleanup()":
+  partial: False; MODULE service.py, IMPORT service.py::import:os@7, CLASS
+  service.py::Service, METHOD service.py::Service.create, all parent-existence flags True.
+- rg -n '(from|import)\s+tree_sitter' src/arctrellis/extraction:
+  no matches, exit one (normal no-match).
+- git diff -- pyproject.toml src/arctrellis/parsing src/arctrellis/ingestion src/arctrellis/graph tests/parsing tests/ingestion tests/graph:
+  empty; no dependency or stable-layer change.
+- .venv\Scripts\python.exe -m pip check: No broken requirements found.
+- git diff --check: exit zero; LF-to-CRLF notices are not whitespace failures.
 
-Earlier test-first runs failed because arctrellis.parsing did not exist. Initial
-implementation failed with NameError: name 'SyntaxNode' is not defined (D-024).
-Deep normalization failed containment, then faulthandler/native probes reported
-Windows fatal exception: access violation under runtime 0.26.0 (D-025..D-027).
-Review regressions reproduced RecursionError, pre-containment I/O and eager native
-import failure before correction. Final runs above contain no such failures.
+The initial inline grammar command failed with SyntaxError: unterminated string
+literal. The literal stdin retry inspected all requested samples without diagnostics.
+One combined documentation patch was rejected and changed nothing (D-039).
+Native grammar probes, test-first errors and review regressions are recorded rather
+than hidden. The marker-file integration test confirms no target execution, and
+patching builtins.open during extraction confirms no direct content reads. Canonical
+output converts through dataclasses.asdict and JSON. Deep traversal uses a synthetic
+1200-level normalized control tree, not a claim about maximum Python source nesting.
 
-One parser symbolic-link replacement fixture skipped for WinError 1314: A required
-privilege is not held by the client. Five earlier symlink fixtures have the same
-privilege limitation; one earlier FIFO fixture skips because os.mkfifo is unavailable.
-Thus actual symlink runtime behavior is not verified on this host. Simulated
-link/reparse refusals pass. Actual Windows source-parent junction replacement passes.
-Filesystem read/permission failures, growth and metadata changes are injected;
-real OS permission denial and hostile races were not exercised. The malicious
-source marker remains absent. Anonymous missing } recovery is runtime-verified.
+All seven skips are existing platform fixtures: six symlink tests lack Windows
+privileges (WinError 1314), one FIFO test lacks os.mkfifo. Extraction has no skips.
+Actual junction coverage remains in previous passing suites. No new permission test
+or hostile race test was run. UTF-8 identifiers, BOM and Latin-1 literals passed;
+Latin-1 identifiers are explicitly tested as partial under current native parsing.
 
-Not tested: other OS/Python versions, fresh distribution installs, benchmarks,
-parser execution-time limits, hostile concurrent mutation or future extraction.
+Not tested: other platforms/Python versions, benchmarks, cross-revision matching,
+arbitrary Python encoding support, full compiler validity or repository-wide indexing.
 No formatter/linter/type checker ran because none is configured.
 
-- git diff --check and git diff --cached --check: exit zero, no whitespace errors;
-  Git emitted LF-to-CRLF notices while staging, not check failures.
-- git diff --cached --name-only: sixteen intended parser/test/config/documentation paths.
-- Forbidden-path staging check: No forbidden files staged, exit zero.
-- Staged git grep attribution audit across documentation, src and tests:
-  no matches, exit one (normal no-match).
-- git var GIT_AUTHOR_IDENT and git var GIT_COMMITTER_IDENT: both required identities.
+- git diff --cached --check: exit zero; no staged whitespace errors.
+- git diff --cached --name-only: eighteen intended extraction/core/test/documentation paths.
+- Forbidden-path staging audit: No forbidden files staged, exit zero.
+- Staged git grep attribution audit across README/state documents/src/tests: no
+  matches, exit one (normal no-match).
+- git var GIT_AUTHOR_IDENT and git var GIT_COMMITTER_IDENT: required identity.
+- git config user.name / git config user.email recheck: required values.
+- git remote -v recheck: empty.
 
-Rule 10: required documents read first; meaningful changes, package comparisons,
-bug causes and regressions recorded; real nested call flow and every change row
-reviewed. No secrets or attribution added. Remotes remain empty and nothing was
-pushed or published. All twelve handoff sections are present. Implementation hash
-references are finalized separately under D-004 after the implementation commit.
+Rule 10 review: documents read first; every meaningful change has required decisions
+and flow rows, bug symptoms/verified causes/regressions recorded, real nested call
+names reviewed. No packages changed, secrets or attribution added. Required identity
+and empty remotes verified; nothing pushed/published. All twelve handoff sections
+are present. Hash references finalize separately under D-004 after the feature commit.
 
 ## 8. Known Issues / Risks
 
-Confirmed: no remaining defect observed in executed checks. Six symlink fixtures
-and one FIFO fixture cannot run on this host. Runtime 0.26.0 is incompatible with
-the tested deep point-access case here; the final pin is 0.25.2.
+Confirmed: no remaining defect observed in final checks. Current byte parsing cannot
+reliably recover the tested Latin-1 identifier; it returns partial/module-only rather
+than fabricated identity. Existing platform skips limit actual symlink/FIFO coverage.
 
-Possible: native parsing is not process isolation; input size does not bound native
-time or tree memory. Concurrent hostile replacement can evade pathname checks.
-Cross-platform behavior remains unverified. Grammar kinds/fields remain grammar
-vocabulary, so future upgrades require extractor compatibility review.
+Possible: conservative recovery may omit valid enclosing declarations/descendants.
+Identity lacks repository namespace and edit-stability guarantees. Grammar upgrades
+may change fields/kinds. Parsing/discovery retain stable-tree and native-resource
+limitations from prior phases; extraction does not solve them. Filename syntax must
+be representable by core SourceLocation and CodeEntity name validation.
 
 ## 9. Unfinished Work
 
-No Phase 1.1 functionality remains unfinished after the observed tests. Local commit
-traceability is finalized separately under D-004. Broader platform verification and
-resource isolation remain future work. No Phase 1.2 implementation was started.
+No Phase 1.2 functionality remains unfinished after final observed tests. Local commit
+reference finalization follows D-004. Broader platform/encoding coverage, repository
+identity and later semantic resolution remain future design work. Phase 1.3 not begun.
 
 ## 10. Next Subphase
 
-Phase 1.2 — Python semantic entity extraction. Consume ParsedSource to produce
-canonical Python module/class/function/method/import entities with exact locations
-and deterministic IDs. Do not start full inter-file call resolution automatically.
+Phase 1.3 — JavaScript and TypeScript semantic entity extraction. Reuse common result,
+identity helper and canonical entities for JS/TS/JSX/TSX. Do not automatically begin
+repository-wide extraction or call resolution.
 
 ## 11. Critical Context
 
-Previous handoffs remain in Git history. Historical failed startup attempts changed
-nothing. Earlier foundation and discovery decisions/session tables are preserved.
-Do not restore the Windows DirEntry/lstat cross-API identity comparison (D-016).
-Do not restore runtime 0.26.0 without reproducing the native deep regression.
-D-025/D-026 capture failed intermediate approaches; D-027/D-031 establish final state.
-Tree-sitter objects never become repository facts. Source parsing is syntax only.
+Earlier handoffs remain in Git history. Prior blocked startup attempts changed
+nothing. Keep Tree-sitter 0.25.2 until deliberate Windows deep-regression verification;
+0.26.0 native point access crashed in Phase 1.1. Do not restore incompatible Windows
+DirEntry/lstat comparisons. No existing parser/graph/ingestion semantics changed here.
+
+Future imports have a separate grammar kind and anonymous module token. Async remains
+function_definition. Decorated wrappers own locations while definitions own signatures.
+Do not replace newline-only tokenizer offsets with splitlines. UUID input strings are
+versioned and delimiter-safe; runtime object identity is used only for temporary
+traversal maps, never canonical IDs or metadata.
 
 ## 12. Agent Instructions
 
-Read all three root state documents first, then verify status, identity, Python and
-remotes. Preserve core/graph/ingestion contracts. Do not execute target source or
-install target dependencies. Keep native parser types private and syntax separate
-from semantic facts. Repeat deep equality/normalization and TSX regressions before
-runtime/grammar upgrades. Document decisions with code, run the full suite, report
-actual skips/failures, stage explicit paths and audit forbidden material/attribution.
-Keep everything local. Finalize commit references without history rewriting and
-rewrite all twelve handoff sections with observed results.
+Read all three state documents first; verify repository root/status/identity/Python/
+remotes. Preserve existing constructor positions, native isolation and conservative
+partial semantics. Consume ParsedSource rather than walking files inside extraction.
+Do not execute target source or infer graph facts. Document meaningful changes with
+code, add focused regressions, run the full suite and report real skips/failures.
+Review encoding/signature/import grammar fields before extending language support.
+Stage explicit paths, audit forbidden material and attribution, verify author and
+committer, keep everything local and finalize commit hashes without rewriting history.
+Rewrite all twelve handoff sections with checked facts.

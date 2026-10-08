@@ -129,6 +129,7 @@ class CodeEntity:
     parent_id: str | None = None
     language: str | None = None
     metadata: Metadata = ()
+    signature: str | None = None
 
     def __post_init__(self) -> None:
         for field in ("id", "name", "qualified_name"):
@@ -136,7 +137,7 @@ class CodeEntity:
         _require_instance(self.kind, EntityKind, "kind")
         if self.location is not None:
             _require_instance(self.location, SourceLocation, "location")
-        for field in ("parent_id", "language"):
+        for field in ("parent_id", "language", "signature"):
             value = getattr(self, field)
             if value is not None:
                 _require_text(value, field)

@@ -78,6 +78,15 @@ class SourceLocationTests(unittest.TestCase):
 
 
 class DomainRecordTests(unittest.TestCase):
+    def test_optional_signature_preserves_existing_positions_and_validates_text(self):
+        entity = CodeEntity("id", EntityKind.FUNCTION, "f", "f", None, None, "python", (("x", "y"),))
+        self.assertIsNone(entity.signature)
+        signature = "def f(\n    x: int,\n) -> int"
+        self.assertEqual(replace(entity, signature=signature).signature, signature)
+        for invalid in ("", " ", " def f()", 1):
+            with self.subTest(invalid=invalid), self.assertRaises((ValueError, TypeError)):
+                replace(entity, signature=invalid)
+
     def setUp(self):
         self.location = SourceLocation("src/payment/PaymentService.ts", 61, 61)
         self.entity = CodeEntity(
