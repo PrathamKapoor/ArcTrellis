@@ -642,8 +642,8 @@ Python supports identifier-component path aliases and an explicit leading-src he
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Resolution | Add immutable decisions, path catalog and pure static resolver with contract tests. | src/arctrellis/resolution/, tests/resolution/, README.md, decisions.md, flow.md | uncommitted | D-057 |
-| Evidence | Add site-specific LIKELY IMPORTS edges preserving lexical graph proof. | src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py | uncommitted | D-058 |
-| Candidate boundaries | Correct root index probes and reject literal-dot Python filename aliases. | src/arctrellis/resolution/catalog.py, src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py, decisions.md, flow.md | uncommitted | D-059 |
-| Directory candidates | Preserve trailing slash/dot directory intent and restrict probes to indexes. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, decisions.md, flow.md | uncommitted | D-060 |
-| Conservative literals | Defer percent-encoded specifiers and cover alias/relative-level negatives. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md | uncommitted | D-061 |
+| Resolution | Add immutable decisions, path catalog and pure static resolver with contract tests. | src/arctrellis/resolution/, tests/resolution/, README.md, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-057 |
+| Evidence | Add site-specific LIKELY IMPORTS edges preserving lexical graph proof. | src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-058 |
+| Candidate boundaries | Correct root index probes and reject literal-dot Python filename aliases. | src/arctrellis/resolution/catalog.py, src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-059 |
+| Directory candidates | Preserve trailing slash/dot directory intent and restrict probes to indexes. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-060 |
+| Conservative literals | Defer percent-encoded specifiers and cover alias/relative-level negatives. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md | 300652d914eb811f8a0c13f6bb2333afd914c1ee | D-061 |
