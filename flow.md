@@ -203,10 +203,10 @@ nodes/edges because sorted adjacency is maintained at insertion.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Tests | Define graph storage, adjacency, traversal, path and immutable result contracts using existing domain records. | tests/graph/__init__.py, tests/graph/fixtures.py, tests/graph/test_graph.py, tests/graph/test_traversal.py, tests/graph/test_results.py | uncommitted | D-006, D-007, D-008 |
-| Graph storage | Add endpoint-safe canonical storage, idempotence, explicit lookup errors, counts and immutable snapshots. | src/arctrellis/graph/graph.py, src/arctrellis/graph/errors.py | uncommitted | D-006, D-008 |
-| Queries | Add sorted adjacency, unique neighbors, filters and shared cycle-safe BFS for traversal and shortest paths. | src/arctrellis/graph/graph.py | uncommitted | D-007, D-008 |
-| Results and public API | Add validated immutable node results and evidence-preserving directed paths, with intentional package exports. | src/arctrellis/graph/results.py, src/arctrellis/graph/__init__.py | uncommitted | D-008 |
-| Documentation | Describe actual graph semantics and call order while preserving the Phase 0.1 history. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-006, D-007, D-008 |
-| Fixture and session traceability | Use named synthetic payment entities, record actual verification, and finalize new commit references without rewriting old history. | tests/graph/fixtures.py, decisions.md, flow.md, handoff.md | uncommitted | D-009 |
-| Documentation review | Correct the constructor/graph validation distinction, explicit placeholder policy and continuous session table; rewrite handoff in place. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-010 |
+| Tests | Define graph storage, adjacency, traversal, path and immutable result contracts using existing domain records. | tests/graph/__init__.py, tests/graph/fixtures.py, tests/graph/test_graph.py, tests/graph/test_traversal.py, tests/graph/test_results.py | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-006, D-007, D-008 |
+| Graph storage | Add endpoint-safe canonical storage, idempotence, explicit lookup errors, counts and immutable snapshots. | src/arctrellis/graph/graph.py, src/arctrellis/graph/errors.py | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-006, D-008 |
+| Queries | Add sorted adjacency, unique neighbors, filters and shared cycle-safe BFS for traversal and shortest paths. | src/arctrellis/graph/graph.py | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-007, D-008 |
+| Results and public API | Add validated immutable node results and evidence-preserving directed paths, with intentional package exports. | src/arctrellis/graph/results.py, src/arctrellis/graph/__init__.py | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-008 |
+| Documentation | Describe actual graph semantics and call order while preserving the Phase 0.1 history. | README.md, decisions.md, flow.md, handoff.md | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-006, D-007, D-008 |
+| Fixture and session traceability | Use named synthetic payment entities, record actual verification, and finalize new commit references without rewriting old history. | tests/graph/fixtures.py, decisions.md, flow.md, handoff.md | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-009 |
+| Documentation review | Correct the constructor/graph validation distinction, explicit placeholder policy and continuous session table; rewrite handoff in place. | README.md, decisions.md, flow.md, handoff.md | 7c9b42800c1e5b7c8d22791109480cc2cb42b94f | D-010 |

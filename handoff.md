@@ -5,8 +5,7 @@
 Phase 0 — Repository Foundation. Subphase 0.2 — In-memory graph container and
 deterministic traversal. Objective: store explicitly supplied domain records and
 answer predictable structural queries without infrastructure dependencies.
-Status: complete implementation and tests; local commit checks and reference
-finalization remain. Phase 1.0 has not begun.
+Status: complete. Phase 1.0 has not begun.
 
 ## 2. Work Completed
 
@@ -66,7 +65,11 @@ No runtime dependency was added. pyproject.toml still declares Python >=3.13 and
 build-only setuptools==84.0.0. The existing editable installation exposes the new
 package. No formatter, linter, type checker, CI configuration or license exists.
 Git has no remotes. This session has not pushed or published anything.
-Implementation commit reference: uncommitted; finalize under D-004 after committing.
+Implementation commit: 7c9b42800c1e5b7c8d22791109480cc2cb42b94f,
+feat(graph): add deterministic in-memory code graph. The required author and
+committer were verified and the working tree was clean after this commit.
+A separate documentation commit finalizes references under D-004; its hash is
+available from git log. No history was rewritten.
 
 ## 5. Decisions Made
 
@@ -120,6 +123,20 @@ Commands executed from the repository root:
   the forbidden-path check printed No forbidden files staged.
 - Staged-content attribution scan with git grep: no matches; exit one means no
   matches. Reviewed staged files contain no secrets or attribution.
+- git commit -m "feat(graph): add deterministic in-memory code graph": succeeded,
+  creating 7c9b428 with the thirteen intended graph/test/documentation files.
+- git rev-parse HEAD: 7c9b42800c1e5b7c8d22791109480cc2cb42b94f.
+- git log -1 --format='%h %an <%ae> | %cn <%ce> | %s': verified the required author
+  and committer and exact graph implementation message.
+- git status --short after the graph implementation commit: empty, clean tree.
+
+Rule 10 review: all three root documents were read at startup; meaningful changes
+have decisions and session rows; no package change occurred; the documentation
+correction has a symptom, verified cause and an explicit no-test rationale; real
+names and nested call order are documented; commit references name the real graph
+implementation commit; no secrets or authorship attribution were added; required
+identity was verified; no remote was added and no push occurred; this handoff has
+all twelve sections.
 
 All 33 Phase 0.1 tests were included in the passing 89-test runs. New graph tests
 compare reversed insertion order across snapshots, adjacency, bounded forward and
@@ -148,9 +165,9 @@ CodeGraph is not thread-safe.
 
 ## 9. Unfinished Work
 
-Phase 0.2 functionality is implemented and verified by the current suite. Local
-commit auditing and documentation-reference finalization remain before closure.
-CI, license selection and later product capabilities are future work.
+No Phase 0.2 functionality remains unfinished. CI, license selection and later
+product capabilities are future work. Commit reference finalization follows D-004
+without modifying implementation or rewriting history.
 
 ## 10. Next Subphase
 
