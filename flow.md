@@ -76,9 +76,10 @@ fails the suite. There is no production serialization or database format yet.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Foundation | Initialize Git, src packaging, local authorship and ignore rules. | .gitignore, pyproject.toml, src/arctrellis/__init__.py | uncommitted | D-001 |
-| Domain | Add canonical enums, frozen records and public exports. | src/arctrellis/core/models.py, src/arctrellis/core/__init__.py | uncommitted | D-002 |
-| Validation | Enforce path, line, metadata, type and score invariants. | src/arctrellis/core/models.py | uncommitted | D-003 |
-| Tests | Add standard-library public API and domain invariant coverage. | tests/__init__.py, tests/core/__init__.py, tests/core/test_models.py | uncommitted | D-001, D-002, D-003 |
-| Documentation | Document current capabilities, flows, decisions and handoff. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-001, D-002, D-003, D-004 |
-| Commit traceability | Finalize implementation commit references in a separate documentation commit. | decisions.md, flow.md, handoff.md | uncommitted | D-004 |
+| Foundation | Initialize Git, src packaging, local authorship and ignore rules. | .gitignore, pyproject.toml, src/arctrellis/__init__.py | e7a2f98d078583b392170d323682870745311e45 | D-001 |
+| Domain | Add canonical enums, frozen records and public exports. | src/arctrellis/core/models.py, src/arctrellis/core/__init__.py | e7a2f98d078583b392170d323682870745311e45 | D-002 |
+| Validation | Enforce path, line, metadata, type and score invariants. | src/arctrellis/core/models.py | e7a2f98d078583b392170d323682870745311e45 | D-003 |
+| Tests | Add standard-library public API and domain invariant coverage. | tests/__init__.py, tests/core/__init__.py, tests/core/test_models.py | e7a2f98d078583b392170d323682870745311e45 | D-001, D-002, D-003 |
+| Documentation | Document current capabilities, flows, decisions and handoff. | README.md, decisions.md, flow.md, handoff.md | e7a2f98d078583b392170d323682870745311e45 | D-001, D-002, D-003, D-004 |
+| Commit traceability | Finalize implementation commit references in a separate documentation commit. | decisions.md, flow.md, handoff.md | e7a2f98d078583b392170d323682870745311e45 | D-004 |
+| Commit configuration | Record the initial commit's per-command signing override; no runtime or persistent configuration changed. | decisions.md, flow.md, handoff.md | e7a2f98d078583b392170d323682870745311e45 | D-005 |

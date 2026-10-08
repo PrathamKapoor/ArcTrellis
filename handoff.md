@@ -30,7 +30,7 @@ allowed; classifications do not certify proof. No score thresholds are inferred.
 - tests/__init__.py: enable recursive unittest discovery.
 - tests/core/__init__.py: enable core test discovery.
 - tests/core/test_models.py: 33 meaningful contract tests with additional subcases.
-- decisions.md: D-001 through D-004 rationale and commit traceability.
+- decisions.md: D-001 through D-005 rationale and commit traceability.
 - flow.md: actual packaging, constructor and test call order plus session table.
 - handoff.md: current state, results, limitations and continuation instructions.
 
@@ -43,9 +43,13 @@ convert through dataclasses.asdict and json.dumps. There are no runtime package
 dependencies, parser, graph container, storage, API or UI. No formatter, linter,
 type checker, CI configuration or license file exists.
 
-Implementation/documentation commit reference: uncommitted. Commit references are
-finalized afterward as specified in D-004. The .venv and editable-install metadata
-are local ignored artifacts.
+Implementation commit: e7a2f98d078583b392170d323682870745311e45,
+`feat(core): establish canonical repository domain foundation`.
+git log verified the required author and committer; the initial commit is unsigned
+as recorded in D-005. The working tree was verified clean immediately after that
+commit. A separate documentation commit finalizes references as specified in
+D-004; consult git log for its hash. The .venv and editable-install metadata are
+local ignored artifacts.
 
 ## 5. Decisions Made
 
@@ -53,6 +57,7 @@ are local ignored artifacts.
 - D-002: canonical immutable vocabulary, supplied IDs and embedded evidence.
 - D-003: strict raw relative paths and ordered immutable string metadata.
 - D-004: implementation hash finalization in a separate documentation commit.
+- D-005: record the initial commit's per-command signing override.
 
 ## 6. Requirements and Constraints
 
@@ -99,6 +104,20 @@ Commands executed from the repository root:
   denotes no matches. No attribution was found.
 - git add emitted LF-to-CRLF notices under the existing Git environment settings;
   staging and whitespace validation succeeded. No global settings were changed.
+- git -c commit.gpgsign=false commit -m "feat(core): establish canonical repository domain foundation":
+  succeeded, creating e7a2f98 with twelve intended files.
+- git rev-parse HEAD: e7a2f98d078583b392170d323682870745311e45.
+- git log --format='%h %an <%ae> | %cn <%ce> | signature:%G? | %s': verified
+  PrathamKapoor <prathamkapoor027@gmail.com> as both author and committer,
+  signature:N, and the exact implementation message.
+- git status --short after the implementation commit: empty output, clean tree.
+
+Rule 10 review: required documents were created as headings and read before code;
+all meaningful changes have decisions and session-table rows; the build dependency
+has its version and alternatives recorded; no domain bug fix was needed; flow uses
+real code names and nested order; commit references now name the implementation
+commit; reviewed files contain no secrets or attribution; verified commit identity
+is correct; this handoff contains all twelve required sections.
 
 Not tested: other Python versions, other operating systems, a non-editable package
 install, any parser/storage/API/graph behavior (none implemented). No formatter,
