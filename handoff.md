@@ -91,7 +91,8 @@ Build-only setuptools==84.0.0. Optional dev pins: ruff==0.16.10, mypy==2.4.0.
 Local Phase 1.5 commits: acfd609 (feature), 334ec3d (documentation finalization).
 Local Phase 1.6 commits: 300652d (feature), facc23e (documentation finalization).
 Q1 implementation commit: ec14dca7cf518a167dc42bd853c45d876c64cf26.
-Documentation references finalize separately under D-004.
+Documentation repair/finalization commit: 0235fbf33103b90004ec470e53623209b2bc68c6.
+Its reference finalization follows D-004 in a separate documentation commit.
 
 ## 5. Decisions Made
 

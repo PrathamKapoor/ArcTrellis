@@ -677,4 +677,4 @@ developer gate (manual local sequence)        commands below run independently
 | Architecture | Add native import audit and verified local developer quality flow. | tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-064 |
 | Handoff | Record verified gates, limits and twelve-section continuation state; stop after Q1. | README.md, decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-065 |
 | Verification commands | Correct auxiliary smoke byte input and retain existing Git line normalization for whitespace audit. | decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-066 |
-| Historical prose | Restore old decision/flow prose and restrict finalization to current commit fields. | decisions.md, flow.md, handoff.md | uncommitted | D-067 |
+| Historical prose | Restore old decision/flow prose and restrict finalization to current commit fields. | decisions.md, flow.md, handoff.md | 0235fbf33103b90004ec470e53623209b2bc68c6 | D-067 |

@@ -683,7 +683,7 @@ Append-only record of engineering decisions.
 - Files: decisions.md, flow.md, handoff.md
 
 ### D-067: Restore historical prose and restrict reference finalization fields
-- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, 0235fbf33103b90004ec470e53623209b2bc68c6
 - Context: Final historical-prefix comparison detected an overbroad hash replacement in earlier Stage A documentation finalization.
 - Decision: Restore the entire pre-D-055 decisions prefix exactly from 25f333c and its original D-048 flow row. Finalize only current decision commit fields and table Commit cells, leaving literal prose unchanged. Verify historical equality before the final documentation commit.
 - Why: Comparison showed D-004's phrase uncommitted markers and D-048's phrase uncommitted documentation replaced by acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79; the old flow row had the same unintended word substitution.
