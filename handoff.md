@@ -87,7 +87,10 @@ when all components match. Human-readable qualified names need not be unique.
 Dependency pins unchanged: tree-sitter==0.25.2, tree-sitter-python==0.25.0,
 tree-sitter-javascript==0.25.0, tree-sitter-typescript==0.23.2. No installation or
 upgrade was needed. No formatter/linter/type checker is configured.
-Implementation commit: uncommitted. Finalize its reference separately under D-004;
+Implementation commit: 4981f258ea312e254e9c4de4b34f3f3068e71a03,
+feat(extraction): add Python semantic entity extraction. Required author and
+committer were verified; git status --short after this commit was empty.
+This reference finalization changes documentation only. Finalize its reference separately under D-004;
 obtain the later documentation commit from git log without rewriting history.
 
 ## 5. Decisions Made

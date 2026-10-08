@@ -332,7 +332,7 @@ Append-only record of engineering decisions.
 - Regression test: none; documentation-only correction verified against src/arctrellis/parsing/source.py and src/arctrellis/ingestion/discovery.py.
 
 ### D-032: Add the missing optional declaration signature compatibly
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Inspection verified CodeEntity has no signature field although Phase 1.2 explicitly requires CodeEntity.signature. Existing callers use positional metadata as the eighth argument.
 - Decision: Add optional signature as the final field, default None; validate nonempty unpadded strings while permitting internal newlines. Add a regression covering existing positional construction and signature validation.
 - Why: A final optional field preserves existing constructor positions and satisfies the requested canonical signature API.
@@ -341,7 +341,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/core/models.py, tests/core/test_models.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-033: Centralize revision-deterministic identity and validated extraction results
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Extraction is the first producer of canonical entity IDs and must retain scoped declarations without ambiguous ownership.
 - Decision: Add extraction models, IDs, errors and public API. Use UUID5/NAMESPACE_URL over compact canonical JSON containing a versioned marker, language, path, kind, lexical qualified name and half-open byte span. ExtractionResult owns a module-first immutable entity tuple sorted by byte span/kind/ID, rejects duplicate IDs and invalid local parents, and retains partial status. Language uses the existing Language enum; the result vocabulary supports future supported-language extractors while this extractor accepts Python only.
 - Why: Caller-independent deterministic identity and an explicit validated result can be reused without filesystem or native-parser dependencies.
@@ -350,7 +350,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/extraction/__init__.py, src/arctrellis/extraction/models.py, src/arctrellis/extraction/ids.py, src/arctrellis/extraction/errors.py, tests/extraction/__init__.py, tests/extraction/test_models.py, tests/extraction/test_ids.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-034: Interpret verified normalized Python grammar with semantic scope
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Normalized samples verified async uses function_definition, decorators wrap a definition field, and imports expose repeated name fields plus module_name and wildcard_import.
 - Decision: Add an iterative Python extractor that carries nearest semantic parent through control syntax. Emit only MODULE, CLASS, FUNCTION, METHOD and one IMPORT per binding. Classes determine immediate method scope; decorated wrappers supply locations/numbered decorator metadata without duplicate extraction. Keep six exact span coordinates as string metadata and async state. Import metadata retains form/module/imported name/alias/binding/relative level/wildcard state without resolution.
 - Why: Syntax-parent-only classification fails class control flow and nested functions; field-based grammar interpretation was observed directly through ArcTrellis SyntaxNode samples.
@@ -359,7 +359,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/extraction/python.py, src/arctrellis/extraction/imports.py, tests/extraction/test_python.py, tests/extraction/test_imports.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-035: Decode owned Python bytes and conservatively exclude recovery declarations
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Signatures/names need encoding-aware decoding, and malformed source must not yield speculative semantic identity.
 - Decision: Detect source encoding with tokenize.detect_encoding, validate full decoding, and decode exact byte slices with that encoding. Preserve declaration headers through a token-based top-level colon boundary, including multiline annotations but excluding decorators/body/comments after the header colon. Precompute subtree recovery state iteratively; skip any candidate declaration/import or decorated wrapper containing ERROR/MISSING descendants and do not traverse that rejected semantic scope. Mark partial from parser diagnostics or observed recovery/skips. Use explicit decoding, wrong-language and semantic-boundary exceptions.
 - Why: Encoding detection is standard-library data inspection; tokenize is only a header delimiter helper, not a second semantic parser. One recovery prepass avoids repeated subtree scans.
@@ -368,7 +368,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/extraction/source.py, src/arctrellis/extraction/python.py, src/arctrellis/extraction/errors.py, tests/extraction/test_python.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-036: Use local contract tests and literal scripts for grammar inspection
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: The baseline ran 164 tests, OK (skipped=7). The first inline grammar inspection failed with SyntaxError: unterminated string literal due to PowerShell quote handling.
 - Decision: Retry temporary grammar inspection through a literal here-string piped to Python stdin; add local extraction, identity, import and result tests before implementation. Keep existing dependencies and the environment unchanged. Preserve failed inspection history and finalize local commit references under D-004.
 - Why: The retry printed actual normalized kinds/fields for all required samples, with zero diagnostics; no permanent debug file or target execution is needed.
@@ -377,7 +377,7 @@ Append-only record of engineering decisions.
 - Files: tests/extraction/__init__.py, tests/extraction/test_ids.py, tests/extraction/test_models.py, tests/extraction/test_python.py, tests/extraction/test_imports.py, decisions.md, flow.md, handoff.md
 
 ### D-037: Postpone the source helper's self-referential annotation
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: The first extraction implementation run failed all four test imports before running semantic assertions.
 - Decision: Postpone annotations in extraction/source.py, matching the established Python 3.13 forward-reference approach.
 - Why: _PythonSource.from_parsed names its own not-yet-created class in a return annotation.
@@ -389,7 +389,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_python.py::PythonExtractionTests.test_empty_module_has_path_identity_and_inclusive_location and all extraction public-import tests.
 
 ### D-038: Verify empty-suite recovery and encoding limits explicitly
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Additional probes showed def f(): followed by a newline has an empty body with no parser diagnostics. A Latin-1 identifier produced two parser diagnostics although decoding succeeds.
 - Decision: Retain conservative empty-body skipping and partial status; add tests for diagnostic-free empty suites, missing names/recovery flags, canonical serialization and the native non-UTF-8 identifier limitation.
 - Why: Absence of parser diagnostics is not proof of a structurally complete declaration. Parsing remains the syntax boundary; extraction does not re-encode or reparse.
@@ -398,7 +398,7 @@ Append-only record of engineering decisions.
 - Files: tests/extraction/test_python.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-039: Retry a rejected documentation patch with actual context
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: A combined test/documentation patch failed with apply_patch verification failed: Failed to find expected lines in C:\Projects\ArcTrellis\README.md: No numeric classification. Search confirmed its added tests and D-038 were absent.
 - Decision: Retry using the inspected README paragraphs and separate supported contexts.
 - Why: The rejected atomic patch changed no files; the expected line was part of a longer existing line.
@@ -407,7 +407,7 @@ Append-only record of engineering decisions.
 - Files: README.md, decisions.md, flow.md
 
 ### D-040: Preserve lambda return annotation colons in declaration signatures
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Independent review and a local literal-byte probe reproduced a truncated signature with zero syntax diagnostics.
 - Decision: Select the final depth-zero operator colon in the already-bounded declaration header, ignoring colons inside brackets, strings and comments.
 - Why: The first depth-zero colon can belong to an unparenthesized lambda return annotation; the declaration delimiter is the final one before its body.
@@ -419,7 +419,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_python.py::PythonExtractionTests.test_lambda_return_annotation_keeps_internal_top_level_colons.
 
 ### D-041: Include normalized future-import binding declarations
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Review reproduced from __future__ import annotations yielding only MODULE with partial=False. Inspection verified future_import_statement and repeated name fields, with no module_name field.
 - Decision: Include future_import_statement in recovery checks/import dispatch and assign its grammar-defined __future__ module explicitly, reusing per-binding alias metadata.
 - Why: These are actual source import declarations. The grammar's anonymous module token would otherwise silently disappear.
@@ -431,7 +431,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_imports.py::ImportTests.test_future_imports_use_their_anonymous_module_token_without_resolution.
 
 ### D-042: Align header offsets with tokenizer newline coordinates
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Review recheck found cleanly parsed headers containing U+2028 or form-feed produce truncated signatures.
 - Decision: Compute decoded header row offsets only from actual newline characters, matching StringIO.readline/tokenize, rather than str.splitlines.
 - Why: splitlines treats additional Unicode separators and form-feed as line breaks while tokenizer rows do not.
@@ -443,7 +443,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_python.py::PythonExtractionTests.test_signature_rows_use_only_newlines_not_unicode_separators_or_formfeeds.
 
 ### D-043: Record verified Python extraction and preserve local session continuity
-- Date / phase / commit: 2026-10-08, Phase 1.2, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.2, 4981f258ea312e254e9c4de4b34f3f3068e71a03
 - Context: Implementation and independent review corrections are complete; the next session needs verified boundaries and actual results.
 - Decision: Rewrite all twelve handoff sections with extraction contracts, actual test outcomes, initial failures and encoding/recovery limitations. Keep dependency configuration, parsing, ingestion and graph unchanged; finalize implementation hashes separately under D-004 after local commits.
 - Why: Extraction tests ran 31 tests with OK; the complete suite ran 196 tests, OK (skipped=7), including the original 164 tests and signature compatibility coverage. Public imports and scan/parse/extract smoke succeeded; pip check found no broken requirements; native-import source search found no matches. Review recheck found no remaining actionable issue.
