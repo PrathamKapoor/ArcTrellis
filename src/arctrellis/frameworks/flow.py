@@ -167,6 +167,10 @@ def resolve_framework_flow(
                 for endpoint in eligible:
                     graph.add_relationship(_pre_edge(p, endpoint, outcome))
         analysis = FrameworkAnalysisResult(graph, endpoints.observations, endpoints.endpoints, endpoints.resolutions)
-        return FrameworkFlowResult(analysis, index.pre_handler_observations, tuple(outcomes))
+        from .composition import compose_router_paths
+
+        return compose_router_paths(
+            index, imports, FrameworkFlowResult(analysis, index.pre_handler_observations, tuple(outcomes))
+        )
     except (GraphError, TypeError, ValueError) as error:
         raise FrameworkResolutionInvariantError("invalid snapshot for framework flow") from error

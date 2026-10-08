@@ -9,6 +9,7 @@ from arctrellis.graph import CodeGraph
 from arctrellis.ingestion import DiscoveredFile, Language
 from arctrellis.parsing import SyntaxSpan
 
+from .composition_models import RouterMountObservation, RouterMountResolution, RouterPrefixObservation, _router_order
 from .ids import _identity
 from .models import (
     Framework,
@@ -16,6 +17,7 @@ from .models import (
     FrameworkBinding,
     HttpEndpointResolution,
     HttpRouteObservation,
+    _contains,
     _text,
 )
 
@@ -93,14 +95,6 @@ class PreHandlerObservation:
             raise ValueError("framework binding must precede pre-handler registration")
 
 
-def _contains(outer: SyntaxSpan, inner: SyntaxSpan) -> bool:
-    return (
-        outer.start_byte <= inner.start_byte <= inner.end_byte <= outer.end_byte
-        and (outer.start_line, outer.start_column) <= (inner.start_line, inner.start_column)
-        and (inner.end_line, inner.end_column) <= (outer.end_line, outer.end_column)
-    )
-
-
 def _pre_order(p: PreHandlerObservation) -> tuple[str, int, int, str]:
     return p.path, p.span.start_byte, p.span.end_byte, p.id
 
@@ -136,6 +130,10 @@ class FrameworkFlowResult:
     pre_handler_observations: tuple[PreHandlerObservation, ...]
     pre_handler_resolutions: tuple[HttpEndpointResolution, ...]
 
+    router_prefix_observations: tuple[RouterPrefixObservation, ...] = ()
+    router_mount_observations: tuple[RouterMountObservation, ...] = ()
+    mount_resolutions: tuple[RouterMountResolution, ...] = ()
+
     def __post_init__(self) -> None:
         if not isinstance(self.analysis, FrameworkAnalysisResult):
             raise TypeError("flow requires canonical framework analysis")
@@ -154,6 +152,37 @@ class FrameworkFlowResult:
             != tuple(p.id for p in self.pre_handler_observations)
         ):
             raise ValueError("one ordered decision required per pre-handler")
+
+        groups: tuple[
+            tuple[
+                tuple[RouterPrefixObservation | RouterMountObservation, ...],
+                type[RouterPrefixObservation] | type[RouterMountObservation],
+            ],
+            ...,
+        ] = (
+            (self.router_prefix_observations, RouterPrefixObservation),
+            (self.router_mount_observations, RouterMountObservation),
+        )
+        for records, kind in groups:
+            if not isinstance(records, tuple) or any(not isinstance(r, kind) for r in records):
+                raise TypeError("router observations must be immutable canonical tuples")
+            if records != tuple(sorted(records, key=_router_order)) or len({r.id for r in records}) != len(records):
+                raise ValueError("router observations must be unique and ordered")
+        if (
+            not isinstance(self.mount_resolutions, tuple)
+            or any(not isinstance(r, RouterMountResolution) for r in self.mount_resolutions)
+            or tuple(r.observation_id for r in self.mount_resolutions)
+            != tuple(r.id for r in self.router_mount_observations)
+        ):
+            raise ValueError("one ordered decision required per mount")
+
+    @property
+    def local_endpoints(self) -> tuple[CodeEntity, ...]:
+        return tuple(e for e in self.endpoints if dict(e.metadata).get("path_completeness") != "effective")
+
+    @property
+    def effective_endpoints(self) -> tuple[CodeEntity, ...]:
+        return tuple(e for e in self.endpoints if dict(e.metadata).get("path_completeness") == "effective")
 
     @property
     def graph(self) -> CodeGraph:
@@ -186,3 +215,15 @@ class FrameworkFlowResult:
     @property
     def unsupported_pre_handler_count(self) -> int:
         return sum(r.status.value == "unsupported" for r in self.pre_handler_resolutions)
+
+    @property
+    def resolved_mount_count(self) -> int:
+        return sum(r.status.value == "resolved" for r in self.mount_resolutions)
+
+    @property
+    def unresolved_mount_count(self) -> int:
+        return sum(r.status.value == "unresolved" for r in self.mount_resolutions)
+
+    @property
+    def ambiguous_mount_count(self) -> int:
+        return sum(r.status.value == "ambiguous" for r in self.mount_resolutions)

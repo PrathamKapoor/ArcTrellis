@@ -12,7 +12,7 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.9A with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.9 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
 internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
@@ -48,6 +48,8 @@ Current capabilities:
 - Conservative lexical, direct same-class and import-assisted CALLS with LIKELY confidence.
 - Static FastAPI/Flask/Express route observations with explicit handler uncertainty.
 - API_ENDPOINT entities, registration proof and endpoint-to-handler EXPOSES traces.
+- Precise Express route middleware, FastAPI decorator dependencies and Flask request hooks.
+- Static same-file router prefixes/mounts, distinct local/effective endpoints and multi-site proof.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
 Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
@@ -586,7 +588,7 @@ Supported initial adapters:
   including constructor aliases, followed by simple instance assignments. Direct
   get/post/put/patch/delete/options/head decorators associate represented functions
   or class methods, including async handlers. APIRouter paths are explicitly local;
-  constructor prefixes and include_router mounting are not composed.
+  static constructor prefixes and simple same-file include_router mounting are composed by the framework-flow stage.
 - **Flask:** direct module Flask constructor imports/aliases and app assignments,
   with `@app.route` using a static literal path and optional literal list/tuple/set
   of methods. The adapter default is GET. Explicit methods are normalized/deduplicated;
@@ -596,7 +598,7 @@ Supported initial adapters:
   followed by a simple module-level app or express.Router initialization. Direct
   module registrations support get/post/put/patch/delete/options/head. One-argument
   app.get is a settings accessor, not a registration. Only the final argument is
-  the handler reference; earlier arguments are counted without middleware classification.
+  the handler reference; earlier arguments are counted during endpoint extraction and classified separately by the pre-handler stage.
 
 Supported paths are slash-prefixed, unescaped single/double quoted strings.
 Interpolation, escaped strings, concatenation, templates and variables are not
@@ -635,11 +637,11 @@ can follow endpoint -> EXPOSES -> handler -> CALLS -> callee with both proofs in
 Resolution copies the completed call graph, preserves all prior evidence and validates
 matching snapshots. It performs no source reads, framework imports, constructor or
 decorator execution, Node invocation, dependency installation or environment evaluation.
-No framework CALLS or APPLIES_MIDDLEWARE relationships are added.
+Endpoint resolution adds no framework CALLS or APPLIES_MIDDLEWARE relationships; the separate framework-flow stage adds pre-handler edges.
 
 Deferred: api_route, module-namespace constructor imports, application factories,
-nested/conditional Express registration, router mounting/prefix composition,
-Flask Blueprints, Express app.use and route chains, middleware semantics, dynamic
+nested/conditional Express registration, cross-file/recursive router composition,
+Flask Blueprints, global Express app.use middleware and route chains, dynamic
 routes, runtime introspection and frameworks beyond these three adapters.
 
 Local reproducible verification:
@@ -669,5 +671,52 @@ exact reference coordinates. Dependencies are not ASGI middleware; request hooks
 are not WSGI middleware. Express/FastAPI associations are LIKELY/0.85 locally or
 LIKELY/0.75 import-assisted. Exact Flask same-app hook association is PROVEN/1.0.
 Unknown/ambiguous/unsupported targets receive no edge. No synthetic middleware-to-handler
-CALLS are created. Global Express use, Flask other hooks/Blueprints, router mounts
-and prefix composition are deferred at this gate.
+CALLS are created. Global Express use and Flask other hooks/Blueprints remain deferred.
+
+## Static router path composition
+
+The final `resolve_framework_flow(index, imports, calls, endpoints)` stage captures
+same-file constructor and mount provenance from observations retained during indexing:
+
+- FastAPI: a static `APIRouter(prefix="/users")`, plus direct
+  `app.include_router(router, prefix="/api")` or an absent include prefix.
+  Constructor imports may be aliased. Only route declarations preceding the include
+  site participate in this conservative subset; framework-version lifecycle behavior
+  is not emulated. Nonempty FastAPI prefixes ending in `/` are unsupported, matching
+  the [APIRouter prefix contract](https://fastapi.tiangolo.com/reference/apirouter/).
+- Express: proven `express.Router()` and direct two-argument
+  `app.use("/api", router)`. Normal functions, middleware factories, dynamic mount
+  paths and additional mount arguments do not produce effective endpoints.
+- Cross-file router variables and nested mount chains are deferred. Nested/cyclic
+  FastAPI includes receive unsupported decisions; the implementation never recurses.
+
+Local endpoints remain unchanged. Changed composed paths create separate entities
+with `path_completeness=effective`, `local_endpoint_id`, constructor/prefix/mount
+observation IDs and `composition_scope=application|router`. Mounted effective endpoints
+belong to the mounting app's MODULE. Prefix-only endpoints describe router configuration,
+not proof of a publicly deployed path. Unchanged paths retain the local fact without
+creating a duplicate effective entity. Separate mount sites remain distinct even if
+paths match. Unsupported mounts preserve local endpoints and explicit decisions.
+
+`join_http_paths(prefix, route)` removes boundary slashes only:
+`"/api/" + "/users" -> "/api/users"`, `"/api" + "/" -> "/api/"`,
+`"" + "/users" -> "/users"`. The route must begin with `/`; the prefix may be
+empty. Trailing route slashes, internal spelling and path parameters are preserved;
+there is no URL decoding or filesystem normalization. Adapter composition declines
+local paths beginning `//` rather than normalizing them into effective claims.
+
+Effective DEFINES, EXPOSES and APPLIES_MIDDLEWARE edges retain original route/reference
+Evidence and add constructor, prefix and mount proof records. Original handler and
+pre-handler confidence is inherited unchanged. No middleware-to-handler CALLS or
+full runtime middleware-order guarantee is introduced. Resolution uses retained
+observations and existing imports/entities; it does not reread or execute sources.
+Result tuples are immutable; their independently owned CodeGraph follows the existing
+mutable graph API and should be treated as a completed snapshot.
+
+Verified local commands:
+
+```powershell
+.venv\Scripts\python.exe -m unittest tests.frameworks.test_flow -q
+.venv\Scripts\python.exe -m unittest tests.frameworks.test_composition -q
+.venv\Scripts\python.exe -m tests.frameworks.flow_smoke
+```

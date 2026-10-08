@@ -1,5 +1,8 @@
 """Conservative FastAPI, Flask and Express static endpoint adapters."""
 
+from .composition import join_http_paths
+from .composition_extraction import extract_router_observations
+from .composition_models import RouterMountObservation, RouterMountResolution, RouterPrefixObservation
 from .errors import FrameworkAnalysisError, FrameworkExtractionError, FrameworkResolutionInvariantError
 from .extraction import extract_framework_observations
 from .models import (
@@ -36,4 +39,13 @@ __all__ += [
     "PreHandlerKind",
     "extract_pre_handler_observations",
     "resolve_framework_flow",
+]
+
+
+__all__ += [
+    "join_http_paths",
+    "RouterPrefixObservation",
+    "RouterMountObservation",
+    "RouterMountResolution",
+    "extract_router_observations",
 ]

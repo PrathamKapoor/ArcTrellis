@@ -492,6 +492,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
      │   ├─ extract_call_sites()        calls/extraction.py; retain body-owned observations before releasing syntax
      │   ├─ extract_framework_observations() frameworks/extraction.py; retain route/provenance syntax before release
      │   ├─ extract_pre_handler_observations() frameworks/flow_extraction.py; preserve precise pre-handler occurrences
+     │   ├─ extract_router_observations()  frameworks/composition_extraction.py; preserve constructor/prefix/mount proof
      │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
      │   ├─ _file_entity()               create path-based FILE with analyzed byte size
      │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
@@ -617,14 +618,14 @@ extract_framework_observations()           src/arctrellis/frameworks/extraction.
 resolve_http_endpoints()                   src/arctrellis/frameworks/resolution.py
  ├─ _validate_snapshots()                 reject stale inputs before adding graph facts
  ├─ framework import decision/inventory   reject known internal framework-name collisions, even failed files
- ├─ _HandlerIndex()                       index direct functions/import bindings/declaration spans once
+ ├─ _handler_index()                      index direct functions/import bindings/declaration spans once
  ├─ _handler()                            match canonical decorated declarations or indexed Express references
  ├─ _endpoint()                           one API_ENDPOINT per static HTTP method
  └─ _relationship()                       preserve registration-site Evidence for DEFINES and EXPOSES
      └─ CodeGraph.add_relationship()       retain immutable proof in the independent graph
 ```
 
-Observations separate syntax from target selection. Constructor/import provenance rejects unrelated .get/.route receivers and visible contradictory writes. Decorator arguments use framework-specific path/rule keywords; splats and invalid duplicates remain unsupported. Express one-argument get is a settings accessor. Direct module handler visibility is retained separately from handler syntax; explicit rebinding or block-only targets stay unresolved. Unsupported paths/methods create a decision but no endpoint. A valid static registration with an unknown/ambiguous handler retains its endpoint and DEFINES proof, with no EXPOSES edge. Wildcard/conditional imports and class import shadows cannot establish receiver provenance. Exact decorated declaration spans prevent same-name nested handler collisions. Python decorator association is PROVEN/1.0; Express local/import-assisted references remain LIKELY/0.85 or 0.75. No middleware, route mounting/prefix composition or framework CALLS are added. Typed extraction errors become explicit FAILED file outcomes; inconsistent snapshots raise FrameworkResolutionInvariantError. Resolution reads retained semantic records only; inputs remain unchanged.
+Observations separate syntax from target selection. Constructor/import provenance rejects unrelated .get/.route receivers and visible contradictory writes. Decorator arguments use framework-specific path/rule keywords; splats and invalid duplicates remain unsupported. Express one-argument get is a settings accessor. Direct module handler visibility is retained separately from handler syntax; explicit rebinding or block-only targets stay unresolved. Unsupported paths/methods create a decision but no endpoint. A valid static registration with an unknown/ambiguous handler retains its endpoint and DEFINES proof, with no EXPOSES edge. Wildcard/conditional imports and class import shadows cannot establish receiver provenance. Exact decorated declaration spans prevent same-name nested handler collisions. Python decorator association is PROVEN/1.0; Express local/import-assisted references remain LIKELY/0.85 or 0.75. This endpoint-resolution stage adds no middleware, route composition or framework CALLS; the separate framework-flow stage enriches pre-handlers and static paths. Typed extraction errors become explicit FAILED file outcomes; inconsistent snapshots raise FrameworkResolutionInvariantError. Resolution reads retained semantic records only; inputs remain unchanged.
 
 ## Changes in this session (Phase 0.1)
 
@@ -802,9 +803,10 @@ extract_pre_handler_observations()         frameworks/flow_extraction.py; retain
  └─ Flask before_request decorator        retain exact same-app binding and decorated function
 resolve_framework_flow()                  frameworks/flow.py; copy prior graph, never reread sources
  ├─ validate existing endpoint snapshot   reject stale facts rather than silently replacing them
- ├─ _HandlerIndex() / _reference_handler() frameworks/resolution.py; reuse function/import selection
+ ├─ _handler_index() / _reference_handler() frameworks/resolution.py; reuse function/import selection
  ├─ resolve each pre-handler              duplicates ambiguous; unsupported/unknown produces no edge
- └─ _pre_edge()                           endpoint APPLIES_MIDDLEWARE callable with occurrence Evidence
+ ├─ _pre_edge()                           endpoint APPLIES_MIDDLEWARE callable with occurrence Evidence
+ └─ compose_router_paths()                frameworks/composition.py; enrich static paths after pre-handler resolution
 ```
 
 Evidence metadata retains semantic_kind and order_index. Express/FastAPI edges are LIKELY/0.85 locally or0.75 import-assisted. Flask exact same-app hooks are PROVEN/1.0; source order is per-file/app registration order, not a claim of cross-file runtime ordering. No middleware-to-handler CALLS are fabricated. Typed extraction failure remains a bounded FAILED file outcome.
@@ -817,3 +819,33 @@ Evidence metadata retains semantic_kind and order_index. Express/FastAPI edges a
 | Reference safety | Preserve the complete direct-module visibility index and test actual snapshot boundaries. | src/arctrellis/frameworks/extraction.py, src/arctrellis/indexing/models.py, tests/frameworks/test_flow.py | 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9 | D-091 |
 | Scope and provenance | Defer class dependencies and validate exact constructor/Depends witnesses and app identity. | src/arctrellis/frameworks/flow_extraction.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/frameworks/flow.py, src/arctrellis/indexing/models.py, tests/frameworks/test_flow.py, README.md | 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9 | D-092 |
 | Verification gate | Record52 framework/347 total tests, quality/isolation checks, smoke and reviewed corrections. | README.md, decisions.md, flow.md, handoff.md | 94cdfd6dc4e789f2bc315f2fb82a05ac98f37ec9 | D-093 |
+
+## 20. Static router path composition
+
+Input: prefix/mount observations captured within the existing parse lifetime and an independently resolved pre-handler graph.
+
+```text
+extract_router_observations()             frameworks/composition_extraction.py; no reparse
+ ├─ _bindings()                           shared unique canonical constructor provenance
+ ├─ router prefix syntax                  retain static literal or explicit unsupported value
+ └─ direct include_router/use             retain module-level mount site; never execute
+compose_router_paths()                    frameworks/composition.py; retained records only
+ ├─ validate router constructor witnesses against existing entities/import decisions
+ ├─ resolve same-file router reference    no imported-variable or recursive mount inference
+ ├─ reject unsupported boundaries        FastAPI trailing prefixes/dynamic values, doubled route-leading slash
+ ├─ preceding FastAPI declaration subset do not emulate lifecycle differences or recursively follow mounts
+ ├─ join_http_paths()                     trim only boundary slashes; preserve trailing route slash
+ ├─ create effective endpoints            retain local fact and distinct mount identities
+ └─ copy DEFINES/EXPOSES/pre-handler proof add route/prefix/constructor/mount Evidence without raising confidence
+```
+
+Mount ownership is the application module. Prefix-only paths are router configuration, not proof of public mounting. Unsupported/ambiguous mounts create no effective path. Middleware edges remain separate from EXPOSES, never synthetic execution CALLS. No source files are reopened.
+
+## Changes in this session (Phase 1.9B)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Static composition | Capture configuration/mount observations and preserve local/effective endpoint facts with multi-site proof. | src/arctrellis/frameworks/, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py, tests/frameworks/test_composition.py, README.md | uncommitted | D-094 |
+| Composition hardening | Reject invalid FastAPI prefix boundaries and unusual route slash normalization; use keyword-only graph filters and typed router validation. | src/arctrellis/frameworks/composition.py, src/arctrellis/frameworks/composition_extraction.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/indexing/models.py, tests/frameworks/test_composition.py | uncommitted | D-095 |
+| Verification and documentation | Add repeatable mixed flow/proof and seven negative smoke cases; document local/effective ownership and bounded composition. | tests/frameworks/flow_smoke.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-096 |
+| Final quality and handoff | Share coordinate containment validation and record all passing gates, audits, skips and twelve-section continuation state. | src/arctrellis/frameworks/models.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/frameworks/composition_models.py, src/arctrellis/indexing/models.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-097 |

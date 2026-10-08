@@ -6,8 +6,14 @@ from enum import StrEnum
 from arctrellis.calls.models import CallSite, _site_order
 from arctrellis.core import EntityKind
 from arctrellis.extraction.models import _entity_span
-from arctrellis.frameworks.flow_models import PreHandlerKind, PreHandlerObservation, _contains, _pre_id, _pre_order
-from arctrellis.frameworks.models import HttpRouteObservation, _route_order
+from arctrellis.frameworks.composition_models import (
+    RouterMountObservation,
+    RouterPrefixObservation,
+    _router_id,
+    _router_order,
+)
+from arctrellis.frameworks.flow_models import PreHandlerKind, PreHandlerObservation, _pre_id, _pre_order
+from arctrellis.frameworks.models import HttpRouteObservation, _contains, _route_order
 from arctrellis.graph import CodeGraph
 from arctrellis.ingestion import DiscoveredFile, Language, RepositoryInventory
 
@@ -31,6 +37,7 @@ class FileIndexResult:
     call_site_count: int = 0
     route_observation_count: int = 0
     pre_handler_observation_count: int = 0
+    router_observation_count: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.language, Language) or not isinstance(self.status, FileIndexStatus):
@@ -43,6 +50,7 @@ class FileIndexResult:
             self.call_site_count,
             self.route_observation_count,
             self.pre_handler_observation_count,
+            self.router_observation_count,
         ):
             if type(count) is not int:
                 raise TypeError("counts must be non-boolean integers")
@@ -56,6 +64,7 @@ class FileIndexResult:
                     self.call_site_count,
                     self.route_observation_count,
                     self.pre_handler_observation_count,
+                    self.router_observation_count,
                 )
             ):
                 raise ValueError("failed files cannot contribute graph records")
@@ -86,6 +95,8 @@ class RepositoryIndexResult:
     call_sites: tuple[CallSite, ...] = ()
     route_observations: tuple[HttpRouteObservation, ...] = ()
     pre_handler_observations: tuple[PreHandlerObservation, ...] = ()
+    router_prefix_observations: tuple[RouterPrefixObservation, ...] = ()
+    router_mount_observations: tuple[RouterMountObservation, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.inventory, RepositoryInventory) or not isinstance(self.graph, CodeGraph):
@@ -253,6 +264,59 @@ class RepositoryIndexResult:
             pre_counts[p.path] = pre_counts.get(p.path, 0) + 1
         if any(pre_counts.get(f.path, 0) != f.pre_handler_observation_count for f in self.file_results):
             raise ValueError("pre-handler counts must match file summaries")
+
+        router_counts: dict[str, int] = {}
+        groups: tuple[
+            tuple[
+                tuple[RouterPrefixObservation | RouterMountObservation, ...],
+                type[RouterPrefixObservation] | type[RouterMountObservation],
+            ],
+            ...,
+        ] = (
+            (self.router_prefix_observations, RouterPrefixObservation),
+            (self.router_mount_observations, RouterMountObservation),
+        )
+        for records, kind in groups:
+            if not isinstance(records, tuple) or any(not isinstance(r, kind) for r in records):
+                raise TypeError("router observations must be immutable canonical tuples")
+            if records != tuple(sorted(records, key=_router_order)) or len({r.id for r in records}) != len(records):
+                raise ValueError("router observations must be unique and ordered")
+            for r in records:
+                module = entities.get(r.owner_module_id)
+                witness = entities.get(r.binding.import_entity_id)
+                summary = summaries.get(r.path)
+                if (
+                    module is None
+                    or module.kind is not EntityKind.MODULE
+                    or module.location is None
+                    or module.location.file_path != r.path
+                    or module.language != r.language.value
+                    or witness is None
+                    or witness.kind is not EntityKind.IMPORT
+                    or witness.parent_id != module.id
+                    or summary is None
+                    or summary.status is FileIndexStatus.FAILED
+                    or not _contains(_entity_span(module), r.span)
+                    or not _contains(_entity_span(module), r.binding.span)
+                    or _entity_span(witness).end_byte > r.binding.span.start_byte
+                    or r.id != _router_id(r)
+                ):
+                    raise ValueError("router requires exact analyzed module/provenance/identity")
+                constructor = _constructor_import(witness)
+                if (
+                    constructor is None
+                    or constructor[0] is not r.framework
+                    or r.binding.constructor
+                    not in (("express", "Router") if r.framework.value == "express" else (constructor[1],))
+                ):
+                    raise ValueError("router constructor witness disagrees")
+                router_counts[r.path] = router_counts.get(r.path, 0) + 1
+        if any(router_counts.get(f.path, 0) != f.router_observation_count for f in self.file_results):
+            raise ValueError("router observation counts must match file summaries")
+
+    @property
+    def router_observation_count(self) -> int:
+        return len(self.router_prefix_observations) + len(self.router_mount_observations)
 
     @property
     def pre_handler_observation_count(self) -> int:

@@ -207,3 +207,11 @@ class FrameworkAnalysisResult:
     @property
     def unsupported_count(self) -> int:
         return sum(r.status is EndpointResolutionStatus.UNSUPPORTED for r in self.resolutions)
+
+
+def _contains(outer: SyntaxSpan, inner: SyntaxSpan) -> bool:
+    return (
+        outer.start_byte <= inner.start_byte <= inner.end_byte <= outer.end_byte
+        and (outer.start_line, outer.start_column) <= (inner.start_line, inner.start_column)
+        and (inner.end_line, inner.end_column) <= (outer.end_line, outer.end_column)
+    )

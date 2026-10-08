@@ -10,8 +10,11 @@ from arctrellis.frameworks import (
     FrameworkExtractionError,
     HttpRouteObservation,
     PreHandlerObservation,
+    RouterMountObservation,
+    RouterPrefixObservation,
     extract_framework_observations,
     extract_pre_handler_observations,
+    extract_router_observations,
 )
 from arctrellis.graph import CodeGraph, GraphError
 from arctrellis.ingestion import DiscoveredFile, scan_repository
@@ -68,6 +71,8 @@ def _analyze_file(
     tuple[CallSite, ...],
     tuple[HttpRouteObservation, ...],
     tuple[PreHandlerObservation, ...],
+    tuple[RouterPrefixObservation, ...],
+    tuple[RouterMountObservation, ...],
 ]:
     if file.language is None:
         raise RepositoryIndexInvariantError("unsupported file reached analysis")
@@ -84,6 +89,8 @@ def _analyze_file(
         routes = extract_framework_observations(parsed, result)
         stage = "pre_handler_extraction"
         pre_handlers = extract_pre_handler_observations(parsed, result, routes)
+        stage = "router_extraction"
+        prefixes, mounts = extract_router_observations(parsed, result)
     except (ParsingError, ExtractionError, CallExtractionError, FrameworkExtractionError) as error:
         error_type = type(error).__name__[:128]
         return (
@@ -98,6 +105,8 @@ def _analyze_file(
                 f"{stage} failed ({error_type})",
             ),
             None,
+            (),
+            (),
             (),
             (),
             (),
@@ -122,11 +131,14 @@ def _analyze_file(
             call_site_count=len(call_sites),
             route_observation_count=len(routes),
             pre_handler_observation_count=len(pre_handlers),
+            router_observation_count=len(prefixes) + len(mounts),
         ),
         local,
         call_sites,
         routes,
         pre_handlers,
+        prefixes,
+        mounts,
     )
 
 
@@ -142,8 +154,12 @@ def index_repository(
     sites: list[CallSite] = []
     routes: list[HttpRouteObservation] = []
     pre_handlers: list[PreHandlerObservation] = []
+    prefixes: list[RouterPrefixObservation] = []
+    mounts: list[RouterMountObservation] = []
     for file in inventory.supported_files:
-        summary, local, calls, observations, pre_observations = _analyze_file(root, file, max_source_bytes)
+        summary, local, calls, observations, pre_observations, prefix_observations, mount_observations = _analyze_file(
+            root, file, max_source_bytes
+        )
         if local is not None:
             try:
                 for entity in local.entities():
@@ -156,9 +172,18 @@ def index_repository(
         sites.extend(calls)
         routes.extend(observations)
         pre_handlers.extend(pre_observations)
+        prefixes.extend(prefix_observations)
+        mounts.extend(mount_observations)
     try:
         return RepositoryIndexResult(
-            inventory, graph, tuple(outcomes), tuple(sites), tuple(routes), tuple(pre_handlers)
+            inventory,
+            graph,
+            tuple(outcomes),
+            tuple(sites),
+            tuple(routes),
+            tuple(pre_handlers),
+            tuple(prefixes),
+            tuple(mounts),
         )
     except (TypeError, ValueError) as error:
         raise RepositoryIndexInvariantError("repository summary does not match merged graph") from error
