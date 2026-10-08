@@ -2,169 +2,183 @@
 
 ## 1. Current Phase
 
-Phase 0 — Repository Foundation; subphase 0.1 — Project structure and canonical
-domain model. Objective: shared language-independent vocabulary and invariants.
-Status: complete. Phase 0.2 has not begun.
+Phase 0 — Repository Foundation. Subphase 0.2 — In-memory graph container and
+deterministic traversal. Objective: store explicitly supplied domain records and
+answer predictable structural queries without infrastructure dependencies.
+Status: complete implementation and tests; local commit checks and reference
+finalization remain. Phase 1.0 has not begun.
 
 ## 2. Work Completed
 
-Inspected the empty project directory, initialized Git, and configured the
-required repository-local identity. Created a src-layout package, immutable domain
-records, validated string enums and standard-library tests. Installed the package
-in a fresh .venv and verified public imports and all 33 tests.
+Verified the repository root, clean starting tree, Phase 0.1 commits, Git identity,
+Python 3.13.14 and absence of remotes. Read all required root documents and domain
+implementation. Added CodeGraph with canonical ID dictionaries and sorted
+incoming/outgoing indexes, explicit graph errors, immutable TraversalResult and
+evidence-preserving GraphPath records. Core files, packages and configuration
+were not changed.
 
-SourceLocation validates raw POSIX-style relative paths without normalization.
-Line ranges are inclusive and 1-based. Metadata is an ordered tuple of unique
-string pairs; order affects equality. Relationships embed immutable evidence
-records and read source → kind → target. IDs are caller-owned. Zero evidence is
-allowed; classifications do not certify proof. No score thresholds are inferred.
+Equal value reinsertions return None and preserve original records; conflicting
+IDs fail. Distinct edge IDs may share a structural triple. Both endpoints must
+exist before any relationship storage/index mutation. UNRESOLVED edges obey the
+same rule: any placeholder entity must be explicitly inserted.
+
+Snapshots and neighbors sort by ID; BFS expands sorted edge IDs and visits nodes
+once at discovery. Traversal includes the start and contains nodes only. Shortest
+paths preserve original relationships/evidence, use unweighted BFS, return None
+for disconnected known nodes, and return one entity with zero edges for same-node
+queries. Query confidence is not filtered or reclassified. No inference occurs.
+
+Independent review found no important correctness issues; the three minor
+Markdown/validation-policy findings were checked and corrected under D-010.
 
 ## 3. Files Changed
 
-- .gitignore: excludes local artifacts, credentials and forbidden research files.
-- pyproject.toml: src-layout packaging, Python >=3.13 and build-only setuptools pin.
-- README.md: honest current capabilities, verified PowerShell setup and invariants.
-- src/arctrellis/__init__.py: package identity.
-- src/arctrellis/core/__init__.py: seven public domain exports.
-- src/arctrellis/core/models.py: enums, frozen records and constructor validation.
-- tests/__init__.py: enable recursive unittest discovery.
-- tests/core/__init__.py: enable core test discovery.
-- tests/core/test_models.py: 33 meaningful contract tests with additional subcases.
-- decisions.md: D-001 through D-005 rationale and commit traceability.
-- flow.md: actual packaging, constructor and test call order plus session table.
-- handoff.md: current state, results, limitations and continuation instructions.
+- src/arctrellis/graph/__init__.py: intentional public graph exports.
+- src/arctrellis/graph/graph.py: indexed storage, safe insertion, counts, lookups,
+  snapshots, adjacency, neighbors, bounded BFS and shortest paths.
+- src/arctrellis/graph/errors.py: conflicts and unknown-reference exceptions.
+- src/arctrellis/graph/results.py: frozen validated TraversalResult and GraphPath.
+- tests/graph/__init__.py: graph test discovery.
+- tests/graph/fixtures.py: explicit synthetic payment graph and small test helpers.
+- tests/graph/test_graph.py: storage, integrity, adjacency and snapshots.
+- tests/graph/test_traversal.py: bounds, direction, cycles, filters and path choice.
+- tests/graph/test_results.py: result cardinality, continuity and immutability.
+- README.md: local graph capabilities, semantics and public imports.
+- decisions.md: D-006 through D-010, preserving earlier entries.
+- flow.md: graph call order and Phase 0.2 table, preserving the previous table.
+- handoff.md: verified current phase and continuation state.
 
 ## 4. Current Architecture / State
 
-Repository root: C:/Projects/ArcTrellis. Python observed: 3.13.14.
-arctrellis.core exports EntityKind, RelationshipKind, Confidence, SourceLocation,
-CodeEntity, Evidence and Relationship. Frozen, slotted records are hashable and
-convert through dataclasses.asdict and json.dumps. There are no runtime package
-dependencies, parser, graph container, storage, API or UI. No formatter, linter,
-type checker, CI configuration or license file exists.
+Repository root: C:/Projects/ArcTrellis. Python and .venv Python: 3.13.14.
+Public core: EntityKind, RelationshipKind, Confidence, SourceLocation, CodeEntity,
+Evidence and Relationship. Public graph: CodeGraph, GraphPath, TraversalResult,
+GraphError, DuplicateEntityError, DuplicateRelationshipError, UnknownEntityError
+and UnknownRelationshipError.
 
-Implementation commit: e7a2f98d078583b392170d323682870745311e45,
-`feat(core): establish canonical repository domain foundation`.
-git log verified the required author and committer; the initial commit is unsigned
-as recorded in D-005. The working tree was verified clean immediately after that
-commit. A separate documentation commit finalizes references as specified in
-D-004; consult git log for its hash. The .venv and editable-install metadata are
-local ignored artifacts.
+CodeGraph is mutable and append-oriented; its stored records are immutable.
+No removal, caching, persistence or thread-safety guarantee exists. Dictionary
+lookups average O(1); adjacency scans O(degree); sorted insertion costs O(degree);
+BFS is O(V+E) over explored nodes/edges. Snapshots and unique neighbors incur sorting.
+These are algorithmic expectations, not measured benchmarks.
+
+No runtime dependency was added. pyproject.toml still declares Python >=3.13 and
+build-only setuptools==84.0.0. The existing editable installation exposes the new
+package. No formatter, linter, type checker, CI configuration or license exists.
+Git has no remotes. This session has not pushed or published anything.
+Implementation commit reference: uncommitted; finalize under D-004 after committing.
 
 ## 5. Decisions Made
 
-- D-001: src layout, Python >=3.13, unittest, build backend and repository setup.
-- D-002: canonical immutable vocabulary, supplied IDs and embedded evidence.
-- D-003: strict raw relative paths and ordered immutable string metadata.
-- D-004: implementation hash finalization in a separate documentation commit.
-- D-005: record the initial commit's per-command signing override.
+- D-006: append-oriented graph, duplicate policy and endpoint integrity.
+- D-007: sorted adjacency and shared deterministic breadth-first search.
+- D-008: explicit errors and immutable traversal/path results.
+- D-009: synthetic fixtures and truthful session traceability.
+- D-010: documentation corrections and a supported in-place handoff rewrite.
+- Existing D-001 through D-005 remain in force; D-004 governs hash finalization.
 
 ## 6. Requirements and Constraints
 
-Keep the domain independent of infrastructure and explanation providers. Retain
-all required entity/relationship kinds and static confidence classifications;
-OBSERVED is intentionally absent. Do not silently normalize input or infer proof.
-All commits must be PrathamKapoor <prathamkapoor027@gmail.com>, with no attribution
-trailers. Do not commit paper/, research/ or *.tex. Keep decisions append-only
-(except permitted commit-reference finalization), flow accurate and handoff current.
+Keep graph behavior independent of parsers, databases, graph libraries and
+explanation providers. Query inserted records only; preserve direction,
+uncertainty and evidence. Do not infer architectural truth from prose.
+No removal semantics or global evidence/parent-reference policy was added.
+
+All commits must use PrathamKapoor <prathamkapoor027@gmail.com> as author and
+committer, with no attribution trailers. Never commit paper/, research/ or *.tex.
+No remote additions, pushes, uploads, publication or external repository operations
+are authorized. Keep decisions append-only except permitted hash finalization;
+update real call flows alongside changes.
 
 ## 7. Testing and Verification
 
 Commands executed from the repository root:
 
-- pwd: succeeded, C:\Projects\ArcTrellis.
-- Initial git status and git rev-parse --show-toplevel: failed with
-  `fatal: not a git repository (or any of the parent directories): .git`.
-  Get-ChildItem -Force returned no entries, confirming an empty directory.
-- git init: succeeded. Subsequent git rev-parse --show-toplevel returned
-  C:/Projects/ArcTrellis; git status confirmed no commits and an empty working tree.
-- git config user.name and git config user.email: returned PrathamKapoor and
-  prathamkapoor027@gmail.com. Both were also set locally and verified again.
-- python --version: Python 3.13.14.
-- python -m pip show setuptools: version 84.0.0. The host installation warned
-  about invalid distributions `~`, `~atplotlib` and `~ywin32`; exit code was zero.
-  The project uses an isolated .venv and does not modify those host packages.
-- python -m venv .venv: exit code zero.
-- .venv\Scripts\python.exe -m pip install -e .: successfully built and installed
-  arctrellis-0.1.0, exit code zero.
-- .venv\Scripts\python.exe -m unittest discover -s tests -v: 33 tests, OK,
-  exit code zero.
-- .venv\Scripts\python.exe -c "from arctrellis.core import CodeEntity, Relationship, Evidence, SourceLocation, EntityKind, RelationshipKind, Confidence; print('Public API imports OK')":
-  printed Public API imports OK, exit code zero.
-- git status --short: only the intended new foundation files were untracked;
-  .venv and build metadata were excluded.
-- .venv\Scripts\python.exe -c "from arctrellis.core import CodeEntity, Relationship, Evidence, SourceLocation":
-  README import command succeeded with exit code zero.
-- git diff --cached --check: no whitespace errors, exit code zero.
-- git diff --cached --name-only: exactly the twelve intended project files;
-  the staged forbidden-path check printed No forbidden files staged.
-- git check-ignore paper/example.md research/example.md example.tex .venv/pyvenv.cfg:
-  all four example paths were ignored, exit code zero.
-- Staged-content attribution scan using git grep: no matches; grep exit code one
-  denotes no matches. No attribution was found.
-- git add emitted LF-to-CRLF notices under the existing Git environment settings;
-  staging and whitespace validation succeeded. No global settings were changed.
-- git -c commit.gpgsign=false commit -m "feat(core): establish canonical repository domain foundation":
-  succeeded, creating e7a2f98 with twelve intended files.
-- git rev-parse HEAD: e7a2f98d078583b392170d323682870745311e45.
-- git log --format='%h %an <%ae> | %cn <%ce> | signature:%G? | %s': verified
-  PrathamKapoor <prathamkapoor027@gmail.com> as both author and committer,
-  signature:N, and the exact implementation message.
-- git status --short after the implementation commit: empty output, clean tree.
+- git rev-parse --show-toplevel: C:/Projects/ArcTrellis.
+- git status at startup: on master, working tree clean.
+- git log --oneline --decorate -10: HEAD a3d364e followed by e7a2f98.
+- git config user.name: PrathamKapoor.
+- git config user.email: prathamkapoor027@gmail.com.
+- python --version and .venv\Scripts\python.exe --version: Python 3.13.14.
+- git remote -v: empty output at startup and during review, no remotes.
+- .venv\Scripts\python.exe -m unittest discover -s tests -v:
+  baseline 33 tests, OK, exit zero. After writing graph tests before implementation,
+  the suite failed with three module-import errors and exit one:
+  ModuleNotFoundError: No module named 'arctrellis.graph'. This was an expected
+  missing-feature check, not a domain regression. After implementation and after
+  naming payment entities, the full suite ran 89 tests, OK, exit zero.
+- .venv\Scripts\python.exe -c "from arctrellis.graph import CodeGraph, GraphPath, TraversalResult, GraphError, DuplicateEntityError, DuplicateRelationshipError, UnknownEntityError, UnknownRelationshipError; print('Graph public API imports OK')":
+  printed Graph public API imports OK, exit zero.
+- .venv\Scripts\python.exe -c "from arctrellis.graph import CodeGraph, GraphPath, TraversalResult":
+  README graph import command succeeded with exit zero.
+- git diff --check: no whitespace errors. Git emitted LF-to-CRLF notices under
+  existing environment settings; no line-ending or signing settings were changed.
+- git status --short during review: intended README/decision/flow changes and new
+  graph implementation/tests only.
+- git diff --cached --check: no whitespace errors in the staged changes.
+- git diff --cached --name-only: thirteen intended graph/test/documentation paths;
+  the forbidden-path check printed No forbidden files staged.
+- Staged-content attribution scan with git grep: no matches; exit one means no
+  matches. Reviewed staged files contain no secrets or attribution.
 
-Rule 10 review: required documents were created as headings and read before code;
-all meaningful changes have decisions and session-table rows; the build dependency
-has its version and alternatives recorded; no domain bug fix was needed; flow uses
-real code names and nested order; commit references now name the implementation
-commit; reviewed files contain no secrets or attribution; verified commit identity
-is correct; this handoff contains all twelve required sections.
+All 33 Phase 0.1 tests were included in the passing 89-test runs. New graph tests
+compare reversed insertion order across snapshots, adjacency, bounded forward and
+reverse traversal, kind filters and equal-length shortest-path selection.
 
-Not tested: other Python versions, other operating systems, a non-editable package
-install, any parser/storage/API/graph behavior (none implemented). No formatter,
-linter or type checker ran because none is configured.
+The first combined delete/add handoff patch failed with the exact error recorded
+in D-010 and changed no files. The in-place rewrite succeeded.
+
+Not tested: other operating systems/Python versions, large-graph benchmarks,
+threaded access or non-editable distribution installs. No formatter, linter or type
+checker ran because none is configured. Source analysis, storage, APIs and product
+modes remain unimplemented.
 
 ## 8. Known Issues / Risks
 
-Confirmed: the host pip installation emits invalid-distribution warnings described
-above. Isolated project installation and tests succeeded. No project defect was
-observed. No license file exists; a license choice remains necessary for clear
-open-source reuse permissions.
+Confirmed: no project defect was observed in executed checks. No license exists;
+licensing remains an explicit future choice before public reuse. Earlier host pip
+invalid-distribution warnings remain in previous handoff history; host pip was not
+inspected or changed in this session.
 
-Possible: stricter path syntax and shallow metadata may require explicit adapter
-conversion. Cross-platform behavior and Python versions other than 3.13.14 remain
-unverified. Repository-wide identity and unresolved-target policy need definition
-when graph construction begins.
+Possible: cross-platform and large-graph behavior remain unverified. Sorted list
+insertion can be expensive for very high-degree nodes. Graph-wide evidence ID
+consistency, parent references, placeholder naming and incremental replacement or
+deletion need deliberate future policies. Queries include all confidence classes;
+CodeGraph is not thread-safe.
 
 ## 9. Unfinished Work
 
-No Phase 0.1 implementation remains. License selection and broader packaging/CI
-coverage are future repository work requiring deliberate choices. All later
-product capabilities remain unimplemented.
+Phase 0.2 functionality is implemented and verified by the current suite. Local
+commit auditing and documentation-reference finalization remain before closure.
+CI, license selection and later product capabilities are future work.
 
 ## 10. Next Subphase
 
-Phase 0.2 — In-memory graph container and deterministic graph traversal.
-Do not begin it until requested. Define graph referential integrity, duplicate
-handling and unresolved-target behavior before implementing the container.
+Phase 1.0 — Repository discovery, safe file inventory and language detection.
+Do not begin it during this session. No discovery, crawling, parsing or language
+detection code has been added.
 
 ## 11. Critical Context
 
-The earlier blocked attempt performed no repository inspection, changes, tests or
-commits. This retry's initial git failures reflected an empty directory, not a
-domain-code bug. No prior documents or decisions were present to preserve.
+Phase 0.1's earlier execution failure changed nothing. Its successful retry
+initialized an empty directory and produced e7a2f98 and a3d364e; both were verified
+at this session's start. Old decisions and the Phase 0.1 table are preserved; prior
+handoff details remain available in Git history.
 
-SourceLocation checks syntax only, not source existence or line count. Relationship
-constructors validate structure, not analysis truth. Numeric scores are optional;
-UNRESOLVED still requires a nonempty opaque target ID. There is no persistence or
-versioned serialization contract. No secrets or author-attribution trailers were
-added to project files.
+TraversalResult presents distinct reachable nodes in BFS discovery order, not a
+route or an induced subgraph. GraphPath validates a local directed walk, not source
+truth. Shortest-path ties use edge IDs, not entity names or confidence. No-path None
+is distinct from unknown-ID errors. Payment fixture evidence is synthetic test
+input, not analyzer output.
 
 ## 12. Agent Instructions
 
-Read decisions.md, flow.md and this handoff completely before changes. Respect
-existing decisions; append a superseding decision for any authorized reversal.
-Record meaningful changes and update flow in the same step. Run actual tests and
-verify public imports before claims. Use only verified facts in documentation.
-Check Git identity and stage explicit intended paths before each commit; inspect
-for forbidden material and attribution strings. Finalize commit references without
-rewriting history. Rewrite all twelve handoff sections at session end.
+Read decisions.md, flow.md and this handoff completely before changes. Verify
+status, identity, Python and remotes rather than trusting this summary. Respect
+existing decisions; append authorized superseding entries when needed. Document
+meaningful changes and flows in the same step. Preserve immutable records and
+ordering. Run full unittest and public-import checks before completion claims.
+Stage explicit paths, inspect forbidden files and attribution, and verify commit
+identity. Keep everything local; never add a remote or push without explicit
+authorization. Finalize hashes without rewriting history; use one supported file
+update per handoff target and rewrite all twelve sections with observed facts.
