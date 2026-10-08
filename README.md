@@ -12,10 +12,10 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.6 and Quality Gate Q1, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.7 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
-internal import-resolution subset are implemented. Call/inheritance resolution,
+internal import-resolution and conservative static call graph subsets are implemented. Inheritance resolution,
 routes, middleware, tests and database semantics are not implemented. There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
@@ -43,6 +43,8 @@ Current capabilities:
 - Repository-wide in-memory indexing with explicit COMPLETE/PARTIAL/FAILED outcomes.
 - FILE-to-MODULE structural evidence and a deterministic merged semantic graph.
 - Conservative internal module imports with explicit unresolved/ambiguous decisions and LIKELY evidence.
+- Static body-owned call-site observations, explicit unresolved/ambiguous decisions and site evidence.
+- Conservative lexical, direct same-class and import-assisted CALLS with LIKELY confidence.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
 Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
@@ -444,7 +446,7 @@ with file_module_membership evidence. FILE UUID5 identity uses language/relative
 remaining stable across content edits; declaration/proof identity remains revision-based.
 Repository identity is deliberately deferred; no REPOSITORY node is invented.
 
-Only semantic graph records, inventory and diagnostic counts survive per-file analysis.
+Only semantic graph records, inventory, diagnostic counts and lightweight CallSite observations survive per-file analysis.
 ParsedSource, full source bytes and syntax trees are released after each helper returns.
 Summary records are immutable; CodeGraph retains its existing mutable API, so completed
 results should be treated as snapshots. This is not persistent indexing.
@@ -462,7 +464,7 @@ print(resolved.resolved_count, resolved.unresolved_count, resolved.ambiguous_cou
 
 `resolve_imports(index)` returns a new graph and explicit per-import decisions. Python uses path-based modules (including __init__ and an extra alias without a leading src directory) and relative imports. JS/TS resolves simple quoted relative imports, exact source extensions and unique extension/index candidates; static CommonJS uses the same policy. A unique static match adds a LIKELY/0.90 IMPORTS edge from the lexical importing scope to the target MODULE with import-site evidence. Lexical DEFINES stays PROVEN. Multiple candidates are AMBIGUOUS with no edge; unresolved imports stay visible.
 
-Unsupported: Node packages/node_modules, package.json exports, tsconfig/webpack aliases, complete Python environment/sys.path or namespace behavior, imported-symbol resolution or dynamic import evaluation. Escaped and percent-encoded JS strings are not evaluated or resolved. Resolution does not re-read files or mutate the original index. IDs are still not repository-namespaced.
+Unsupported: Node packages/node_modules, package.json exports, tsconfig/webpack aliases, complete Python environment/sys.path or namespace behavior, general symbol/export resolution or dynamic import evaluation. The call stage below supports a limited imported-function lookup. Escaped and percent-encoded JS strings are not evaluated or resolved. Resolution does not re-read files or mutate the original index. IDs are still not repository-namespaced.
 
 
 ### Indexing and resolution safety
@@ -476,3 +478,76 @@ The existing concurrent-replacement/native-resource limitations still apply. A p
 index remains partial after resolution; resolving imports does not certify complete
 repository understanding. Frozen summaries own mutable CodeGraph instances; callers
 must treat completed graphs as snapshots or counts may become stale.
+
+## Conservative static calls
+
+```python
+from arctrellis.calls import resolve_calls
+from arctrellis.indexing import index_repository
+from arctrellis.resolution import resolve_imports
+
+index = index_repository("path/to/local/repository")
+imports = resolve_imports(index)
+calls = resolve_calls(index, imports)
+print(index.call_site_count, calls.resolved_count, calls.unresolved_count, calls.ambiguous_count)
+```
+
+`extract_call_sites(parsed_source, extraction_result)` separately records invocation
+observations without choosing targets or repeating entity extraction. Indexing calls it
+while syntax is already live. `index.call_sites` is an immutable tuple ordered by path,
+start byte, end byte and ID; file summaries expose `call_site_count`. Failed files have
+no observations, partial files retain only safe surviving scopes. No source bytes or
+syntax trees are retained repository-wide.
+
+Observations represent plain NAME calls and simple non-computed member chains in
+Python/JavaScript/TypeScript. A MODULE owns executable top-level calls; represented
+FUNCTION/METHOD entities own only their bodies, including arrow expression bodies.
+Nested declarations switch owners. Decorators, declaration defaults/annotations/bases,
+class-body execution and unrepresented anonymous/object callable bodies are omitted.
+JSX elements are not calls; ordinary executable JSX expression children may contain
+calls. Constructor invocation is omitted while ordinary argument calls survive;
+executable destructuring defaults/keys are inspected. Dynamic callees and optional
+invocations are omitted without evaluation. Escaped ECMAScript callee spellings are
+omitted; ordinary Unicode identifiers remain intact. Recovery subtrees are excluded.
+
+`resolve_calls(index, imports)` copies the import graph and returns explicit decisions
+in call-site order. NAME calls match uniquely visible FUNCTION declarations (including
+represented callable variable bindings); recursion and nested lexical functions work.
+Nearest represented import bindings block farther functions. Class namespaces
+are skipped because they are not method closures; ECMAScript static-block locals
+are not treated as bindings visible to ordinary methods. Duplicate functions, methods or
+visible import bindings are AMBIGUOUS, with no tie-breaking and no CALLS edge.
+
+Inside a direct METHOD, conventional Python `self`/`cls` and JS/TS `this` member calls
+may target a uniquely named METHOD directly owned by that same CLASS. This includes
+represented callable class fields. These names are syntactic heuristics, not runtime
+receiver proof. Inherited methods and `super` are not resolved.
+
+Import-assisted calls reuse resolved module records: Python from-import aliases and
+direct module bindings, ES named/aliased functions and namespace members, and static
+CommonJS namespace members. Only directly module-owned FUNCTION targets are eligible.
+Type-only imports never produce runtime call edges. Default-import calls, callable
+CommonJS exports and unaliased dotted-module binding guesses remain unresolved.
+Longer member chains remain observable but unresolved. General export/re-export and
+symbol visibility semantics are not modeled; matching declarations is a static heuristic.
+
+Every emitted relationship is caller -> CALLS -> callable and retains invocation-site
+Evidence with all six exact coordinates. Analysis methods distinguish lexical,
+same-class, imported-symbol and imported-module-member resolution by language family.
+Confidence is always LIKELY: **0.85 lexical/same-class**, **0.75 import-assisted**.
+No Phase 1.7 CALLS edge is PROVEN. Separate invocation sites remain separate edges.
+Unknown and ambiguous targets produce records without speculative graph edges.
+
+**This is a conservative static call graph subset, not a complete call graph.**
+Assignment/parameter shadowing and runtime rebinding are not tracked; the current
+confidence labels do not make those cases runtime guarantees. Arbitrary dynamic
+dispatch, inheritance, constructor targets, callbacks, higher-order targets, function
+values beyond represented bindings, object methods, dependency injection,
+framework-generated calls, monkey patching, reflection and full alias/dataflow
+analysis are intentionally unsupported. IDs use versioned canonical JSON and UUID5;
+they reproduce a revision and are neither edit-stable nor repository-namespaced.
+
+Call resolution revalidates snapshot identity/proof consistency and never reopens
+sources, reruns imports, executes target code or mutates input graphs. Indexing's
+existing source/resource/stable-tree limitations remain. Existing graph paths retain
+CALLS Evidence; traversal does not elevate static confidence to runtime proof.

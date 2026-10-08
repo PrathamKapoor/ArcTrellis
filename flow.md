@@ -489,6 +489,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
      ├─ _analyze_file()                  own one source/tree only for this helper's lifetime
      │   ├─ parse_discovered_file()      parsing/parser.py; bounded safe current bytes and normalized syntax
      │   ├─ extract_entities()          extraction/__init__.py; canonical language dispatch
+     │   ├─ extract_call_sites()        calls/extraction.py; retain body-owned observations before releasing syntax
      │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
      │   ├─ _file_entity()               create path-based FILE with analyzed byte size
      │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
@@ -501,7 +502,7 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
  └─ RepositoryIndexResult()              indexing/models.py; validate ordered outcomes and graph counts
 ```
 
-Output: inventory, merged in-memory graph and frozen per-file summaries. FILE identity
+Output: inventory, merged in-memory graph, frozen per-file summaries and a source-ordered CallSite tuple. FILE identity
 uses path/language, not declaration positions; no repository entity is invented.
 Counts include FILE and membership edges. ParsedSource, bytes, trees, exceptions and
 tracebacks are not retained. Typed source/parsing/extraction failures return bounded
@@ -546,6 +547,60 @@ developer gate (manual local sequence)        commands below run independently
 ```
 
 `ruff format src tests` applies formatting before checks. Tools are optional dev dependencies; runtime parser pins remain unchanged. The standard-library tests/test_architecture.py import audit inspects ArcTrellis source only and rejects native imports outside parsing. Any failed command requires correction and rerun; no CI, publication or target package hooks are introduced.
+
+## 16. Static call observations
+
+Input: ParsedSource and its already-produced ExtractionResult; no file access or semantic re-extraction.
+
+```text
+extract_call_sites()                       src/arctrellis/calls/extraction.py
+ ├─ ExtractionResult()                    validate canonical per-file ownership
+ ├─ _PythonSource.from_parsed() / decode() establish strict existing decoding policy
+ ├─ _recovery_subtrees()                  mark unsafe syntax once without recursion
+ └─ iterative pending stack              preserve semantic ownership through executable control flow
+     ├─ declaration match                parent/name/end identify canonical scopes, never span-only ownership
+     │   └─ body field                   enter function/method bodies; omit headers and class execution
+     ├─ _parts()                         retain only static identifier/member spellings
+     ├─ _optional_call()                 distinguish real punctuation from comments and TS type arguments
+     ├─ make_call_site_id()               calls/ids.py: reproducible invocation identity
+     └─ CallSite()                       calls/models.py: immutable owned coordinates without a target
+sorted(..., key=_site_order)               retain deterministic source order
+```
+
+Output: immutable CallSite tuple. Incompatible source/semantic scopes raise CallExtractionError;
+wrong API types raise TypeError. Recovery produces only surviving safe observations. No source
+execution, graph edges or target selection occurs. Anonymous scopes and dynamic invocation
+callees are omitted; ordinary argument expressions may still be visited.
+
+## 17. Conservative call resolution
+
+Input: RepositoryIndexResult plus its ImportResolutionResult; no source/config reads or import rerun.
+
+```text
+resolve_calls()                            src/arctrellis/calls/resolution.py
+ ├─ RepositoryIndexResult()                validate call owners/counts and base snapshot
+ ├─ ImportResolutionResult()               validate import decisions and matching entities/base edges
+ ├─ _import_edge()                         require exact preserved import proof, without path re-resolution
+ ├─ _Symbols()                            index functions/methods/bindings once, by parent and name
+ ├─ CodeGraph.add_entity()/add_relationship() copy immutable records into independent graph storage
+ └─ for each source-ordered CallSite
+     ├─ _resolve()                        select a conservative resolution family
+     │   ├─ _ancestors()                  search nearest scope; class/static-block namespaces are not method closures
+     │   ├─ _choose()                     one candidate resolves; duplicates remain ambiguous
+     │   └─ _imported()                   use existing resolved module plus direct function lookup
+     ├─ CallResolution()                  retain resolved/unresolved/ambiguous outcome
+     └─ _edge()                           only unique targets receive a CALLS relationship
+         ├─ _identity()                   calls/ids.py: versioned site-specific proof identity
+         ├─ Evidence()                    invocation lines and all six exact coordinates
+         └─ CodeGraph.add_relationship()  preserve LIKELY/0.85 or import-assisted LIKELY/0.75 evidence
+```
+
+Output: CallResolutionResult with a new graph and one decision per observation. No edge
+is emitted for unresolved/ambiguous calls. Invalid or mismatched snapshots raise
+CallResolutionInvariantError. Duplicate import bindings are ambiguity witnesses, not
+selected callable targets. Local runtime imports avoid initialization cycles; they
+load only ArcTrellis result types, never target modules. Assignment/parameter shadowing
+and runtime dispatch are not modeled, so no CALLS edge is PROVEN.
 
 ## Changes in this session (Phase 0.1)
 
@@ -678,3 +733,20 @@ developer gate (manual local sequence)        commands below run independently
 | Handoff | Record verified gates, limits and twelve-section continuation state; stop after Q1. | README.md, decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-065 |
 | Verification commands | Correct auxiliary smoke byte input and retain existing Git line normalization for whitespace audit. | decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-066 |
 | Historical prose | Restore old decision/flow prose and restrict finalization to current commit fields. | decisions.md, flow.md, handoff.md | 0235fbf33103b90004ec470e53623209b2bc68c6 | D-067 |
+
+## Changes in this session (Phase 1.7)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Call observations | Add immutable invocation values, identity, typed errors and public contract tests. | src/arctrellis/calls/, tests/calls/test_models.py, tests/calls/__init__.py | uncommitted | D-068 |
+| Body extraction | Interpret normalized invocation syntax using canonical body ownership and conservative omissions. | src/arctrellis/calls/extraction.py, tests/calls/test_extraction.py | uncommitted | D-069 |
+| Index observations | Extend semantic indexing and import snapshot validation with lightweight call tuples/counts. | src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/resolution/imports.py, tests/calls/test_indexing.py | uncommitted | D-070 |
+| Call resolution | Add indexed lexical/method/import matching and site-specific LIKELY CALLS evidence. | src/arctrellis/calls/models.py, src/arctrellis/calls/resolution.py, src/arctrellis/calls/__init__.py, tests/calls/test_resolution.py | uncommitted | D-071 |
+| Import order | Defer runtime snapshot imports and verify public APIs in fresh interpreters. | src/arctrellis/calls/resolution.py, tests/calls/test_indexing.py | uncommitted | D-072 |
+| Callee spelling | Omit escaped callee identifiers safely without decoding them. | src/arctrellis/calls/extraction.py, tests/calls/test_indexing.py | uncommitted | D-073 |
+| Execution boundaries | Skip Python class closure lookup and preserve executable binding defaults/constructor arguments. | src/arctrellis/calls/extraction.py, src/arctrellis/calls/resolution.py, tests/calls/test_extraction.py, tests/calls/test_resolution.py | uncommitted | D-074 |
+| Snapshot validation | Reject out-of-owner observations and import records that disagree with preserved proof. | src/arctrellis/indexing/models.py, src/arctrellis/calls/resolution.py, tests/calls/test_indexing.py, tests/calls/test_resolution.py | uncommitted | D-075 |
+| Contract hardening | Validate ID components and cover depth, non-execution and mixed deterministic call analysis. | src/arctrellis/calls/ids.py, tests/calls/fixtures.py, tests/calls/, README.md | uncommitted | D-076 |
+| Static block scope | Exclude class-owned static-block bindings from ordinary method lookup. | src/arctrellis/calls/resolution.py, tests/calls/test_resolution.py, README.md | uncommitted | D-077 |
+| Optional punctuation | Exclude normalized comment/type spans from optional invocation detection. | src/arctrellis/calls/extraction.py, tests/calls/test_extraction.py | uncommitted | D-078 |
+| Verification and handoff | Record final gates, smoke evidence, intentional limits and twelve-section continuation state. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-079 |

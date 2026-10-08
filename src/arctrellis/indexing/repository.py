@@ -3,6 +3,7 @@
 import os
 from pathlib import PurePosixPath
 
+from arctrellis.calls import CallExtractionError, CallSite, extract_call_sites
 from arctrellis.core import CodeEntity, Confidence, EntityKind, Evidence, Relationship, RelationshipKind
 from arctrellis.extraction import ExtractionError, build_lexical_graph, extract_entities
 from arctrellis.graph import CodeGraph, GraphError
@@ -54,7 +55,7 @@ def _membership(file: CodeEntity, module: CodeEntity) -> Relationship:
 
 def _analyze_file(
     root: str | os.PathLike[str], file: DiscoveredFile, limit: int
-) -> tuple[FileIndexResult, CodeGraph | None]:
+) -> tuple[FileIndexResult, CodeGraph | None, tuple[CallSite, ...]]:
     if file.language is None:
         raise RepositoryIndexInvariantError("unsupported file reached analysis")
     diagnostics = 0
@@ -64,18 +65,24 @@ def _analyze_file(
         diagnostics = parsed.diagnostic_count
         stage = "extraction"
         result = extract_entities(parsed)
-    except (ParsingError, ExtractionError) as error:
+        stage = "call_extraction"
+        call_sites = extract_call_sites(parsed, result)
+    except (ParsingError, ExtractionError, CallExtractionError) as error:
         error_type = type(error).__name__[:128]
-        return FileIndexResult(
-            file.path,
-            file.language,
-            FileIndexStatus.FAILED,
-            0,
-            0,
-            diagnostics,
-            error_type,
-            f"{stage} failed ({error_type})",
-        ), None
+        return (
+            FileIndexResult(
+                file.path,
+                file.language,
+                FileIndexStatus.FAILED,
+                0,
+                0,
+                diagnostics,
+                error_type,
+                f"{stage} failed ({error_type})",
+            ),
+            None,
+            (),
+        )
     try:
         local = build_lexical_graph(result)
         structural = _file_entity(file, parsed.size_bytes)
@@ -85,9 +92,19 @@ def _analyze_file(
         raise RepositoryIndexInvariantError(f"invalid semantic assembly for {file.path}") from error
     # Only semantic values escape this helper; parsed/source/tree references die here.
     status = FileIndexStatus.PARTIAL if result.partial else FileIndexStatus.COMPLETE
-    return FileIndexResult(
-        file.path, file.language, status, local.entity_count, local.relationship_count, diagnostics
-    ), local
+    return (
+        FileIndexResult(
+            file.path,
+            file.language,
+            status,
+            local.entity_count,
+            local.relationship_count,
+            diagnostics,
+            call_site_count=len(call_sites),
+        ),
+        local,
+        call_sites,
+    )
 
 
 def index_repository(
@@ -99,8 +116,9 @@ def index_repository(
     inventory = scan_repository(root)
     graph = CodeGraph()
     outcomes = []
+    sites: list[CallSite] = []
     for file in inventory.supported_files:
-        summary, local = _analyze_file(root, file, max_source_bytes)
+        summary, local, calls = _analyze_file(root, file, max_source_bytes)
         if local is not None:
             try:
                 for entity in local.entities():
@@ -110,7 +128,8 @@ def index_repository(
             except GraphError as error:
                 raise RepositoryIndexInvariantError(f"graph collision while merging {file.path}") from error
         outcomes.append(summary)
+        sites.extend(calls)
     try:
-        return RepositoryIndexResult(inventory, graph, tuple(outcomes))
+        return RepositoryIndexResult(inventory, graph, tuple(outcomes), tuple(sites))
     except (TypeError, ValueError) as error:
         raise RepositoryIndexInvariantError("repository summary does not match merged graph") from error

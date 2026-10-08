@@ -1,243 +1,151 @@
-# Handoff
+# ArcTrellis Handoff
 
 ## 1. Current Phase
 
-Phase 1 — Repository Understanding.
-Phase 1.5 — Repository-wide semantic indexing and graph assembly: complete.
-Phase 1.6 — Conservative cross-file static import resolution: complete.
-Quality Gate Q1 — Linting, static typing and engineering hardening: complete.
-Objective: safe source indexing into a merged in-memory graph, conservative module
-imports with explicit uncertainty, and a verified local developer quality interface.
-Stop after Q1. Phase 1.7 has not begun.
+Phase 1 — Repository Understanding. Subphase 1.7 — Static call-site extraction and conservative call resolution.
+Objective: retain body-owned invocation observations during indexing and infer evidence-backed CALLS only for unique static candidates.
+Status: complete. Phase 1.8 was not started.
 
 ## 2. Work Completed
 
-Verified C:/Projects/ArcTrellis, clean master at start, Python 3.13.14, required Git
-identity and empty remotes. Baseline suite ran 236 tests, OK (skipped=7).
-
-Added index_repository, FileIndexStatus, FileIndexResult and RepositoryIndexResult.
-Supported files run sequentially in inventory path order. Typed read/parse/extraction
-failures are bounded FAILED summaries and do not discard successful sibling files.
-Discovery failures and graph identity collisions abort. PARTIAL tracks recovery or
-structural omissions. Unsupported files remain inventory-only. FILE identity is
-language/path-based; FILE DEFINES MODULE carries PROVEN/1.0 module-root evidence.
-The per-file helper returns only semantic graph/summary values, releasing source/tree.
-
-Added resolve_imports, immutable import decisions and a fresh graph. Python uses
-identifier-component path aliases, __init__ package aliases, leading-src heuristic
-and relative package arithmetic. JS/TS uses safe quoted relative literals and unique
-extension/index candidates. Directory intent probes indexes only. Ambiguous matches
-record candidates and create no edge; unsupported/bare/escaped/percent literals remain
-unresolved. Unique matches emit lexical owner IMPORTS target MODULE, LIKELY/0.90,
-with actual import-site evidence. Each site has separate deterministic proof/edge IDs.
-Resolution reads no files and leaves the original index graph unchanged.
-
-Review reproduced and fixed root index probes, literal-dot Python filename aliases,
-directory-intent false matches and percent-literal uncertainty. Each correction has
-regression coverage and a decision. Independent final review found no critical or
-important issue and confirmed original fixture bytes/assertions were preserved.
-
-Added optional Ruff 0.16.10 and mypy 2.4.0. Ruff E/F/I/UP/B/SIM uses 120 columns;
-strict mypy checks 37 source files without broad suppressions. Formatted Python,
-annotated helpers/work items and narrowed existing validated invariants. Runtime
-parser pins are unchanged. Added an import-boundary regression over ArcTrellis source.
+- Added arctrellis.calls with immutable CallSite, CalleeKind, resolution records/status/result, typed errors and public extraction/resolution APIs.
+- Calls are observations, not CodeEntity values. UUID5/versioned canonical JSON includes language, relative path, owner, callee kind/parts and byte endpoints.
+- Body-aware iterative extraction matches existing declaration IDs through lexical parent/name/end and covering coordinates, rather than treating span containment as execution ownership.
+- Functions, methods, arrow/function-expression bodies and executable module statements retain static NAME/non-computed member calls. Nested scopes switch owners.
+- Decorators/defaults/annotations/bases, class execution, anonymous/object callable bodies, optional/computed/dynamic invocations and constructor invocation are omitted. Ordinary constructor arguments, destructuring defaults/keys and JSX expression children may contain independent calls.
+- Repository indexing retains only lightweight CallSite tuples and per-file counts, never ParsedSource/source bytes/trees. Failed files contribute none; partial files retain safe surviving scopes.
+- Resolution indexes functions/methods/import bindings once, uses existing import decisions, and returns a new graph. Nearest represented bindings block farther names; class namespaces are not enclosing method closures.
+- Lexical FUNCTION and direct same-class self/cls/this METHOD matches are LIKELY/0.85. Imported function/module-member matches are LIKELY/0.75. No CALLS is PROVEN.
+- Duplicate callable/binding witnesses are ambiguous; unknown targets unresolved; neither creates an edge. Separate sites retain separate relationship/evidence IDs.
+- Evidence identifies the actual invocation and all six syntax coordinates. Existing shortest_path preserves CALLS proof along a -> b -> c.
+- Corrected verified import initialization, escaped spelling, namespace visibility, omitted executable arguments/patterns, optional punctuation and snapshot-validation defects with failing regressions first.
 
 ## 3. Files Changed
 
-- src/arctrellis/indexing/__init__.py: public indexing API.
-- src/arctrellis/indexing/models.py: immutable file/repository summaries and completeness.
-- src/arctrellis/indexing/errors.py: typed fatal indexing invariant boundary.
-- src/arctrellis/indexing/ids.py: versioned FILE and structural proof identity helper.
-- src/arctrellis/indexing/repository.py: sequential analysis, membership and public graph merge.
-- tests/indexing/__init__.py, tests/indexing/test_repository.py: ten outcome/safety/memory contracts.
-- src/arctrellis/resolution/__init__.py: public resolver and decision records.
-- src/arctrellis/resolution/models.py: immutable statuses/candidates and derived counts.
-- src/arctrellis/resolution/catalog.py: pure path-based Python/JS/TS candidate sets.
-- src/arctrellis/resolution/imports.py: graph clone and import-site LIKELY evidence.
-- tests/resolution/__init__.py, tests/resolution/test_imports.py: thirteen conservative resolution contracts.
-- pyproject.toml: optional pinned quality tools and lint/format/type configuration.
-- tests/test_architecture.py: two native-import isolation contracts.
-- Existing Python source/tests: Ruff formatting/import ordering and explicit type contracts;
-  exact changed paths are listed in D-062/D-063. Core runtime model is unchanged.
-- README.md: capabilities, examples, identity/security limits and verified developer commands.
-- decisions.md: D-055 through D-067, with actual commit reference finalization.
-- flow.md: real indexing, resolution and quality flows plus phase change rows.
-- handoff.md: verified twelve-section continuation state.
+- src/arctrellis/calls/__init__.py — deliberate public APIs and errors.
+- src/arctrellis/calls/models.py — immutable observations/decisions, derived resolution counts.
+- src/arctrellis/calls/ids.py — validated revision-deterministic UUID5 identity and proof keys.
+- src/arctrellis/calls/errors.py — extraction/resolution boundary failures.
+- src/arctrellis/calls/extraction.py — normalized body-only iterative invocation extraction.
+- src/arctrellis/calls/resolution.py — indexed lexical/method/import matching and exact CALLS evidence.
+- src/arctrellis/indexing/models.py — final default call tuple/count fields and owner/count/span validation.
+- src/arctrellis/indexing/repository.py — extract calls during the existing per-file parse lifetime.
+- src/arctrellis/resolution/imports.py — preserve call observations when revalidating the repository snapshot.
+- tests/calls/__init__.py — package-aware test discovery.
+- tests/calls/fixtures.py — six-file mixed-language integration fixture.
+- tests/calls/test_models.py — immutability, coordinates, identity and canonical input contracts.
+- tests/calls/test_extraction.py — ownership, omissions, recovery, deep traversal and grammar boundary regressions.
+- tests/calls/test_indexing.py — counts, memory, public import order and non-execution contracts.
+- tests/calls/test_resolution.py — all resolution families, uncertainty, proof, traversal and deterministic integration.
+- README.md — current static call subset, public usage, confidence and limitations.
+- decisions.md — D-068 through D-079.
+- flow.md — extended indexing lifecycle, call extraction/resolution and current session changes.
+- handoff.md — current verified continuation state.
 
 ## 4. Current Architecture / State
 
-Local root -> scan_repository -> inventory -> per-file parse_discovered_file ->
-extract_entities -> build_lexical_graph -> FILE membership/merge -> RepositoryIndexResult.
-Then resolve_imports -> path catalog -> explicit decisions -> new CodeGraph.
-
-Graph entities include supported analyzed FILE/MODULE/CLASS/FUNCTION/METHOD/IMPORT.
-DEFINES edges remain PROVEN/1.0. File membership uses file_module_membership;
-lexical edges use lexical_parentage. IMPORTS edges are LIKELY/0.90, owner -> MODULE,
-with python_static_import_resolution or ecmascript_relative_import_resolution evidence.
-There is no REPOSITORY node or symbol/call/inheritance/framework resolution.
-
-Repository is synchronous and in-memory; no retained ParsedSource/full source bytes,
-persistence, concurrent indexing or incremental cache. Summaries are frozen but own
-ordinary mutable CodeGraph objects; treat them as snapshots. Resolver copies the base.
-Per-file statistics include structural FILE nodes and membership edges. is_complete
-requires zero failed and zero partial supported files. Resolution does not certify
-repository completeness. Declaration IDs are revision-deterministic; FILE IDs depend
-on language/path and survive content-only edits. IDs are not repository-namespaced.
-
-Runtime pins: tree-sitter==0.25.2, tree-sitter-python==0.25.0,
-tree-sitter-javascript==0.25.0, tree-sitter-typescript==0.23.2.
-Build-only setuptools==84.0.0. Optional dev pins: ruff==0.16.10, mypy==2.4.0.
-
-Local Phase 1.5 commits: acfd609 (feature), 334ec3d (documentation finalization).
-Local Phase 1.6 commits: 300652d (feature), facc23e (documentation finalization).
-Q1 implementation commit: ec14dca7cf518a167dc42bd853c45d876c64cf26.
-Documentation repair/finalization commit: 0235fbf33103b90004ec470e53623209b2bc68c6.
-Its reference finalization follows D-004 in a separate documentation commit.
+scan_repository -> parse_discovered_file -> extract_entities -> extract_call_sites -> lexical/file graph assembly -> RepositoryIndexResult.
+resolve_imports(index) -> ImportResolutionResult; resolve_calls(index, imports) -> CallResolutionResult.
+Graphs retain PROVEN/1.0 DEFINES, LIKELY/0.90 IMPORTS and LIKELY/0.85 or 0.75 CALLS.
+Call resolution uses retained semantic values only, verifies matching snapshots/import proof, and never reads source again.
+File/module identities and entity/relationship counts remain compatible. Call-site counts are separate from graph edges.
+Frozen summary shells own mutable CodeGraph instances; consumers must treat completed results as snapshots.
+Repository identity/persistence remains deferred; IDs are not repository-namespaced or edit-stable.
 
 ## 5. Decisions Made
 
-- D-055: synchronous repository outcomes with bounded source/exception ownership.
-- D-056: path-based FILE IDs and proven FILE DEFINES MODULE evidence.
-- D-057: pure conservative path catalog and explicit import uncertainty.
-- D-058: import-site-specific LIKELY/0.90 scope-to-module evidence edges.
-- D-059: root index and identifier-component Python catalog corrections.
-- D-060: directory-intent candidate preservation.
-- D-061: percent-encoded specifier deferral and catalog negative coverage.
-- D-062: optional pinned Ruff/mypy and reproducible quality configuration.
-- D-063: explicit typed work items/validated invariants without suppression.
-- D-064: native import architecture audit and developer flow.
-- D-065: final verified handoff and bounded stop.
-- D-066: corrected auxiliary fixture input and Git whitespace audit invocation.
-- D-067: restore historical prose and target only commit-reference fields.
-Prior decisions remain in force, including D-004 hash finalization and D-027 native pin.
+- D-068 — observations and versioned call identity separate from targets.
+- D-069 — body-only normalized execution ownership and conservative omissions.
+- D-070 — lightweight repository observations/counts without syntax retention.
+- D-071 — indexed conservative resolution, uncertainty and confidence-specific site evidence.
+- D-072 — eliminate eager snapshot-import cycles; verify fresh public import orders.
+- D-073 — omit unsupported escaped identifier spellings without aborting indexing.
+- D-074 — respect Python class visibility and executable binding/constructor argument boundaries.
+- D-075 — revalidate coordinate containment and import decision/proof consistency.
+- D-076 — canonical ID validation and integrated depth/security/determinism hardening.
+- D-077 — exclude ECMAScript static-block locals from method lookup.
+- D-078 — distinguish optional punctuation from comments/type literals.
+- D-079 — verified handoff and bounded stop before frameworks.
 
 ## 6. Requirements and Constraints
 
-Everything stays local: no remote additions/modifications, push, GitHub APIs, upload,
-publication, releases or package publishing. Commit author/committer must be
-PrathamKapoor <prathamkapoor027@gmail.com>, with no attribution trailers.
-Never commit paper/, research/ or *.tex. Append decisions; update real flows with code.
-Finalize actual commit references separately without rewriting history.
-
-Targets are untrusted. Discovery inspects metadata; parsing reads bounded bytes;
-extraction interprets normalized syntax; resolution uses semantic metadata only.
-No target execution/import/require, Node invocation, target dependency installation,
-package hooks/scripts/tests or repository configuration evaluation occurs.
-Installing ArcTrellis itself and its optional tools is separate from target installation.
+Local only: no remotes, push, uploads, GitHub APIs or publication.
+Every commit must use PrathamKapoor <prathamkapoor027@gmail.com> as author and committer; verify identity before each commit.
+No attribution trailers, paper/, research/ or .tex commits.
+No target code execution/import/require/Node/dependencies/scripts/hooks/tests/config evaluation.
+No new runtime dependencies or parser pin changes; pyproject.toml is unchanged.
+No inheritance, constructor targets, callbacks, higher-order dispatch, full dataflow or framework semantics.
+Keep decisions append-only; finalize only new commit fields/table cells, never descriptive occurrences of uncommitted.
+Keep strict mypy and Ruff rules unchanged.
 
 ## 7. Testing and Verification
 
-Observed commands from C:/Projects/ArcTrellis:
+Verified environment: C:/Projects/ArcTrellis, Python 3.13.14, required Git identity, no remotes.
+Commands run with .venv/Scripts/python.exe:
 
-- git rev-parse --show-toplevel: C:/Projects/ArcTrellis.
-- .venv\Scripts\python.exe --version: Python 3.13.14.
-- git config user.name / git config user.email: required values before each commit.
-- git remote -v: empty at startup and stage boundaries.
-- .venv\Scripts\python.exe -m unittest tests.indexing.test_repository -q: 10 tests OK.
-- .venv\Scripts\python.exe -m unittest tests.resolution.test_imports -q: 13 tests OK.
-- .venv\Scripts\python.exe -m unittest discover -s tests/graph -t . -q: 56 tests OK.
-- .venv\Scripts\python.exe -m unittest tests.test_architecture -q: 2 tests OK.
-- .venv\Scripts\python.exe -m unittest discover -s tests -q: baseline236,
-  indexing246, resolution259, final261; every gate OK (skipped=7).
-- .venv\Scripts\python.exe -m pip index versions ruff: available latest 0.16.10.
-- .venv\Scripts\python.exe -m pip index versions mypy: available latest 2.4.0.
-- .venv\Scripts\python.exe -m pip install -e .: success.
-- .venv\Scripts\python.exe -m pip install -e ".[dev]": success.
-- .venv\Scripts\python.exe -m pip show ruff mypy tree-sitter tree-sitter-python
-  tree-sitter-javascript tree-sitter-typescript: verified installed pins above.
-- .venv\Scripts\python.exe -m ruff --version: ruff 0.16.10.
-- .venv\Scripts\python.exe -m mypy --version: mypy 2.4.0 (compiled: yes).
-- .venv\Scripts\python.exe -m ruff format src tests: applied Python formatting.
-- .venv\Scripts\python.exe -m ruff check src tests: All checks passed.
-- .venv\Scripts\python.exe -m ruff format --check src tests: 65 files already formatted.
-- .venv\Scripts\python.exe -m mypy src/arctrellis: Success, 37 source files.
-- .venv\Scripts\python.exe -m compileall -q src: exit zero.
-- .venv\Scripts\python.exe -m pip check: No broken requirements found.
-- Literal-stdin public import check: all seven public package boundaries imported.
-- Source audit for eval/exec/subprocess/os.system/importlib/native imports:
-  only parsing normalization/registry native imports and fixed grammar loader matched.
-  No type: ignore, ignore_errors or disable_error_code was introduced.
+- -m unittest discover -s tests/calls -t . -v — 34 tests OK.
+- -m unittest discover -s tests -q — 295 tests OK, skipped=7; baseline was 261 OK/skipped=7.
+- -m ruff check src tests — All checks passed.
+- -m ruff format --check src tests — 77 files already formatted.
+- -m mypy src/arctrellis — Success, no issues in 43 source files.
+- -m compileall -q src — exit 0.
+- -m pip check — No broken requirements found.
+- -m unittest tests.test_architecture -v — 2 tests OK; native imports remain parsing-only.
+- -c public calls/indexing/resolution imports — public APIs OK; fresh import-order regression also passed.
+- stdin temporary mixed_sources pipeline — supported6/complete6/partial0/failed0; call_sites6/resolved4/unresolved1/ambiguous1/CALLS4; deterministic rerun true.
 
-Literal-stdin temporary index smoke: supported5, complete5, partial0, failed0,
-entities17, relationships12. README stayed inventory-only; node_modules was excluded.
-Temporary resolution smoke: supported6, complete6, partial0, failed0, entities19,
-base relationships13; resolved2, unresolved1, ambiguous1; rerun decisions/edges equal.
-Verified edge: service.py::create IMPORTS util.py; service.py lines2..2,
-python_static_import_resolution, LIKELY, score0.9. TS app.ts IMPORTS legacy.js,
-app.ts lines1..1, ecmascript_relative_import_resolution, LIKELY/0.9.
+Real smoke proof: service.py::create CALLS util.py::validate, service.py:5-5,
+python_imported_symbol_call_resolution, LIKELY, 0.75.
+Also service.py::create CALLS service.py::helper at line 6 with python_lexical_call_resolution/0.85,
+service.ts::submit CALLS util.ts::audit, and app.js::run CALLS helper.js::sanitize.
 
-Expected test-first failures: missing indexing/resolution packages before creation.
-Actual new catalog regressions failed before fixes, recorded in D-059 through D-061.
-Initial mypy:38 errors/9 files; annotations reduced that to10 local-name inference
-errors then zero. Initial Ruff:134 issues (36 fixed); formatting/manual corrections
-removed remaining findings. A targeted SIM117 automatic fix attempt reported seven
-unchanged findings; contexts were merged explicitly and rerun passed. No suppressions
-were used and no test assertions were removed. An auxiliary fixture smoke initially
-supplied str to a write_bytes helper and failed with TypeError: memoryview: a
-bytes-like object is required, not 'str'; rerun with bytes returned 3 complete
-supported files, 9 entities, 6 relationships. A temporary core.autocrlf=false
-whitespace invocation reported raw CRLF lines as trailing whitespace; normal
-repository git diff --check and staged checks passed with no persistent config change.
-D-066 records both verification-command corrections. Final comparison against
-25f333c found a global reference replacement had altered historical descriptive words
-in D-004/D-048 and one old flow row. D-067 restores exact historical content and
-restricts replacements to current commit fields; source behavior is unchanged.
+Source searches found native imports only in parsing; execution-mechanism search found only the existing fixed installed-grammar loader.
+git diff -- pyproject.toml returned no changes. Normal git diff --check passed (Git warned about expected LF-to-CRLF normalization).
 
-Seven platform skips: six symlink fixtures lack Windows privilege (WinError1314);
-one FIFO fixture lacks os.mkfifo. Junction tests remain in the passing suite.
-Not tested: other OS/Python versions, adversarial filesystem races, arbitrary loader
-configuration, dynamic/module/symbol/call behavior, scale benchmarks or native resource bounds.
-Independent review was read-only and did not run the full suite; pass claims here
-come from observed local commands. Final Git identity/whitespace/forbidden/attribution
-and clean-tree audits are performed with local commit finalization.
+Initial expected test failures: missing calls package/API/counts. Verified regression failures: circular public import,
+escaped callee ValueError, class namespace/static-block false edges, omitted arguments/patterns, optional comment omission,
+out-of-owner coordinates, stale import proof and noncanonical helper AttributeError; all corrected and regression-tested.
+Initial lint reported formatting/import/line issues; formatter/autofix and exact fixture-string splits corrected them.
+Initial strict typing reported one missing list annotation; corrected explicitly without suppression.
+
+Seven existing platform skips: six symlink tests require Windows link privilege (WinError 1314), FIFO test requires unavailable os.mkfifo.
+Junction tests passed. Other operating systems, real hostile filesystem races, runtime call behavior, and exhaustive language semantics were not tested.
 
 ## 8. Known Issues / Risks
 
-Confirmed: no unresolved production defect found in final tests/reviews.
-Runtime symlink/FIFO coverage is limited by the seven recorded platform skips.
-The earlier non-UTF-8 Python identifier/native grammar limitation remains documented.
-
-Possible: pathname checks are not an atomic sandbox under hostile concurrent
-replacement; the byte cap does not bound native time or total tree memory. Declaration
-IDs change with edits and can collide across independent identical repositories.
-Mutable graph misuse can invalidate frozen summary counts. Static path catalog
-matches do not establish runtime loader behavior, hence LIKELY confidence.
-
-Deferred intentionally: full Python environment/sys.path/namespace resolution,
-JS package exports/aliases/transpiler rewriting/escaped or percent literals,
-imported-symbol resolution, call/inheritance/framework semantics, persistence,
-repository identity, concurrent/incremental indexing, CI and publication.
+Confirmed unresolved implementation defects: none found in the bounded reviews/gates.
+Confirmed limitations: assignment/parameter shadowing and runtime rebinding/export semantics are not modeled;
+self/cls/this conventions and static candidates remain heuristics. No complete call graph is claimed.
+Class/static-block environments without represented execution scopes may remain unresolved.
+Possible risks: unfamiliar dynamic/configured repositories can differ from static candidates; existing filesystem race/native resource limitations remain.
+Graphs are mutable snapshot objects; unauthorized caller mutation can stale summaries, detected at supported validation boundaries.
 
 ## 9. Unfinished Work
 
-No authorized implementation remains unfinished after the verified three gates.
-Q1 implementation references are finalized under D-004. Historical prose is restored
-under D-067, whose repair-commit reference finalizes separately without rewriting history.
-No call-site extraction or Phase 1.7 work began.
+No required Phase 1.7 implementation remains. Intentional omissions are not unresolved defects.
+Local commit references are finalized separately after the feature commit exists; no history rewrite.
 
 ## 10. Next Subphase
 
-Phase 1.7 — Static call-site extraction and conservative call resolution.
-Require a later authorization. Split likely work into call sites, same-file resolution,
-import-assisted resolution, confidence classification and evidence-backed CALLS edges.
-Do not start it in this bounded session.
+Phase 1.8 — Framework semantic adapters and HTTP entry-point extraction.
+Do not begin it without the next authorized session. Likely initial candidates: FastAPI, Flask and Express.
 
 ## 11. Critical Context
 
-Keep Tree-sitter0.25.2: earlier Windows deep-point probes crashed under0.26.0.
-Runtime upgrades need deliberate grammar/deep-input verification. Use graph public
-APIs; never overwrite identity collisions. IMPORT entities are evidence sites, not
-resolved targets. Import edges originate from their lexical owner and preserve sites
-separately. Lexical evidence remains PROVEN while module resolution is LIKELY/0.90.
-Do not use source/config execution to increase import recall or resolve ambiguity.
-Snapshot ownership is conventional: graph APIs remain mutable. Frozen containers
-are not a persistence format or immutable graph implementation.
+CALLS source is actual MODULE/FUNCTION/METHOD owner; target is a unique eligible FUNCTION/METHOD.
+Evidence points to invocation, not target declaration. No PROVEN CALLS; lexical/method 0.85, imported 0.75.
+Imports must already be resolved and match preserved proof. Type-only/default callable imports do not resolve calls.
+Python unaliased dotted module bindings and longer member chains remain unresolved.
+Nearest import/function binding collisions remain ambiguous; candidate witness IDs may identify IMPORT bindings.
+Class parentage is structural ownership, not a promise that class namespaces are closures.
+Preserve parser pins: tree-sitter 0.25.2 and the existing compatible grammar versions.
+The existing normalized parser, core graph traversal and ingestion safety behavior were not redesigned.
 
 ## 12. Agent Instructions
 
-Read all three state documents and verify root/status/history/Python/identities/remotes
-before new work. Keep native objects inside parsing and target source inert. Preserve
-canonical models, revision identity and explicit uncertainty. Reproduce bugs before
-fixing them, document choices with code, run every quality command and report actual
-skips/failures. Stage explicit paths, audit forbidden content and authorship, finalize
-hashes separately and keep all commits local. The current session stops after Q1.
+Read decisions.md, flow.md and this file completely before changing code. Verify current Git/Python state; do not trust historical summaries.
+Preserve append-only decisions and current confidence/ownership/security boundaries. Write regression tests before verified bug fixes.
+Run call tests, full suite, Ruff lint/format, strict mypy, compileall, pip check and architecture audit.
+Never execute untrusted targets, reread sources during resolution, publish or add a remote.
+Verify identity and forbidden/attribution audits before local commits. Finalize only new commit-reference fields.
+Stop at the authorized phase boundary; the next work is framework entry-point semantics, not speculative dynamic dispatch.
