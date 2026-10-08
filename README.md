@@ -12,9 +12,10 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.5, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 1.6, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
-import sites become canonical CodeEntity values. Import/call/inheritance resolution,
+import sites become canonical CodeEntity values. Repository indexing and a conservative
+internal import-resolution subset are implemented. Call/inheritance resolution,
 routes, middleware, tests and database semantics are not implemented. There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
@@ -40,7 +41,7 @@ Current capabilities:
 - Explicit partial results that conservatively omit malformed semantic declarations.
 - Single-file lexical graphs with proven DEFINES relationships and exact declaration evidence.
 
-Planned capabilities: repository acquisition and indexing; lexical, semantic and structural symbol
+Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
 search; architecture questions; execution and dependency tracing; source evidence
 inspection; reverse dependency impact; retrieval and evidence quality evaluation.
 
@@ -425,3 +426,9 @@ Only semantic graph records, inventory and diagnostic counts survive per-file an
 ParsedSource, full source bytes and syntax trees are released after each helper returns.
 Summary records are immutable; CodeGraph retains its existing mutable API, so completed
 results should be treated as snapshots. This is not persistent indexing.
+
+### Conservative internal imports
+
+`from arctrellis.resolution import resolve_imports` resolves an index into a new graph and explicit per-import decisions. Python uses path-based modules (including __init__ and an extra alias without a leading src directory) and relative imports. JS/TS resolves simple quoted relative imports, exact source extensions and unique extension/index candidates; static CommonJS uses the same policy. A unique static match adds a LIKELY/0.90 IMPORTS edge from the lexical importing scope to the target MODULE with import-site evidence. Lexical DEFINES stays PROVEN. Multiple candidates are AMBIGUOUS with no edge; unresolved imports stay visible.
+
+No Node packages/node_modules, package.json exports, tsconfig/webpack aliases, complete Python environment/sys.path or namespace behavior, imported-symbol resolution or dynamic import evaluation. Escaped and percent-encoded JS strings are not evaluated or resolved. Resolution does not re-read files or mutate the original index. IDs are still not repository-namespaced.

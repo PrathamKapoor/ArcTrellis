@@ -509,6 +509,25 @@ assembly/collision violations raise chained RepositoryIndexInvariantError. Parti
 semantic survivors enter the graph and make is_complete false. Owned CodeGraph remains
 mutable by its existing contract; consumers should treat completed results as snapshots.
 
+## 14. Conservative internal import resolution
+
+Input: RepositoryIndexResult; no source or configuration reads.
+
+```text
+resolve_imports(index)                          src/arctrellis/resolution/imports.py
+ ├─ RepositoryIndexResult(...)                 reject stale summary invariants
+ ├─ CodeGraph.add_entity()/add_relationship()  clone base graph without mutation
+ ├─ _catalog(modules)                          resolution/catalog.py: derive path-based module candidates
+ └─ for each IMPORT in deterministic ID order
+     ├─ _python_candidates(...)               calculate absolute/relative Python aliases
+     ├─ _script_candidates(...)               match safe relative JS/TS paths against catalog
+     ├─ ImportResolution(...)                 record unique, ambiguous or unresolved result
+     └─ _import_edge(site, target)             only unique candidates become LIKELY/0.90 edges
+         └─ CodeGraph.add_relationship()       retain import-site evidence
+```
+
+Python supports identifier-component path aliases and an explicit leading-src heuristic; no environment/configuration or imported-symbol resolution. JS/TS probes exact supported extensions, or all supported extension/index paths for extensionless names; explicit directory-intent specifiers probe only indexes; no priority guesses. Unknown extensions, bare imports, escaped literals and outside-root paths are unresolved. Ambiguous imports record sorted candidate IDs without an edge. Output is ImportResolutionResult with a new graph and decisions. Invalid graph/summary invariants abort explicitly; original index remains unchanged. Evidence points to the IMPORT location with language-specific analysis method, not a guessed target declaration.
+
 ## Changes in this session (Phase 0.1)
 
 | Area | Change | Files | Commit | Decision |
@@ -618,3 +637,13 @@ mutable by its existing contract; consumers should treat completed results as sn
 | Repository contracts | Add mixed-language, outcome, memory, collision and structural proof tests before implementation. | tests/indexing/__init__.py, tests/indexing/test_repository.py | acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 | D-055, D-056 |
 | Repository pipeline | Add ordered per-file analysis, structural membership, fatal collision handling and explicit summaries without syntax retention. | src/arctrellis/indexing/__init__.py, src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/errors.py, src/arctrellis/indexing/ids.py | acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 | D-055, D-056 |
 | Documentation | Describe repository outcomes, ownership lifecycle and structural identity. | README.md, decisions.md, flow.md | acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 | D-055, D-056 |
+
+## Changes in this session (Phase 1.6)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Resolution | Add immutable decisions, path catalog and pure static resolver with contract tests. | src/arctrellis/resolution/, tests/resolution/, README.md, decisions.md, flow.md | uncommitted | D-057 |
+| Evidence | Add site-specific LIKELY IMPORTS edges preserving lexical graph proof. | src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py | uncommitted | D-058 |
+| Candidate boundaries | Correct root index probes and reject literal-dot Python filename aliases. | src/arctrellis/resolution/catalog.py, src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py, decisions.md, flow.md | uncommitted | D-059 |
+| Directory candidates | Preserve trailing slash/dot directory intent and restrict probes to indexes. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, decisions.md, flow.md | uncommitted | D-060 |
+| Conservative literals | Defer percent-encoded specifiers and cover alias/relative-level negatives. | src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md | uncommitted | D-061 |

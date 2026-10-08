@@ -1,0 +1,1 @@
+"""Conservative module-resolution contracts."""

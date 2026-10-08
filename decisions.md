@@ -579,3 +579,57 @@ Append-only record of engineering decisions.
 - Alternatives considered: Absolute-root IDs depend on clone location; a constant repository ID collides; random IDs break reproducibility; modifying module.parent_id would break ExtractionResult semantics.
 - Consequences: Graph membership connects FILE to the existing parentless MODULE without changing semantic records. IDs remain non-namespaced across repositories. File summary counts include FILE and its membership edge.
 - Files: src/arctrellis/indexing/ids.py, src/arctrellis/indexing/repository.py, src/arctrellis/indexing/models.py, tests/indexing/test_repository.py, README.md, decisions.md, flow.md
+
+### D-057: Resolve internal modules conservatively without runtime configuration
+- Date / phase / commit: 2026-10-08, Phase 1.6, uncommitted
+- Context: The repository index provides import sites and module paths but no runtime environment or package configuration.
+- Decision: Add resolution package and resolve_imports returning a new graph plus immutable RESOLVED/UNRESOLVED/AMBIGUOUS decisions sorted by import ID. Python aliases derive from paths, __init__ files and an additional leading-src alias. Relative Python imports use each path-based package interpretation. JS/TS use safe matching quoted literals, only relative paths, exact supported extensions or the full extension/index candidate set. Multiple matches emit no edge. Unknown extensions, escapes, bare names and outside-root paths remain unresolved.
+- Why: The user requires conservative static module dependencies without source re-reads or configuration evaluation. Test-first import failed with ModuleNotFoundError for the not-yet-created resolution package; implementation consumes graph metadata only. Final resolution suite ran 13 tests OK; full suite 259 tests OK (skipped=7). Mixed smoke returned resolved=2, unresolved=1, ambiguous=1 with identical rerun decisions/edges. Public imports and pip check passed. Independent review findings were reproduced and corrected in D-059 through D-061.
+- Alternatives considered: Runtime imports execute untrusted code; choosing extension priority guesses compiler configuration; class/symbol resolution and arbitrary source roots exceed scope; labeling bare JS aliases external is not defensible.
+- Consequences: No package exports, aliases, full Python sys.path/namespace behavior, transpiler extension rewriting or imported-symbol resolution. Literal spelling remains unchanged by extraction. Frozen summaries own an ordinary mutable graph; callers treat it as a snapshot.
+- Files: src/arctrellis/resolution/__init__.py, src/arctrellis/resolution/models.py, src/arctrellis/resolution/catalog.py, src/arctrellis/resolution/imports.py, tests/resolution/__init__.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md
+
+### D-058: Back module import edges with import-site evidence and likely confidence
+- Date / phase / commit: 2026-10-08, Phase 1.6, uncommitted
+- Context: A unique path match is static evidence rather than proof of runtime import behavior.
+- Decision: Emit IMPORTS from the import entity lexical parent to the target MODULE, LIKELY/0.90. Preserve each site separately with versioned compact-JSON UUID5 identities using import ID, owner and target. Evidence uses import location and six existing syntax coordinates; methods are python_static_import_resolution and ecmascript_relative_import_resolution. Reuse indexing's small private _stable_id helper.
+- Why: Separate sites preserve evidence integrity; local function/method imports must originate at their actual scope. Existing DEFINES records remain PROVEN and unchanged.
+- Alternatives considered: PROVEN overstates environmental certainty; using IMPORT entity as source confuses dependency scope with evidence site; collapsing repeated imports loses proof sites.
+- Consequences: Original index graph is copied via public APIs; unresolved and ambiguous imports add no target or edge. Identities remain revision-deterministic and not repository-namespaced. Invalid index invariants raise RepositoryIndexInvariantError.
+- Files: src/arctrellis/resolution/imports.py, src/arctrellis/resolution/models.py, src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md
+
+### D-059: Keep candidate aliases faithful to path components and repository root
+- Date / phase / commit: 2026-10-08, Phase 1.6, uncommitted
+- Context: Review found edge cases in the new path catalog before its completion gate.
+- Decision: Accept Python module alias components only when each is an identifier; build root directory index probes without a leading slash. Remove the unused modules argument from _python_candidates.
+- Why: Root-index regression failed with AssertionError: 0 != 1. Separate dotted-filename smoke returned resolved=1, unresolved=0 for import pkg.util against pkg.util.py, an incorrect module-path interpretation.
+- Alternatives considered: Treating dots inside one filename as directory boundaries is false; filesystem normalization would add unwanted I/O and OS dependence.
+- Consequences: Root index candidates stay repository-relative; invalid Python path-component aliases remain unresolved rather than guessed.
+- Files: src/arctrellis/resolution/catalog.py, src/arctrellis/resolution/imports.py, tests/resolution/test_imports.py, decisions.md, flow.md
+- Symptom: Root ./ import missed index.js; pkg.util.py falsely matched dotted import pkg.util.
+- Root cause: Empty normalized base was concatenated with /index; joining unvalidated path components with dots erased component boundaries.
+- Regression test: tests/resolution/test_imports.py::ImportResolutionTests.test_root_index_and_python_literal_dot_filename
+
+### D-060: Preserve directory intent in relative script specifiers
+- Date / phase / commit: 2026-10-08, Phase 1.6, uncommitted
+- Context: Independent review found a conservative-resolution false positive in trailing-slash imports.
+- Decision: Relative specifiers ending in slash, dot or dot-dot probe only directory index candidates; ordinary extensionless names keep file and index probes.
+- Why: The regression test failed twice with AssertionError: 0 != 1 for unresolved_count when ./service/ and ./service.js/ incorrectly matched service.js; an index plus sibling-file case also failed by becoming ambiguous.
+- Alternatives considered: Marking all directory imports unresolved is safe but loses reliable unique index matches; discarding trailing directory intent incorrectly asserts a source-file dependency.
+- Consequences: Normalization retains semantic path intent without filesystem access. Unique index dependencies remain LIKELY, not runtime proof.
+- Files: src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, decisions.md, flow.md
+- Symptom: Directory-only import strings resolved a source file or became ambiguous with a sibling file.
+- Root cause: Empty terminal path components were discarded before candidate probing, erasing directory intent.
+- Regression test: tests/resolution/test_imports.py::ImportResolutionTests.test_directory_specifiers_do_not_match_files
+
+### D-061: Defer URL-encoded specifiers and verify remaining catalog negatives
+- Date / phase / commit: 2026-10-08, Phase 1.6, uncommitted
+- Context: A quoted JS specifier may still carry loader-specific URL interpretation rather than a literal filesystem path.
+- Decision: Reject percent-bearing relative literals as unsupported_specifier; add negative coverage for root/src alias ambiguity, excessive Python relative levels and terminal dot/dot-dot directory intent.
+- Why: test_conservative_catalog_boundaries failed with AssertionError: 0 != 1 for import ./serv%69ce.js matching the percent-bearing filename. Direct spelling resolution would claim a dependency without loader semantics.
+- Alternatives considered: URL decoding adds another resolution policy not requested; treating percent spelling as literal can yield a wrong target; defer these optional imports explicitly instead.
+- Consequences: Percent-bearing specifiers remain unresolved, like query/fragment/escape/config-dependent cases. No runtime loader evaluation is introduced.
+- Files: src/arctrellis/resolution/catalog.py, tests/resolution/test_imports.py, README.md, decisions.md, flow.md
+- Symptom: URL-encoded module specifier matched a literal-percent filename.
+- Root cause: Candidate filtering excluded query and fragment markers but allowed percent encoding without a loader policy.
+- Regression test: tests/resolution/test_imports.py::ImportResolutionTests.test_conservative_catalog_boundaries
