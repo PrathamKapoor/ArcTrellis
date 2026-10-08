@@ -634,7 +634,7 @@ developer gate (manual local sequence)        commands below run independently
 | Flow and capability documentation | Describe actual JS/TS transformation, omissions and unresolved import spelling. | README.md, decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-044, D-045 |
 | Modifier correction | Scan actual field containers and exclude decorator arguments after failing regressions. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-046 |
 | Empty import correction | Preserve an unbound module site for an empty named clause instead of reporting false partial state. | src/arctrellis/extraction/es_imports.py, tests/extraction/test_javascript.py, README.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-047 |
-| Decision-history correction | Restore historical entry boundaries from HEAD after an acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 insertion error. | decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-048 |
+| Decision-history correction | Restore historical entry boundaries from HEAD after an uncommitted insertion error. | decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-048 |
 | Scope correction | Require direct class-body membership before class method extraction, excluding embedded object methods. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-049 |
 | Phase gate and handoff | Record passing regressions, reviewed corrections and local-only continuation; finalize references separately. | README.md, decisions.md, flow.md, handoff.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-050, D-004 |
 
@@ -671,9 +671,10 @@ developer gate (manual local sequence)        commands below run independently
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Development | Add optional pinned quality tools, Ruff configuration and strict mypy. | pyproject.toml, README.md, decisions.md, flow.md | uncommitted | D-062 |
-| Python quality | Format and lint source/tests; make static type contracts explicit. | src/arctrellis/**/*.py, tests/**/*.py | uncommitted | D-062 |
-| Static contracts | Annotate iterative work items and helper boundaries; preserve fixture bytes and validated invariants. | src/arctrellis/, tests/, decisions.md, flow.md | uncommitted | D-063 |
-| Architecture | Add native import audit and verified local developer quality flow. | tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-064 |
-| Handoff | Record verified gates, limits and twelve-section continuation state; stop after Q1. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-065 |
-| Verification commands | Correct auxiliary smoke byte input and retain existing Git line normalization for whitespace audit. | decisions.md, flow.md, handoff.md | uncommitted | D-066 |
+| Development | Add optional pinned quality tools, Ruff configuration and strict mypy. | pyproject.toml, README.md, decisions.md, flow.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-062 |
+| Python quality | Format and lint source/tests; make static type contracts explicit. | src/arctrellis/**/*.py, tests/**/*.py | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-062 |
+| Static contracts | Annotate iterative work items and helper boundaries; preserve fixture bytes and validated invariants. | src/arctrellis/, tests/, decisions.md, flow.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-063 |
+| Architecture | Add native import audit and verified local developer quality flow. | tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-064 |
+| Handoff | Record verified gates, limits and twelve-section continuation state; stop after Q1. | README.md, decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-065 |
+| Verification commands | Correct auxiliary smoke byte input and retain existing Git line normalization for whitespace audit. | decisions.md, flow.md, handoff.md | ec14dca7cf518a167dc42bd853c45d876c64cf26 | D-066 |
+| Historical prose | Restore old decision/flow prose and restrict finalization to current commit fields. | decisions.md, flow.md, handoff.md | uncommitted | D-067 |

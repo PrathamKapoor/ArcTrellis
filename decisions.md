@@ -35,7 +35,7 @@ Append-only record of engineering decisions.
 ### D-004: Finalize commit references without rewriting history
 - Date / phase / commit: 2026-10-08, Phase 0.1, e7a2f98d078583b392170d323682870745311e45
 - Context: The required documentation must reference real commits, but a commit cannot contain its own final hash.
-- Decision: Commit verified implementation and documentation together, then replace their acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 markers with that implementation hash in a separate documentation finalization commit. The finalization commit does not need to embed its own hash.
+- Decision: Commit verified implementation and documentation together, then replace their uncommitted markers with that implementation hash in a separate documentation finalization commit. The finalization commit does not need to embed its own hash.
 - Why: This follows the explicit safe procedure and preserves truthful history. No implementation occurred in the earlier process-launch failure.
 - Alternatives considered: Amending commits changes the hash again; inventing a hash or deleting decision history breaks traceability.
 - Consequences: Implementation records reference the implementation commit; the later commit records reference finalization and the verified handoff.
@@ -497,7 +497,7 @@ Append-only record of engineering decisions.
 - Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Documentation review found D-044 insertion had split D-010, and moving the entry also moved D-010's three bug-detail lines.
 - Decision: Restore the complete historical prefix from HEAD and append only the new entries; inspect the resulting diff before commit.
-- Why: Previous decisions must remain unchanged. The editing error affected only acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79 documentation, not source behavior or Git history.
+- Why: Previous decisions must remain unchanged. The editing error affected only uncommitted documentation, not source behavior or Git history.
 - Alternatives considered: Manually rewriting historical entries risks further changes; retaining misplaced bug context is inaccurate.
 - Consequences: Append-only history remains intact; patch contexts must use the actual end of the decisions file.
 - Files: decisions.md, flow.md
@@ -635,7 +635,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/resolution/test_imports.py::ImportResolutionTests.test_conservative_catalog_boundaries
 
 ### D-062: Pin development-only Ruff and mypy for a reproducible quality gate
-- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, ec14dca7cf518a167dc42bd853c45d876c64cf26
 - Context: Multi-language indexing and resolution need lint, formatting and static typing in addition to runtime tests.
 - Decision: Add optional dev extra with Ruff 0.16.10 and mypy 2.4.0; retain every existing runtime parser pin. Configure Python 3.13, Ruff E/F/I/UP/B/SIM with 120-column formatting, and mypy strict for src/arctrellis. Apply Ruff only to Python source/tests, not Markdown.
 - Why: pip index versions reported ruff (0.16.10) and mypy (2.4.0) as currently available. Official Ruff configuration and mypy configuration documentation describe the selected pyproject interfaces. Editable base/dev installations succeeded. Installed versions were rechecked by pip show and version commands. Final Ruff lint/format, strict mypy (37 source files), compileall, pip check and full unittest suite (261 tests, skipped=7) all passed.
@@ -647,7 +647,7 @@ Append-only record of engineering decisions.
 - Packages compared: Black, Flake8 and isort require separate components; Pyright was not chosen to keep the development tooling Python-oriented.
 
 ### D-063: Express validated type invariants without broad suppressions
-- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, ec14dca7cf518a167dc42bd853c45d876c64cf26
 - Context: Initial strict mypy reported 38 errors in nine files: missing generics/helper annotations, inferred empty-tuple work items, optional fields after independent validation, and an implicit constant re-export. Initial Ruff check fixed 36 issues and reported 98 remaining before formatting; post-format check reported 28 remaining.
 - Decision: Add explicit typed traversal work items and private helper/source annotations, concrete generic record tuples, and type-narrowing invariant assertions at already-validated boundaries. Export the parser limit directly from its defining source module. Declare strict zip behavior where equal lengths are already required. Split long fixture strings without changing their bytes and combine equivalent nested test contexts. No global/per-module type suppressions or blanket casts.
 - Why: Static tools should check the real contracts; broad ignores would hide defects. Existing tests cover the unchanged parser/extractor invariants and invalid inputs.
@@ -656,7 +656,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/graph/results.py, src/arctrellis/ingestion/models.py, src/arctrellis/parsing/parser.py, src/arctrellis/parsing/__init__.py, src/arctrellis/parsing/models.py, src/arctrellis/extraction/models.py, src/arctrellis/extraction/es_imports.py, src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/python.py, src/arctrellis/extraction/lexical.py, tests/core/test_models.py, tests/extraction/test_ids.py, tests/extraction/test_imports.py, tests/extraction/test_javascript.py, tests/extraction/test_lexical.py, tests/extraction/test_models.py, tests/extraction/test_python.py, tests/graph/fixtures.py, tests/graph/test_graph.py, tests/graph/test_results.py, tests/graph/test_traversal.py, tests/indexing/test_repository.py, tests/ingestion/test_discovery.py, tests/ingestion/test_models.py, tests/ingestion/test_safety.py, tests/parsing/test_models.py, tests/parsing/test_parser.py, tests/parsing/test_registry.py, tests/resolution/test_imports.py, decisions.md, flow.md
 
 ### D-064: Audit the native-parser boundary and document local quality commands
-- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, ec14dca7cf518a167dc42bd853c45d876c64cf26
 - Context: Static tooling should protect the normalized parsing boundary as new analysis stages are added.
 - Decision: Add standard-library import inspection tests over ArcTrellis source, with positive/negative vectors proving native-import detection. Tree-sitter imports must remain inside parsing. Review source searches for execution mechanisms and the fixed grammar loader. Publish verified local development commands in README and flow; no CI.
 - Why: Parsing owns native implementation types; extraction, indexing and resolution consume owned records. The audit parses only ArcTrellis test/development source with ast for inspection; it does not replace normalized target parsing or execute inspected source.
@@ -665,7 +665,7 @@ Append-only record of engineering decisions.
 - Files: tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-065: Finalize verified indexing, resolution and quality handoff
-- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, ec14dca7cf518a167dc42bd853c45d876c64cf26
 - Context: The bounded session must stop after all three gates and preserve reproducible continuation state.
 - Decision: Rewrite the twelve handoff sections, record actual counts/commands/skip reasons, expand current capability/security/development documentation and finalize commit references separately under D-004. Retain conservative deferrals and stop before call-site extraction.
 - Why: Baseline 236 tests progressed to 246 after indexing, 259 after resolution and 261 after Q1; all final runs passed with seven existing platform skips. Independent final review compared changed Python syntax against facc23e and found no critical/important issue; test fixtures/assertions remain intact. Package/API/isolation audits and all quality tools passed locally.
@@ -674,10 +674,22 @@ Append-only record of engineering decisions.
 - Files: README.md, decisions.md, flow.md, handoff.md
 
 ### D-066: Preserve actual command contracts during final verification
-- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, ec14dca7cf518a167dc42bd853c45d876c64cf26
 - Context: Two auxiliary final audit invocations used incorrect command/input assumptions.
 - Decision: Supply bytes to the indexing test fixture helper, and use the repository's normal git diff --check without disabling core.autocrlf. Leave persistent Git configuration unchanged and record the failed attempts.
 - Why: A string-based fixture smoke failed with TypeError: memoryview: a bytes-like object is required, not 'str'. The corrected bytes smoke returned supported3, complete3, partial0, failed0, entities9, relationships6. git -c core.autocrlf=false diff --check compared raw CRLF worktree lines to normalized index lines and reported trailing whitespace throughout; normal git diff --check and staged check passed.
 - Alternatives considered: Changing test helper input semantics or repository line-ending policy to accommodate mistaken audit commands would be unnecessary; ignoring failed commands would violate verification honesty.
 - Consequences: No production/runtime behavior changed. Developer checks must respect actual fixture and Windows Git normalization contracts.
 - Files: decisions.md, flow.md, handoff.md
+
+### D-067: Restore historical prose and restrict reference finalization fields
+- Date / phase / commit: 2026-10-08, Quality Gate Q1, uncommitted
+- Context: Final historical-prefix comparison detected an overbroad hash replacement in earlier Stage A documentation finalization.
+- Decision: Restore the entire pre-D-055 decisions prefix exactly from 25f333c and its original D-048 flow row. Finalize only current decision commit fields and table Commit cells, leaving literal prose unchanged. Verify historical equality before the final documentation commit.
+- Why: Comparison showed D-004's phrase uncommitted markers and D-048's phrase uncommitted documentation replaced by acfd6093f95e0f9dd6b150ad625cb5ab6fee4a79; the old flow row had the same unintended word substitution.
+- Alternatives considered: Retaining altered historical prose violates append-only decisions; rewriting earlier commits is prohibited; a local documentation repair preserves actual Git history.
+- Consequences: Historical decisions are restored without source/runtime changes. Literal uncommitted in historical explanations is valid; only unresolved commit-reference fields require finalization.
+- Files: decisions.md, flow.md, handoff.md
+- Symptom: Historical prose contained an implementation hash where a descriptive word belonged.
+- Root cause: Global string replacement was used rather than targeting current commit-reference fields.
+- Regression test: none; this is a documentation-only repair verified by exact pre-D-055 prefix and D-048 flow-row comparisons against 25f333c.

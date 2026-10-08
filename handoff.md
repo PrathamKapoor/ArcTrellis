@@ -60,7 +60,7 @@ parser pins are unchanged. Added an import-boundary regression over ArcTrellis s
 - Existing Python source/tests: Ruff formatting/import ordering and explicit type contracts;
   exact changed paths are listed in D-062/D-063. Core runtime model is unchanged.
 - README.md: capabilities, examples, identity/security limits and verified developer commands.
-- decisions.md: D-055 through D-066, with actual commit reference finalization.
+- decisions.md: D-055 through D-067, with actual commit reference finalization.
 - flow.md: real indexing, resolution and quality flows plus phase change rows.
 - handoff.md: verified twelve-section continuation state.
 
@@ -90,7 +90,8 @@ Build-only setuptools==84.0.0. Optional dev pins: ruff==0.16.10, mypy==2.4.0.
 
 Local Phase 1.5 commits: acfd609 (feature), 334ec3d (documentation finalization).
 Local Phase 1.6 commits: 300652d (feature), facc23e (documentation finalization).
-Q1 implementation/documentation references finalize separately under D-004.
+Q1 implementation commit: ec14dca7cf518a167dc42bd853c45d876c64cf26.
+Documentation references finalize separately under D-004.
 
 ## 5. Decisions Made
 
@@ -106,6 +107,7 @@ Q1 implementation/documentation references finalize separately under D-004.
 - D-064: native import architecture audit and developer flow.
 - D-065: final verified handoff and bounded stop.
 - D-066: corrected auxiliary fixture input and Git whitespace audit invocation.
+- D-067: restore historical prose and target only commit-reference fields.
 Prior decisions remain in force, including D-004 hash finalization and D-027 native pin.
 
 ## 6. Requirements and Constraints
@@ -175,7 +177,10 @@ bytes-like object is required, not 'str'; rerun with bytes returned 3 complete
 supported files, 9 entities, 6 relationships. A temporary core.autocrlf=false
 whitespace invocation reported raw CRLF lines as trailing whitespace; normal
 repository git diff --check and staged checks passed with no persistent config change.
-D-066 records both verification-command corrections.
+D-066 records both verification-command corrections. Final comparison against
+25f333c found a global reference replacement had altered historical descriptive words
+in D-004/D-048 and one old flow row. D-067 restores exact historical content and
+restricts replacements to current commit fields; source behavior is unchanged.
 
 Seven platform skips: six symlink fixtures lack Windows privilege (WinError1314);
 one FIFO fixture lacks os.mkfifo. Junction tests remain in the passing suite.
@@ -205,7 +210,8 @@ repository identity, concurrent/incremental indexing, CI and publication.
 ## 9. Unfinished Work
 
 No authorized implementation remains unfinished after the verified three gates.
-Q1 commit references are finalized by a separate documentation commit under D-004.
+Q1 implementation references are finalized under D-004. Historical prose is restored
+under D-067, whose repair-commit reference finalizes separately without rewriting history.
 No call-site extraction or Phase 1.7 work began.
 
 ## 10. Next Subphase
