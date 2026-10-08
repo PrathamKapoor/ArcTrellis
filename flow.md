@@ -522,13 +522,13 @@ are evaluated/resolved. No relationships or automatic repository-wide pass exist
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Contracts | Add normalized JS/TS declaration, binding, import, recovery and pipeline tests before implementation. | tests/extraction/test_javascript.py | uncommitted | D-044 |
+| Contracts | Add normalized JS/TS declaration, binding, import, recovery and pipeline tests before implementation. | tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-044 |
 
-| JS/TS semantics | Add common normalized declaration traversal, strict decoding, signatures, decorators and exports without changing Python. | src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/__init__.py | uncommitted | D-044, D-045 |
-| Import sites | Record ES bindings/type-only/side-effect imports and conservative static require sites, retaining literal spelling. | src/arctrellis/extraction/es_imports.py | uncommitted | D-045 |
-| Flow and capability documentation | Describe actual JS/TS transformation, omissions and unresolved import spelling. | README.md, decisions.md, flow.md | uncommitted | D-044, D-045 |
-| Modifier correction | Scan actual field containers and exclude decorator arguments after failing regressions. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | uncommitted | D-046 |
-| Empty import correction | Preserve an unbound module site for an empty named clause instead of reporting false partial state. | src/arctrellis/extraction/es_imports.py, tests/extraction/test_javascript.py, README.md | uncommitted | D-047 |
-| Decision-history correction | Restore historical entry boundaries from HEAD after an uncommitted insertion error. | decisions.md, flow.md | uncommitted | D-048 |
-| Scope correction | Require direct class-body membership before class method extraction, excluding embedded object methods. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | uncommitted | D-049 |
-| Phase gate and handoff | Record passing regressions, reviewed corrections and local-only continuation; finalize references separately. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-050, D-004 |
+| JS/TS semantics | Add common normalized declaration traversal, strict decoding, signatures, decorators and exports without changing Python. | src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/__init__.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-044, D-045 |
+| Import sites | Record ES bindings/type-only/side-effect imports and conservative static require sites, retaining literal spelling. | src/arctrellis/extraction/es_imports.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-045 |
+| Flow and capability documentation | Describe actual JS/TS transformation, omissions and unresolved import spelling. | README.md, decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-044, D-045 |
+| Modifier correction | Scan actual field containers and exclude decorator arguments after failing regressions. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-046 |
+| Empty import correction | Preserve an unbound module site for an empty named clause instead of reporting false partial state. | src/arctrellis/extraction/es_imports.py, tests/extraction/test_javascript.py, README.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-047 |
+| Decision-history correction | Restore historical entry boundaries from HEAD after an uncommitted insertion error. | decisions.md, flow.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-048 |
+| Scope correction | Require direct class-body membership before class method extraction, excluding embedded object methods. | src/arctrellis/extraction/javascript.py, tests/extraction/test_javascript.py | 66d881e02bcb52e467720b39293319ff7595f085 | D-049 |
+| Phase gate and handoff | Record passing regressions, reviewed corrections and local-only continuation; finalize references separately. | README.md, decisions.md, flow.md, handoff.md | 66d881e02bcb52e467720b39293319ff7595f085 | D-050, D-004 |

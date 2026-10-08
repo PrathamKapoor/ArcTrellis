@@ -74,6 +74,9 @@ No repository-wide indexing or call/import/inheritance/framework resolution.
 - rg native-import search under extraction: no matches, normal exit one.
 - Dependency and stable-layer diff: empty.
 - git diff --check: exit zero.
+- Initial staged whitespace check found a blank line at test_javascript.py EOF;
+  formatting corrected, then git diff --cached --check returned zero.
+- Staged attribution audit had no matches; forbidden-path audit found no forbidden files.
 Initial API assertion failed as expected before implementation. Modifier, empty
 import and scope regressions each failed before focused fixes; final tests include them.
 Independent focused review found no unresolved important issue.
@@ -89,8 +92,9 @@ and Python non-UTF-8 native identifier limitations remain as previously document
 
 ## 9. Unfinished Work
 
-Phase 1.3 local feature/hash-finalization commits are next. Phase 1.4 is authorized
-only after these commits and a known safe working-tree state.
+Phase 1.3 implementation commit: 66d881e02bcb52e467720b39293319ff7595f085.
+This documentation finalization completes the reference procedure under D-004.
+Phase 1.4 starts only after this commit and a verified clean working tree.
 
 ## 10. Next Subphase
 

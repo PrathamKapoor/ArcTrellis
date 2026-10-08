@@ -452,7 +452,7 @@ Append-only record of engineering decisions.
 - Files: README.md, decisions.md, flow.md, handoff.md
 
 ### D-044: Extend canonical extraction through one normalized JS/TS engine
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: All v1 languages need common entities before lexical graph assembly; inspected normalized samples expose common declaration, binding and method fields.
 - Decision: Add JS/TS entry points and a small canonical-language dispatcher, reusing ExtractionResult, UUID5 identity and six-coordinate metadata. Use iterative nearest-scope traversal and strict UTF-8 decoding. Keep Python behavior and dependency pins unchanged.
 - Why: Actual samples verified declarations, async/generators, callable bindings, class fields, export wrappers and TS decorator siblings without target execution. Baseline: 196 tests, OK (skipped=7).
@@ -461,7 +461,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/__init__.py, tests/extraction/test_javascript.py, README.md, decisions.md, flow.md
 
 ### D-045: Preserve callable declarations, modifiers and static import sites
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: JS/TS use callable variable/class-field bindings, anonymous expressions, export wrappers and ES import clauses that differ from Python.
 - Decision: Add a shared iterative JS/TS engine with simple identifier-bound functions/classes and class callable fields. Preserve signatures as exact binding/declaration headers before body, numbered decorators and export/modifier metadata. Anonymous unbound scopes and object methods are omitted without traversing their bodies. Type declarations remain syntax-only. Import bindings preserve default/named/namespace/side-effect/type-only forms. Statically obvious simple require calls are recorded as unresolved syntactic import sites.
 - Why: Normalized inspections verified fields and TS class-body decorator siblings. The test-first public API assertion failed because extract_entities was absent; the initial implemented JS/TS suite ran 24 tests, OK.
@@ -470,7 +470,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/extraction/javascript.py, src/arctrellis/extraction/es_imports.py, src/arctrellis/extraction/__init__.py, tests/extraction/test_javascript.py, README.md, decisions.md, flow.md
 
 ### D-046: Limit modifier scans to their actual declaration prefixes
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Independent review reproduced static callable-field and decorated export metadata errors in cleanly parsed source.
 - Decision: Scan static field modifiers on the field container and retain its header prefix; exclude decorator nodes from export/member modifier prefixes.
 - Why: Both focused regressions initially failed; after correction the JS/TS suite ran 26 tests, OK.
@@ -482,7 +482,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_javascript.py::JavaScriptExtractionTests.test_static_callable_field_preserves_member_modifiers and test_export_modifier_scan_excludes_decorator_arguments.
 
 ### D-047: Retain empty named import sites without false partial status
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Review reproduced import {} from "m" returning partial=True despite clean syntax.
 - Decision: Represent an empty named clause as one unbound side_effect import site, retaining type-only state if present, and no fabricated binding. Add literal-spelling coverage.
 - Why: The focused empty-import regression failed before this correction. A static module import site remains present even when there are no named bindings.
@@ -494,7 +494,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_javascript.py::JavaScriptImportTests.test_empty_named_import_is_a_complete_unbound_site.
 
 ### D-048: Restore historical decision boundaries after an insertion-context error
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Documentation review found D-044 insertion had split D-010, and moving the entry also moved D-010's three bug-detail lines.
 - Decision: Restore the complete historical prefix from HEAD and append only the new entries; inspect the resulting diff before commit.
 - Why: Previous decisions must remain unchanged. The editing error affected only uncommitted documentation, not source behavior or Git history.
@@ -506,7 +506,7 @@ Append-only record of engineering decisions.
 - Regression test: none; documentation-only correction checked by git diff against HEAD.
 
 ### D-049: Require actual class-body membership before extracting methods
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Review found clean JS/TS object methods inside class static blocks incorrectly emitted as class methods.
 - Decision: Index direct normalized class-body method members iteratively and require membership as well as CLASS semantic parent before emitting METHOD. Continue omitting object methods and their bodies.
 - Why: The focused regression failed with extra METHOD/FUNCTION entities before correction; the updated JS/TS suite ran 29 tests, OK.
@@ -518,7 +518,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/extraction/test_javascript.py::JavaScriptExtractionTests.test_object_methods_inside_class_static_blocks_are_not_class_methods.
 
 ### D-050: Close the verified JS/TS gate before lexical graph work
-- Date / phase / commit: 2026-10-08, Phase 1.3, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.3, 66d881e02bcb52e467720b39293319ff7595f085
 - Context: Phase 1.4 is authorized only after Phase 1.3 passes its full regression gate and local commit finalization.
 - Decision: Preserve unchanged dependencies/stable layers, record review regressions and actual verification, and finalize local feature references separately under D-004 before starting the graph builder.
 - Why: JS/TS tests ran 29 tests, OK; full suite ran 225 tests, OK (skipped=7). Public imports and JS/TSX scan/parse/extract smoke succeeded, pip check reported no broken requirements, and extraction native-import search had no matches. Focused review recheck found no unresolved important issue.
