@@ -695,7 +695,7 @@ Append-only record of engineering decisions.
 - Regression test: none; this is a documentation-only repair verified by exact pre-D-055 prefix and D-048 flow-row comparisons against 25f333c.
 
 ### D-068: Separate invocation observations from target resolution
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Named declarations and import dependencies cannot represent individual invocation evidence.
 - Decision: Create calls models, errors, IDs, extraction and public API plus contract tests. CallSite is a frozen hashable observation with owner ID, identifier parts, inclusive location and owned SyntaxSpan; it is not a CodeEntity and has no target. UUID5/NAMESPACE_URL over compact versioned canonical JSON includes language, path, owner, callee kind/parts and byte endpoints. Order is path/start/end/ID.
 - Why: The requested separation lets syntax observations survive without fabricating callable targets or retaining source trees. Initial contracts failed because arctrellis.calls did not exist.
@@ -704,7 +704,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/calls/__init__.py, src/arctrellis/calls/models.py, src/arctrellis/calls/ids.py, src/arctrellis/calls/errors.py, src/arctrellis/calls/extraction.py, tests/calls/__init__.py, tests/calls/test_models.py, tests/calls/test_extraction.py, decisions.md, flow.md
 
 ### D-069: Extract calls from execution bodies using canonical declaration ownership
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Span containment would attribute decorators, defaults, annotations and class bases to function execution. Normalized TS method decorators can precede their method node; optional invocation punctuation can be omitted.
 - Decision: Iteratively match represented declarations by lexical parent, binding/name and declaration end, verify covering span, then enter only body fields. Omit headers, decorators, class execution, unrepresented anonymous/object callable scopes, constructor/new and optional/computed invocations. Stable identifier/attribute chains survive; dynamic callee subexpressions are omitted but ordinary arguments are visited. Precompute recovery once; omit unsafe invocations/scopes and retain unaffected siblings. Reuse encoding and coordinate helpers without refactoring entity extraction.
 - Why: Actual normalized Python/TS samples verified body/name/value fields, decorator spans and optional-call punctuation. Body traversal establishes ownership rather than inferring execution from location alone.
@@ -713,7 +713,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/calls/extraction.py, tests/calls/test_extraction.py, decisions.md, flow.md
 
 ### D-070: Retain lightweight call observations during the existing indexing read
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Resolution needs invocation syntax without reopening sources or keeping repository-scale parse trees.
 - Decision: Extend FileIndexResult with final default call_site_count and RepositoryIndexResult with final default call_sites tuple and derived count. _analyze_file extracts calls while ParsedSource and ExtractionResult are live, then releases them. Typed call extraction failure is an explicit FAILED outcome with zero observations. Validate unique ordered sites, supported execution owners, matching file/language and per-file counts. Import resolution revalidates the extended snapshot including calls.
 - Why: Existing positional fields and entity/relationship counts remain compatible. Contract tests initially failed with missing call_sites/call_site_count attributes; mixed and partial/failed fixtures exercise the extension.
@@ -722,7 +722,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/indexing/models.py, src/arctrellis/indexing/repository.py, src/arctrellis/resolution/imports.py, tests/calls/test_indexing.py, decisions.md, flow.md
 
 ### D-071: Resolve a static call subset with explicit uncertainty and site evidence
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Dynamic language behavior prevents runtime-proof CALLS relationships, while canonical declarations and resolved imports support useful conservative candidates.
 - Decision: Add CallResolutionStatus/CallResolution/CallResolutionResult and resolve_calls with local indexes by parent/name and import binding. Search nearest semantic scope; represented import bindings block farther same-name functions. NAME targets are FUNCTION only; self/cls/this inside direct METHOD scopes target only direct same-class METHOD. Import-assisted lookup uses resolved import records and direct target-MODULE FUNCTION declarations. Python from aliases, direct module aliases, ES named/namespace and require member forms are supported; type-only, default callable imports, unaliased dotted-member guesses and longer chains are deferred. Multiple witnesses are AMBIGUOUS; unresolved/ambiguous emits no edge. Clone the import graph and add one deterministic site-specific CALLS edge with invocation Evidence per unique target. All CALLS are LIKELY: lexical/same-class 0.85, import-assisted 0.75.
 - Why: User mandates these confidence scores, separation, evidence and no guessed targets. Tests exercise each family, negative cases, immutable input snapshots, separate sites and existing graph paths. Initial strict mypy found one missing list annotation; explicit list[CallSite] addresses it without suppression.
@@ -731,7 +731,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/calls/models.py, src/arctrellis/calls/resolution.py, src/arctrellis/calls/__init__.py, src/arctrellis/indexing/repository.py, tests/calls/test_resolution.py, decisions.md, flow.md
 
 ### D-072: Keep runtime result imports out of the observation dependency path
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Public indexing imports the calls observation package, whose public resolver initially eagerly imported the import-resolution package and returned to partially initialized indexing.
 - Decision: Use postponed/type-only result annotations and local canonical runtime imports when resolve_calls/_imported execute. Add fresh-interpreter tests for indexing-, resolution- and calls-first import orders.
 - Why: Fresh indexing import reproduced ImportError: cannot import name 'RepositoryIndexResult' from partially initialized module 'arctrellis.indexing' (most likely due to a circular import). In-process call tests imported calls first and did not expose this boundary failure.
@@ -743,7 +743,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_indexing.py, test_public_packages_import_in_fresh_process_in_any_order.
 
 ### D-073: Omit unsupported escaped identifier spellings before constructing observations
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Normalized ECMAScript identifier nodes may contain Unicode escape spellings, while CallSite deliberately accepts plain identifier parts only.
 - Decision: Validate every accumulated callee part before producing the tuple; unsupported spellings are omitted without evaluating escape semantics or aborting indexing. Cover JS and TS repository inputs with escaped callees.
 - Why: Review and a failing regression reproduced valid zero-diagnostic source function f() {} followed by an escaped f call raising ValueError: callee parts must be simple identifier spellings.
@@ -755,7 +755,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_indexing.py, test_escaped_script_callees_are_omitted_without_aborting_index.
 
 ### D-074: Respect execution namespace and argument boundaries during call analysis
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Review found Python class namespace leakage and omitted executable JS/TS binding defaults and constructor arguments.
 - Decision: Skip CLASS namespaces during Python lexical/import lookup, retaining outer function/module lookup. Traverse executable variable binding patterns and constructor argument fields without treating the constructor itself as a call or entering anonymous bodies. Add independent regression tests for each boundary.
 - Why: Class-only imported helper incorrectly emitted a CALLS edge from a method; the expected unresolved test failed (0 unresolved, 1 edge). Destructuring/default/key and new Service(helper()) fixtures returned no observations instead of three ordinary body invocations.
@@ -767,7 +767,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_resolution.py, test_python_class_namespace_is_not_a_method_closure; tests/calls/test_extraction.py, test_destructuring_defaults_and_constructor_arguments_are_body_calls.
 
 ### D-075: Revalidate call coordinates and import proof consistency at snapshot boundaries
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Frozen summaries own mutable graphs; programmatically constructed snapshots can be internally inconsistent even when counts agree.
 - Decision: Require each retained call span to fit its canonical owner in bytes and points. Before call resolution, validate every import candidate is an indexed MODULE and resolved records exactly match the existing import-site relationship/evidence; reject missing/extra or modified import edges. Reuse the existing deterministic _import_edge producer without rerunning module/path resolution.
 - Why: New failing tests showed an out-of-owner span was accepted, and a modified resolution target with unchanged graph evidence produced an unsupported CALLS edge. Both fixtures must fail explicitly rather than invent proof.
@@ -779,7 +779,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_indexing.py, test_partial_failed_counts_and_owner_validation; tests/calls/test_resolution.py, test_import_decisions_must_match_preserved_import_evidence.
 
 ### D-076: Validate identity inputs and harden integrated call contracts
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Public identity generation should reject invalid canonical components consistently, and the phase needs independent integration/security/depth evidence.
 - Decision: Validate ID inputs using the same CallSite coordinate/spelling contract before UUID generation; use canonical ASCII JSON escaping consistently with existing identity helpers. Add mixed-source fixtures, deterministic full-pipeline, 1100-level owned-syntax traversal, non-execution and import-order contracts; document public usage, confidence, uncertainty and deliberate omissions in README.
 - Why: Invalid language input initially raised AttributeError: 'str' object has no attribute 'value' rather than the expected validation error. The corrected API validates inputs before field access. The real six-file smoke measured six observations, four resolved, one unresolved, one ambiguous, four CALLS edges; repeat graph/decisions matched. Initial call tests failed before implementation, review regressions failed before fixes, and strict typing/formatting/compile/dependency checks passed locally after corrections.
@@ -791,7 +791,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_models.py, test_identity_helper_rejects_noncanonical_inputs.
 
 ### D-077: Exclude ECMAScript class static-block bindings from method lookup
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Existing semantic ownership retains static-block declarations under CLASS, but the block's bindings are not visible to ordinary methods.
 - Decision: Skip CLASS namespaces during lexical/import ancestor lookup in all languages; direct same-class receiver method resolution remains a separate explicit path. Test class-local static-block functions and fallback to a real module function with the same name.
 - Why: Follow-up review and a failing JS/TS regression reproduced method run resolving helper() to a static-block function with LIKELY/0.85 instead of remaining unresolved.
@@ -803,7 +803,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_resolution.py, test_script_static_block_bindings_are_not_visible_to_methods.
 
 ### D-078: Distinguish optional-call punctuation from comments and type arguments
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: The normalized grammar omits anonymous optional-call punctuation, requiring byte inspection without interpreting unrelated text.
 - Decision: Add _optional_call to remove direct normalized comment/type_arguments ranges from the callee-to-arguments gap before checking optional punctuation. Cover normal comments containing optional spelling, TS string-literal generic arguments and actual optional generic calls.
 - Why: Review reproduced helper followed by a comment containing ?. and ordinary parentheses yielding no call sites despite zero diagnostics. The failing regression and actual TS child inspection verified comment/type_arguments spans; corrected extraction retains ordinary calls and still omits optional invocations.
@@ -815,7 +815,7 @@ Append-only record of engineering decisions.
 - Regression test: tests/calls/test_extraction.py, test_comment_and_type_literal_optional_spelling_is_not_optional_invocation.
 
 ### D-079: Finalize verified Phase 1.7 handoff and stop before framework semantics
-- Date / phase / commit: 2026-10-08, Phase 1.7, uncommitted
+- Date / phase / commit: 2026-10-08, Phase 1.7, e074bbb87e6c242536017d1b4186645b69aa12cb
 - Context: Completed call analysis must leave reproducible local verification and honest continuation boundaries.
 - Decision: Rewrite the twelve handoff sections, record actual commands/results and skip reasons, retain conservative unsupported semantics, and finalize only new commit-reference fields separately under D-004/D-067. Stop before Phase 1.8.
 - Why: Final call suite ran 34 tests OK; full suite ran 295 tests OK with seven existing platform skips. Ruff lint/77-file format check, strict mypy/43 source files, compileall and pip check passed. Public imports and native isolation passed. Real six-file smoke measured six call sites, four resolved, one unresolved, one ambiguous and four CALLS edges; proof showed imported validate at service.py:5 with LIKELY/0.75 and lexical helper at line 6 with LIKELY/0.85. Independent review reproduced boundary defects recorded above and verified their corrections with no remaining confirmed critical/important defect.

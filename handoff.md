@@ -100,7 +100,7 @@ Also service.py::create CALLS service.py::helper at line 6 with python_lexical_c
 service.ts::submit CALLS util.ts::audit, and app.js::run CALLS helper.js::sanitize.
 
 Source searches found native imports only in parsing; execution-mechanism search found only the existing fixed installed-grammar loader.
-git diff -- pyproject.toml returned no changes. Normal git diff --check passed (Git warned about expected LF-to-CRLF normalization).
+git diff -- pyproject.toml returned no changes. Staged forbidden-file audit found zero prohibited paths among 19 files; staged diff check passed. Author and committer were verified with git var as the required identity. Attribution audit found no prohibited matches. Normal git diff --check passed (Git warned about expected LF-to-CRLF normalization).
 
 Initial expected test failures: missing calls package/API/counts. Verified regression failures: circular public import,
 escaped callee ValueError, class namespace/static-block false edges, omitted arguments/patterns, optional comment omission,
@@ -123,7 +123,7 @@ Graphs are mutable snapshot objects; unauthorized caller mutation can stale summ
 ## 9. Unfinished Work
 
 No required Phase 1.7 implementation remains. Intentional omissions are not unresolved defects.
-Local commit references are finalized separately after the feature commit exists; no history rewrite.
+Feature commit e074bbb87e6c242536017d1b4186645b69aa12cb exists locally; its decision/table references are finalized without history rewrite.
 
 ## 10. Next Subphase
 
@@ -138,6 +138,7 @@ Imports must already be resolved and match preserved proof. Type-only/default ca
 Python unaliased dotted module bindings and longer member chains remain unresolved.
 Nearest import/function binding collisions remain ambiguous; candidate witness IDs may identify IMPORT bindings.
 Class parentage is structural ownership, not a promise that class namespaces are closures.
+Local feature commit: e074bbb87e6c242536017d1b4186645b69aa12cb (feat(calls): add conservative evidence-backed static call analysis).
 Preserve parser pins: tree-sitter 0.25.2 and the existing compatible grammar versions.
 The existing normalized parser, core graph traversal and ingestion safety behavior were not redesigned.
 
