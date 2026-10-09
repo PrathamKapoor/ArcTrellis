@@ -787,3 +787,19 @@ staged mutations and transaction controls do not prove database writes. No graph
 Context managers, AsyncSession, sessionmaker, typed parameters, aliases, comprehensions and complete
 control/dataflow are deferred. Visible rebinding anywhere in a scope excludes provenance, even before the rebind.
 Run `.venv\Scripts\python.exe -m unittest tests.database.test_sqlalchemy -q`.
+
+## Prisma static operations
+
+`extract_prisma_operations(parsed_source, extraction_result)` supports direct named/aliased PrismaClient
+imports from `@prisma/client` followed by a unique direct `new` binding in JS/TS. Supported reads:
+findUnique/findUniqueOrThrow/findFirst/findFirstOrThrow/findMany/count/aggregate/groupBy; writes:
+create/createMany/update/updateMany/upsert; deletes: delete/deleteMany; transaction: $transaction.
+Accessor names are Prisma source accessors, not physical table names. Requests are not runtime execution,
+await/commit/success or row-change proof. Raw queries, dynamic/computed/optional access, aliases, CommonJS,
+client extensions/custom paths, schema and anonymous transaction callback reasoning are omitted.
+Catch/with bodies are deferred; named function self-bindings and visible local/rebound clients reject provenance.
+Run `.venv\Scripts\python.exe -m unittest tests.database.test_prisma -q`.
+
+Explicit root-name mutations anywhere in the file (including another function) and TS enum/namespace
+bindings invalidate ORM provenance conservatively. Unrelated same-spelled locals can therefore reduce recall;
+this is not complete interprocedural mutation or alias analysis.

@@ -1,4 +1,4 @@
-"""Language-independent database observations, without enabled extractors."""
+"""Language-independent database observations and deterministic summaries."""
 
 from __future__ import annotations
 

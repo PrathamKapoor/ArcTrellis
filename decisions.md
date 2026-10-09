@@ -1132,3 +1132,36 @@ Append-only record of engineering decisions.
 - Symptom: Comprehension-local db/select names acquired outer ORM provenance; nested final same-name declaration lost a valid operation.
 - Root cause: Existing write helper omits for_in_clause, and a name/end dictionary overwrote enclosing canonical declarations.
 - Regression test: SQLAlchemyTests.test_comprehension_scopes_are_deferred; test_nested_final_same_name_keeps_correct_owner.
+
+### D-111: Recognize direct Prisma Client requests in JavaScript and TypeScript
+- Date / phase / commit: 2026-10-09, Phase 2.1B, uncommitted
+- Context: The common database model and SQLAlchemy adapter are verified; JS/TS needs equivalent provenance-backed source requests.
+- Decision: Add prisma.py and extract_prisma_operations; require direct named/aliased PrismaClient import from @prisma/client and a unique preceding direct new constructor assignment. Classify eight reads, five writes, two deletes and direct $transaction. Retain accessor spelling as target_name/target_basis=prisma_model_accessor, effect_stage=client_request or transaction_control and exact invocation. Omit raw queries, computed/optional access, factories, client aliases, CommonJS, custom generated paths and anonymous transaction bodies.
+- Why: JS/TS normalized inspections showed matching import/new/member/arguments fields with zero diagnostics. Every supported CRUD method is tested in both languages, with canonical FUNCTION/METHOD ownership and deterministic IDs. No Node/Prisma dependency is needed.
+- Alternatives considered: Variable-name recognition invents provenance; schema/table inference and raw SQL classification exceed source evidence; full dependency injection/dataflow is outside scope.
+- Consequences: Observations mean source requests, not successful promises, committed transactions or changed rows. No graph conversion yet. Whole-scope binding exclusions intentionally sacrifice recall.
+- Files: src/arctrellis/database/prisma.py, src/arctrellis/database/__init__.py, src/arctrellis/database/syntax.py, tests/database/test_prisma.py, README.md, flow.md, handoff.md
+
+### D-112: Defer catch/with environments and record named function self-bindings
+- Date / phase / commit: 2026-10-09, Phase 2.1B, uncommitted
+- Context: New negative tests reproduced catch parameters inheriting outer Prisma provenance; named function expressions also introduce local self-bindings.
+- Decision: Record named function-expression self names as local contradictions; omit calls inside catch_clause and with_statement rather than pretending these environments are fully modeled. Keep existing comprehension omissions and canonical ownership.
+- Why: Two catch negative assertions failed before the fix, then passed. Existing general write helper does not collect catch parameters. Named expression test confirms the canonical binding name differs from its internal function name.
+- Alternatives considered: Rewriting stable framework binding logic would expand scope; source containment without environment handling fabricates a client. Complete block/with environments remain deferred.
+- Consequences: Legitimate operations in catch/with bodies can be omitted, explicitly documented. No changes to existing framework or call resolution semantics.
+- Files: src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, handoff.md
+- Symptom: catch(db) calls emitted Prisma WRITE from an unrelated outer db binding.
+- Root cause: Shared write collector omitted catch_clause parameter while canonical calls retained surrounding execution ownership.
+- Regression test: PrismaTests.test_negatives (module and function catch shadow cases).
+
+### D-113: Invalidate visibly mutated client names across execution scopes
+- Date / phase / commit: 2026-10-09, Phase 2.1B, uncommitted
+- Context: Independent Prisma review identified outer-client writes inside another callable and omitted TypeScript runtime enum bindings.
+- Decision: Conservatively invalidate root names appearing anywhere in explicit JS assignment/update/delete patterns, Python member assignments, computed mutation receivers, JS unary delete, or TS enum/internal_module declarations. Do not simulate whether a mutating function runs; name-level contradictions exclude source provenance across scopes.
+- Why: Nine new negative subcases failed before their corrections (nested member replacement, outer let reassignment, enum shadow, two computed mutations and unary delete including tab/comment/parenthesized spellings), then passed. Normalized probes verified enum_declaration/internal_module name fields.
+- Alternatives considered: Interprocedural mutation execution and full block binding models exceed scope; ignoring visible contradictions fabricates provider operations.
+- Consequences: Same-spelled unrelated local mutation can suppress valid operations elsewhere; this intentional false-negative bias is documented. No general alias analysis or monkey-patch certainty is claimed.
+- Files: src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, README.md, handoff.md
+- Symptom: Replaced client/method and local enum produced Prisma operations through outer client provenance.
+- Root cause: Per-scope write collection excludes nested callable writes and does not represent TS enum/namespace bindings; operation callee filtering also omitted computed mutation roots and JS unary delete.
+- Regression test: PrismaTests.test_negatives (replace member, replace let binding, enum shadow).

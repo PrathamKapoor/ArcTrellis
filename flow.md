@@ -930,3 +930,24 @@ revision/owner invariants raise rather than silently disappearing. No filesystem
 |---|---|---|---|---|
 | SQLAlchemy adapter | Require import/constructor provenance and retain operation effect stages. | src/arctrellis/database/, tests/database/test_sqlalchemy.py, README.md | 0f3e24585f927dc293e6ae8ae9143e9df0751ef9 | D-109 |
 | Scope review | Omit comprehensions, remove supplied call override and disambiguate nested scopes. | src/arctrellis/database/syntax.py, tests/database/test_sqlalchemy.py, decisions.md, flow.md, handoff.md | 0f3e24585f927dc293e6ae8ae9143e9df0751ef9 | D-110 |
+
+## 24. Standalone Prisma extraction (Phase 2.1B)
+
+```text
+extract_prisma_operations(parsed_source, extraction_result)
+ ├─ SyntaxContext                         canonical calls and conservative lexical binding indexes
+ ├─ SyntaxContext.client                  named @prisma/client import + preceding unique new assignment
+ └─ make_database_operation_observation   retain client_request/transaction_control and accessor, not table
+```
+
+No repository database pass runs yet. Catch/with, comprehensions, raw queries, computed access,
+anonymous bodies, factories and arbitrary aliases are omitted; no target code/package/SQL execution.
+
+## Changes in this session (Phase 2.1B)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Prisma adapter | Recognize direct JS/TS client requests with method/accessor metadata. | src/arctrellis/database/, tests/database/test_prisma.py, README.md | uncommitted | D-111 |
+| Scope guard | Defer catch/with environments and record named function self-bindings. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, handoff.md | uncommitted | D-112 |
+
+| Cross-scope contradictions | Invalidate explicitly mutated root names and TS enum/namespace names conservatively. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, README.md, handoff.md | uncommitted | D-113 |

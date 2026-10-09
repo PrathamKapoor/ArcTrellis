@@ -45,6 +45,44 @@ class SyntaxContext:
         self.entities = {e.id: e for e in result.entities}
         self.unsafe = _recovery_subtrees(parsed.root)
         nodes = tuple(parsed.root.walk())
+        self.modified_names: set[str] = set()
+        for node in nodes:
+            target = None
+            if node.kind in ("assignment_expression", "augmented_assignment_expression"):
+                target = node.child_by_field("left")
+            elif node.kind in ("assignment", "augmented_assignment"):
+                candidate = node.child_by_field("left")
+                if candidate is not None and candidate.kind in ("attribute", "subscript"):
+                    target = candidate
+            elif node.kind in ("enum_declaration", "internal_module"):
+                target = node.child_by_field("name")
+            elif node.kind in ("update_expression", "delete_statement"):
+                target = node.child_by_field("argument") or (node.children[0] if node.children else None)
+            elif node.kind == "unary_expression" and self.text(node).lstrip().startswith("delete"):
+                target = node.child_by_field("argument")
+            if target is not None:
+                while target.kind in (
+                    "subscript_expression",
+                    "member_expression",
+                    "attribute",
+                    "subscript",
+                    "parenthesized_expression",
+                ):
+                    receiver = target.child_by_field("object") or target.child_by_field("value")
+                    if target.kind == "parenthesized_expression":
+                        receiver = next((c for c in target.children if c.kind != "comment"), None)
+                    if receiver is None:
+                        break
+                    target = receiver
+                parts = _parts(target, self.text)
+                if parts:
+                    self.modified_names.add(parts[0])
+                elif target.kind in ("array_pattern", "object_pattern"):
+                    self.modified_names.update(
+                        self.text(n)
+                        for n in target.walk()
+                        if n.kind in ("identifier", "shorthand_property_identifier_pattern")
+                    )
         self.calls = {(n.span.start_byte, n.span.end_byte): n for n in nodes if n.kind in ("call", "call_expression")}
         scopes: dict[tuple[str, int], list[CodeEntity]] = {}
         for declaration_entity in result.entities:
@@ -62,6 +100,8 @@ class SyntaxContext:
                 "set_comprehension",
                 "dictionary_comprehension",
                 "generator_expression",
+                "catch_clause",
+                "with_statement",
             )
             if inside:
                 omitted.add((node.span.start_byte, node.span.end_byte))
@@ -69,6 +109,7 @@ class SyntaxContext:
         self.sites = tuple(s for s in self.sites if (s.span.start_byte, s.span.end_byte) not in omitted)
         self.roots = {result.module.id: parsed.root}
         parameters: dict[str, SyntaxNode] = {}
+        self_names: dict[str, SyntaxNode] = {}
         for node in nodes:
             name = node.child_by_field("name") or node.child_by_field("property")
             value = node.child_by_field("value")
@@ -89,10 +130,17 @@ class SyntaxContext:
                 parameter = declaration.child_by_field("parameters") or declaration.child_by_field("parameter")
                 if parameter is not None:
                     parameters[entity.id] = parameter
+                self_name = declaration.child_by_field("name")
+                if declaration.kind in ("function_expression", "generator_function") and self_name is not None:
+                    self_names[entity.id] = self_name
         self.disabled = any(n.kind in ("global_statement", "nonlocal_statement") for n in nodes)
         self.writes = {scope: _writes(root, self.text) for scope, root in self.roots.items()}
         self.imports: dict[tuple[str, str], CodeEntity] = {}
         self.assignments: dict[tuple[str, str], SyntaxNode] = {}
+        for scope, self_name in self_names.items():
+            self.writes[scope].setdefault(self.text(self_name), set()).add(
+                (self_name.span.start_byte, self_name.span.end_byte)
+            )
         for scope, parameter in parameters.items():
             for name in parameter.walk():
                 if name.kind in ("identifier", "shorthand_property_identifier_pattern"):
@@ -153,7 +201,7 @@ class SyntaxContext:
     def imported(self, name: str, owner_id: str, before: int, module: str, symbol: str, form: str) -> CodeEntity | None:
         scope = self.visible(name, owner_id)
         entity = self.imports.get((scope, name)) if scope is not None else None
-        if scope is None or entity is None or self.disabled:
+        if scope is None or entity is None or self.disabled or name in self.modified_names:
             return None
         span = _entity_span(entity)
         if self.writes[scope][name] != {(span.start_byte, span.end_byte)} or span.end_byte > before:
@@ -174,7 +222,7 @@ class SyntaxContext:
     ) -> Binding | None:
         scope = self.visible(name, owner_id)
         assignment = self.assignments.get((scope, name)) if scope is not None else None
-        if scope is None or assignment is None or self.disabled:
+        if scope is None or assignment is None or self.disabled or name in self.modified_names:
             return None
         span = assignment.span
         if self.writes[scope][name] != {(span.start_byte, span.end_byte)} or span.end_byte > before:

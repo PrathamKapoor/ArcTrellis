@@ -1,4 +1,4 @@
-"""Common database-operation foundation; no ORM/database extractor is enabled."""
+"""Common operation observations and bounded static ORM adapters."""
 
 from .models import (
     DatabaseAnalysisResult,
@@ -6,6 +6,7 @@ from .models import (
     DatabaseOperationObservation,
     make_database_operation_observation,
 )
+from .prisma import extract_prisma_operations
 from .sqlalchemy import extract_sqlalchemy_operations
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "DatabaseOperationObservation",
     "make_database_operation_observation",
     "extract_sqlalchemy_operations",
+    "extract_prisma_operations",
 ]

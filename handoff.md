@@ -3,7 +3,7 @@
 ## 1. Current Phase
 
 Phase 2.1A complete: standalone SQLAlchemy adapter verified; references finalized separately under D-004.
-Phase 2.1B/C have not started. Previous Phase 2.0 records below remain historical until final rewrite.
+Phase 2.1B verified; Phase 2.1C has not started. Previous Phase 2.0 records below remain historical until final rewrite.
 
 ## 2. Work Completed
 
@@ -55,6 +55,8 @@ Core already has DATABASE_OPERATION, READS_DATABASE and WRITES_DATABASE; none is
 
 ## 5. Decisions Made
 
+D-111 direct PrismaClient provenance and method mapping; D-112 catch/with/self-binding guards.
+
 Current: D-109 bounded Session/statement provenance and effect stages; D-110 scope review corrections.
 
 
@@ -79,6 +81,11 @@ No dependencies, core enums, parser pins, quality settings or architecture isola
 Phase2.1A/B/C are authorized in this session; Phase2.2 is not authorized. Preserve evidence-first conservative uncertainty.
 
 ## 7. Testing and Verification
+
+Phase2.1B: four Prisma tests (both languages/all supported methods/negative subcases) and seven SQLAlchemy
+tests pass. Full404 tests OK/skipped7; Ruff/115-file format, strict mypy65 files, compileall, pip check and
+architecture2 tests pass. Initial missing API, lint line lengths and catch2/cross-scope3 regressions corrected.
+D-113 records independent review mutations/enum fix and conservative name-level omissions.
 
 Phase2.1A: seven SQLAlchemy tests pass (multiple operation/provenance subcases); full400 tests OK/skipped7.
 Ruff/113-file format, strict mypy/64 files, compileall, pip check, architecture2 tests and whitespace pass.
