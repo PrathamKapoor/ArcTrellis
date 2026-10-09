@@ -3,7 +3,7 @@
 ## 1. Current Phase
 
 Phase 2.1A/B/C complete: bounded SQLAlchemy extraction, Prisma extraction and evidence-backed database
-operation graphs. Final local commit/reference finalization pending. Phase 2.2 has not started.
+operation graphs. Implementation committed locally; references finalized separately under D-004. Phase 2.2 has not started.
 Repository C:/Projects/ArcTrellis, Python3.13.14, required Git identity, no remotes.
 
 ## 2. Work Completed
@@ -104,10 +104,10 @@ Final verified commands with .venv\Scripts\python.exe:
 - -m unittest tests.test_architecture -q:3 tests, OK.
 - -m tests.database.smoke:SQLAlchemy6, Prisma3, operation9, reads2, writes3, staged1,
   unmaterialized0, without-DB-edge4, unknown1; deterministic=True.
-  Python POST/payment path: app.py:12 fastapi_decorated_handler PROVEN/1.0,
+  Python POST /payments path: app.py:12 fastapi_decorated_handler PROVEN/1.0,
   app.py:14 python_lexical_call_resolution LIKELY/0.85,
   app.py:7 sqlalchemy_execute_insert LIKELY/0.85.
-  TS POST/payment path: app.ts:10 express_local_handler_resolution LIKELY/0.85,
+  TS POST /payments path: app.ts:10 express_local_handler_resolution LIKELY/0.85,
   app.ts:8 ecmascript_lexical_call_resolution LIKELY/0.85,
   app.ts:6 prisma_model_create LIKELY/0.85.
 - Fresh interpreter public package import orders pass; no retained bytes/trees, original graphs unchanged,
@@ -138,7 +138,10 @@ Existing native parser resource/filesystem race limits and revision-only/non-nam
 
 ## 9. Unfinished Work
 
-No required Phase2.1 implementation remains. Final local commit and reference finalization pending.
+Implementation commits: SQLAlchemy0f3e24585f927dc293e6ae8ae9143e9df0751ef9;
+Prisma b0ecb51aea242e78fc25b25f3eccbc348f937195; database graph b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6.
+
+No required Phase2.1 implementation remains. Implementation and local reference finalization complete.
 No ORM runtime/schema/query execution or Phase2.2 implementation was started. References use real
 implementation hashes in later docs commits without history rewrite under D-004/D-067.
 

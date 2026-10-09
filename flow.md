@@ -992,7 +992,7 @@ parse/read, no SQL/target/runtime dependency execution and no new dependencies o
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Index lifecycle | Capture and validate lightweight operations/counts; preserve all snapshot fields. | src/arctrellis/database/extraction.py, validation.py, syntax.py, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/resolution/imports.py | uncommitted | D-114 |
-| Database graphs | Materialize site entities and eligible evidence-backed capabilities in independent graph. | src/arctrellis/database/graph.py, __init__.py, tests/database/test_graph.py | uncommitted | D-115 |
-| Statement proof | Require actual nested statement invocation coordinates/ID, not unrelated import existence. | src/arctrellis/database/sqlalchemy.py, validation.py, tests/database/test_graph.py | uncommitted | D-116 |
-| Verification | Mixed static smoke, traces, isolation, negatives, public imports and final documentation. | tests/database/smoke.py, tests/database/test_graph.py, tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-117 |
+| Index lifecycle | Capture and validate lightweight operations/counts; preserve all snapshot fields. | src/arctrellis/database/extraction.py, validation.py, syntax.py, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/resolution/imports.py | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-114 |
+| Database graphs | Materialize site entities and eligible evidence-backed capabilities in independent graph. | src/arctrellis/database/graph.py, __init__.py, tests/database/test_graph.py | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-115 |
+| Statement proof | Require actual nested statement invocation coordinates/ID, not unrelated import existence. | src/arctrellis/database/sqlalchemy.py, validation.py, tests/database/test_graph.py | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-116 |
+| Verification | Mixed static smoke, traces, isolation, negatives, public imports and final documentation. | tests/database/smoke.py, tests/database/test_graph.py, tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-117 |
