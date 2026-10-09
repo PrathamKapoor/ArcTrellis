@@ -2,7 +2,7 @@
 
 ## 1. Current Phase
 
-Phase 2.1A complete: standalone SQLAlchemy adapter verified; commit finalization pending.
+Phase 2.1A complete: standalone SQLAlchemy adapter verified; references finalized separately under D-004.
 Phase 2.1B/C have not started. Previous Phase 2.0 records below remain historical until final rewrite.
 
 ## 2. Work Completed

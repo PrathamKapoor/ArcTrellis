@@ -928,5 +928,5 @@ revision/owner invariants raise rather than silently disappearing. No filesystem
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| SQLAlchemy adapter | Require import/constructor provenance and retain operation effect stages. | src/arctrellis/database/, tests/database/test_sqlalchemy.py, README.md | uncommitted | D-109 |
-| Scope review | Omit comprehensions, remove supplied call override and disambiguate nested scopes. | src/arctrellis/database/syntax.py, tests/database/test_sqlalchemy.py, decisions.md, flow.md, handoff.md | uncommitted | D-110 |
+| SQLAlchemy adapter | Require import/constructor provenance and retain operation effect stages. | src/arctrellis/database/, tests/database/test_sqlalchemy.py, README.md | 0f3e24585f927dc293e6ae8ae9143e9df0751ef9 | D-109 |
+| Scope review | Omit comprehensions, remove supplied call override and disambiguate nested scopes. | src/arctrellis/database/syntax.py, tests/database/test_sqlalchemy.py, decisions.md, flow.md, handoff.md | 0f3e24585f927dc293e6ae8ae9143e9df0751ef9 | D-110 |

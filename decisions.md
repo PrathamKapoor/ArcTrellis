@@ -1113,7 +1113,7 @@ Append-only record of engineering decisions.
 - Files: decisions.md, flow.md, handoff.md
 
 ### D-109: Extract bounded SQLAlchemy intent using canonical call ownership
-- Date / phase / commit: 2026-10-09, Phase 2.1A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.1A, 0f3e24585f927dc293e6ae8ae9143e9df0751ef9
 - Context: Database foundation exists but no adapter supplies defensible source patterns.
 - Decision: Add database/sqlalchemy.py and temporary syntax.py indexes; reuse common observations and canonical extract_call_sites ownership. Require direct imported sqlalchemy.orm Session (aliases allowed), one preceding direct constructor assignment and no competing scope writes. Require imported sqlalchemy statement constructors for classified execute. Retain constructor/binding/statement witness IDs, effect_stage and stable analysis_method. Model get as read_capable, add/add_all/delete as staged_mutation, flush/commit/rollback as transaction_control and unknown execute as UNKNOWN. Targets are source_identifier only. Defer context managers, AsyncSession, factories, typed parameters, alias propagation and complete flow. Standalone blocked_providers supports inventory collisions for later integration.
 - Why: Normalized grammar inspections verified assignment/call/attribute/argument and with/async-with shapes; optional context-manager scope support is deliberately omitted. Existing canonical owners avoid another execution-scope engine. No runtime dependency or ORM import is needed.
@@ -1122,7 +1122,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/database/__init__.py, src/arctrellis/database/sqlalchemy.py, src/arctrellis/database/syntax.py, tests/database/test_sqlalchemy.py, README.md, flow.md, handoff.md
 
 ### D-110: Exclude comprehension bindings and disambiguate nested same-name scopes
-- Date / phase / commit: 2026-10-09, Phase 2.1A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.1A, 0f3e24585f927dc293e6ae8ae9143e9df0751ef9
 - Context: Independent review found comprehension shadowing and an unsafe optional supplied-call-site boundary; a local regression also reproduced nested same-name scope collision.
 - Decision: Omit calls inside Python comprehensions/generators; derive call sites internally without caller override. Select the closest covering canonical declaration start among same-name/end candidates. Keep strict typing and format gates; fix local variable type narrowing without suppressions.
 - Why: New tests failed three assertions before correction (two comprehension false positives and one missing nested operation); corrected targeted suite passes. Supplied sites could change owner/callee at an actual span, bypassing parameter shadows. Removing the new optional argument eliminates that unsupported input contract.
