@@ -12,12 +12,13 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 1.9 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 2.0 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
 internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
 and Express adapters identify HTTP endpoints with handler evidence. Inheritance resolution,
-global middleware execution, test classification and database semantics are not implemented. There is no
+global middleware execution and runtime test coverage are not implemented. Static test declarations/direct TESTS
+and a common database-operation model are available. **No ORM/database operation extractor is enabled yet.** There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
 
@@ -50,6 +51,8 @@ Current capabilities:
 - API_ENDPOINT entities, registration proof and endpoint-to-handler EXPOSES traces.
 - Precise Express route middleware, FastAPI decorator dependencies and Flask request hooks.
 - Static same-file router prefixes/mounts, distinct local/effective endpoints and multi-site proof.
+- Conservative Python/JS/TS TEST declarations and direct call-site TESTS evidence, without runtime coverage.
+- Immutable database-operation foundation with canonical owner validation; no enabled adapters or DB graph conversion.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
 Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
@@ -740,6 +743,30 @@ proof of passing tests, CI execution, or assertion quality. Existing call-resolu
 
 Run `.venv\Scripts\python.exe -m unittest tests.test_semantics.test_analysis -q` and
 `.venv\Scripts\python.exe -m tests.test_semantics.smoke` for contracts and measured Python/JS evidence.
+
+## Database-operation foundation
+
+`arctrellis.database` exports `DatabaseOperationKind`, `DatabaseOperationObservation`,
+`make_database_operation_observation`, and `DatabaseAnalysisResult`. Categories are READ, WRITE, DELETE,
+TRANSACTION and UNKNOWN; insert/update/upsert distinctions belong in future adapter metadata.
+The owner-validating factory accepts a canonical MODULE/FUNCTION/METHOD and an operation SyntaxSpan,
+checks language/path/byte/point containment, then retains only owner ID/kind and owned coordinates.
+Observations include operation name, extensible lowercase provider identifier (`unknown` is available),
+optional logical target name, immutable string metadata and a computed versioned UUID5 ID.
+Direct record construction validates structure, not source truth or owner existence; adapters should use the factory.
+Result constructors require deterministic ordering/unique IDs; `from_observations` sorts an immutable tuple.
+Counts by operation kind/provider include only nonzero observed categories.
+
+**No ORM/database operation extractor is enabled yet.** This model does not classify arbitrary `execute()` calls.
+No TABLE/MODEL/DATABASE entities, connections, credentials, SQL parsing or query execution are introduced.
+Core already contains DATABASE_OPERATION, READS_DATABASE and WRITES_DATABASE, but conversion is deferred until
+an adapter supplies defensible operation proof and its own confidence policy. No universal confidence is assigned.
+Future adapters will supply observations to language-independent semantics and future graph conversion;
+there is no database stage in `index_repository` today.
+
+Run `.venv\Scripts\python.exe -m unittest tests.database.test_foundation -q` and
+`.venv\Scripts\python.exe -m tests.database.smoke`. The latter constructs a synthetic model;
+it is not output from an ORM extractor.
 
 Callback binding exclusions include shorthand destructuring in local declarations/parameters/suites and
 named callback function self-bindings; affected calls do not resolve to unrelated module functions.

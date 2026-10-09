@@ -1063,3 +1063,42 @@ Append-only record of engineering decisions.
 - Symptom: Shorthand destructuring and named callbacks falsely linked tests to unrelated module functions.
 - Root cause: The binding guard collected only identifier nodes and omitted the callback function-expression name.
 - Regression test: tests.test_semantics.test_analysis.TestSemanticsTests.test_callback_destructuring_and_named_function_shadowing (five cases each for JS and TS).
+
+### D-104: Define immutable common database-operation observations
+- Date / phase / commit: 2026-10-09, Phase 2.0B, uncommitted
+- Context: Future database adapters need one language-independent contract before any ORM syntax is recognized.
+- Decision: Add arctrellis.database with DatabaseOperationKind READ/WRITE/DELETE/TRANSACTION/UNKNOWN, frozen DatabaseOperationObservation, canonical-owner-validating make_database_operation_observation and ordered DatabaseAnalysisResult. Retain owner ID/kind, path/language, operation/provider/name, optional logical target, SourceLocation, owned SyntaxSpan and immutable string metadata. Compute id as an init=False UUID5 field from version/language/path/owner/provider/kind/name/optional target/byte endpoints. Provider is an extensible lowercase identifier string; unknown is available. Factory validates actual MODULE/FUNCTION/METHOD, matching language and byte/point containment; no canonical owner object escapes it. Result offers sorted construction and nonzero ordered operation/provider counts.
+- Why: Operations are expressions, not declarations. Existing immutable core metadata and owned spans avoid dependencies and parser/source retention. No target schema or provider enum is needed before adapters exist.
+- Alternatives considered: INSERT/UPDATE categories prematurely specialize the common model; storing owner CodeEntity copies unnecessary declaration contents; random/caller-edited IDs weaken reproducibility; provider enums force changes for every adapter; separate target/table entities are unsupported.
+- Consequences: Direct observation construction validates claimed structure, not owner existence/source truth; adapters should use the validated factory. Metadata cannot hold bytes/native objects/handles. Identity is revision-deterministic and not repository-namespaced; confidence remains an adapter responsibility. No dependencies added.
+- Files: src/arctrellis/database/models.py, src/arctrellis/database/__init__.py, tests/database/test_foundation.py, README.md
+
+### D-105: Defer database graph materialization pending adapter proof
+- Date / phase / commit: 2026-10-09, Phase 2.0B, uncommitted
+- Context: Inspection confirmed core already contains DATABASE_OPERATION and READS_DATABASE/WRITES_DATABASE, and Relationship requires existing entity endpoints. No database adapter supplies proof or confidence yet.
+- Decision: Establish observations/results only in Phase2.0B. Do not add graph conversion, fake database/table/model targets or a production database extraction stage. Future evidence-backed adapters may materialize existing DATABASE_OPERATION entities as expression targets, then owner-to-operation database relationships with adapter-specific proof/confidence. That conversion contract is not implemented or advertised now.
+- Why: A valid observation representation alone cannot certify an ORM operation. The canonical operation entity is available for a later honest conversion; its presence does not justify unconditional edges or a universal confidence policy.
+- Alternatives considered: Generic owner WRITES_DATABASE DATABASE_OPERATION machinery is coherent but would require a proof-bearing conversion API before an adapter contract exists; fake TABLE/DATABASE entities invent targets; changing core enums is unnecessary; name-only execute recognition is unsafe.
+- Consequences: No enabled ORM/database extractor. Generic execute calls in Python/JS/TS remain ordinary calls with no database nodes/edges. SQLAlchemy/Prisma/Mongoose and other adapters are deferred to Phase2.1, not started here.
+- Files: src/arctrellis/database/, tests/database/test_foundation.py, tests/database/smoke.py, README.md, flow.md
+
+### D-106: Align capability summary and database contract verification with actual behavior
+- Date / phase / commit: 2026-10-09, Phase 2.0B, uncommitted
+- Context: Database test-first and documentation review exposed incorrect test expectations and a stale README capability summary.
+- Decision: Require TypeError when dataclasses.replace attempts to override computed init=False id; retain deterministic computed identity. Correct the synthetic owner fixture to use inclusive line9 for an exclusive line10/column0 span. Update README's current phase and stale no-test-classification sentence; explicitly distinguish the database foundation from extraction. Add repeatable synthetic database smoke and record initial failures honestly.
+- Why: Initial database API test failed with ModuleNotFoundError before implementation. Initial ten-test implementation run failed because Python3.13 raises TypeError rather than the expected ValueError for replacing init=False fields. Ruff initially found three long lines, then formatting and lint passed; strict mypy passed62 source files. README review found Phase1.9/no-test-classification still in its initial summary despite the appended2.0A section.
+- Alternatives considered: Making id caller-mutable merely to satisfy a mistaken test weakens identity. Retaining stale capability prose contradicts implemented behavior. Synthetic model output must not masquerade as an extractor result.
+- Consequences: No production bug or dependency change follows from the incorrect exception expectation/fixture. The README now accurately names static tests and model-only database capability.
+- Files: tests/database/test_foundation.py, tests/database/smoke.py, README.md, decisions.md, flow.md
+- Symptom: Computed-ID test expected the wrong exception; README initially said test classification was unavailable.
+- Root cause: Test assumption about dataclasses.replace and an unchanged historical current-status paragraph.
+- Regression test: tests.database.test_foundation.DatabaseFoundationTests.test_forged_identity_rejected; README capability summary reviewed against public APIs.
+
+### D-107: Finalize the verified Phase 2.0 foundation and stop before adapters
+- Date / phase / commit: 2026-10-09, Phase 2.0B, uncommitted
+- Context: Both subphases need a reproducible local handoff after the reviewed test-semantics correction and final database foundation gate.
+- Decision: Record all final measured commands/results, independent review, corrected failures, static smokes, security/public API/audit boundaries and complete twelve-section handoff. Commit the database foundation locally, finalize only its new commit-reference fields separately, and stop before Phase2.1.
+- Why: Final targeted suites ran12 test-semantics and10 database tests OK; complete suite393 tests OK/skipped7. Ruff check and110-file format check pass, strict mypy62 source files passes, compileall exits0, pip check reports no broken requirements, architecture2 tests pass. Test smoke measures2 observations/entities/linked,0 unlinked,2 TESTS with deterministic rerun and actual line3 call-site proof. Database smoke constructs unknown-provider WRITE/synthetic_write with unknown target at a.py:2 and computed UUID5; conversion is explicitly deferred. Public API smoke passes. Independent review reproduced the D-103 issue, then rechecked the correction with22 targeted tests passing and no remaining important finding. Remotes, forbidden tracked files and attribution matches are absent; source search finds only fixed native grammar imports/loading in parsing. Dependencies/configuration remain unchanged.
+- Alternatives considered: Claiming extractor/ORM/database query capability from a representation alone overstates evidence; beginning adapters exceeds authorized scope; history rewriting/global marker replacement breaks traceability.
+- Consequences: Seven existing Windows symlink/FIFO skips remain. Other operating systems/runtime frameworks/DB behavior are not verified. No target source/tests/modules/Node/dependencies/DB/SQL were executed/imported/installed/contacted. Existing native parser resource/filesystem race and mutable result-graph limits remain explicit.
+- Files: README.md, decisions.md, flow.md, handoff.md, src/arctrellis/database/, tests/database/

@@ -883,3 +883,25 @@ No transitive TESTS, endpoint test classification, target execution, source rere
 _callback_shadows now recognizes identifier and shorthand_property_identifier_pattern in binding positions,
 and the callback function-expression name. Affected direct callback calls are omitted before resolution;
 TEST identity remains. This applies to test callbacks and inherited describe suite bindings.
+
+## 22. Database-operation foundation (separate future boundary)
+
+Implemented standalone construction only:
+make_database_operation_observation -> validate canonical execution owner and operation coordinates
+-> DatabaseOperationObservation (computed UUID5, owner ID/kind, provider/kind/name/target, immutable metadata)
+-> DatabaseAnalysisResult.from_observations -> deterministic ordering and operation/provider counts.
+
+No database stage runs in index_repository, analyze_tests or framework enrichment.
+Future-only boundary: ORM-specific adapter -> DatabaseOperationObservation -> language-independent semantics
+-> future evidence-backed DATABASE_OPERATION / READS_DATABASE / WRITES_DATABASE conversion.
+Graph conversion and adapters are deferred, not production call paths. No source bytes/native parser objects,
+owner objects, credentials, connection handles, SQL execution or universal DB confidence are retained/introduced.
+
+## Changes in this session (Phase 2.0B)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Database contract | Add immutable operation model, canonical-owner factory, deterministic identity and ordered results/counts. | src/arctrellis/database/, tests/database/test_foundation.py | uncommitted | D-104 |
+| Graph boundary | Defer conversion/adapters and verify generic execute negatives in Python/JS/TS. | tests/database/test_foundation.py, README.md, flow.md | uncommitted | D-105 |
+| Documentation and synthetic smoke | Correct stale capability prose/test expectation and distinguish model construction from extraction. | tests/database/smoke.py, tests/database/test_foundation.py, README.md, decisions.md, flow.md | uncommitted | D-106 |
+| Final verification and handoff | Record393-test quality gate, reviewed correction, synthetic smokes and twelve-section continuation state. | README.md, decisions.md, flow.md, handoff.md | uncommitted | D-107 |
