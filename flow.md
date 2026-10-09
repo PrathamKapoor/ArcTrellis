@@ -849,3 +849,27 @@ Mount ownership is the application module. Prefix-only paths are router configur
 | Composition hardening | Reject invalid FastAPI prefix boundaries and unusual route slash normalization; use keyword-only graph filters and typed router validation. | src/arctrellis/frameworks/composition.py, src/arctrellis/frameworks/composition_extraction.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/indexing/models.py, tests/frameworks/test_composition.py | ee5b1d626a142a410ab5f9e01a201bae8faa511c | D-095 |
 | Verification and documentation | Add repeatable mixed flow/proof and seven negative smoke cases; document local/effective ownership and bounded composition. | tests/frameworks/flow_smoke.py, README.md, decisions.md, flow.md, handoff.md | ee5b1d626a142a410ab5f9e01a201bae8faa511c | D-096 |
 | Final quality and handoff | Share coordinate containment validation and record all passing gates, audits, skips and twelve-section continuation state. | src/arctrellis/frameworks/models.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/frameworks/composition_models.py, src/arctrellis/indexing/models.py, README.md, decisions.md, flow.md, handoff.md | ee5b1d626a142a410ab5f9e01a201bae8faa511c | D-097 |
+
+## 21. Static test semantics
+
+index_repository -> _analyze_file -> extract_test_observations (after router extraction, before parse release).
+RepositoryIndexResult retains TestObservation tuples and per-file counts; callback calls retain owned spans only.
+Python tests reference existing FUNCTION/METHOD declarations. JS callback tests have explicit semantic TEST ownership,
+without general anonymous FUNCTION entities. Failed files contribute no observations.
+
+resolve_imports -> resolve_calls -> optional resolve_http_endpoints/resolve_framework_flow -> analyze_tests.
+analyze_tests uses _validate_snapshots, copies call or matching enriched base_graph, adds TEST and DEFINES,
+resolves callback CallSite values through shared _Symbols/_resolve/_edge, then derives direct TESTS from CALLS.
+TestDerivation retains original CALLS and derived TESTS IDs. Evidence points to invocation coordinates,
+with python_direct_test_call/ecmascript_direct_test_call and LIKELY/0.85. TestAnalysisResult returns a new graph.
+No transitive TESTS, endpoint test classification, target execution, source reread or runtime coverage occurs.
+
+## Changes in this session (Phase 2.0A)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Test contracts and identity | Add immutable observations, TEST identity, callback ownership, result and snapshot validation. | src/arctrellis/test_semantics/, src/arctrellis/indexing/, src/arctrellis/calls/, src/arctrellis/resolution/imports.py, src/arctrellis/frameworks/resolution.py | uncommitted | D-098 |
+| Recognition policy | Restrict Python containers and JS/TS direct static callbacks/suites. | src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md | uncommitted | D-099 |
+| Direct proof | Derive evidence-backed direct TESTS, preserve enriched graphs and provide realistic static smoke. | src/arctrellis/test_semantics/resolution.py, tests/test_semantics/ | uncommitted | D-100 |
+| Boundary corrections | Fix callback parentage, optional calls and local binding contradictions. | src/arctrellis/test_semantics/, tests/test_semantics/test_analysis.py | uncommitted | D-101 |
+| Verification gate | Record targeted/full quality gates, static smoke and local audits. | README.md, decisions.md, flow.md, handoff.md, tests/test_semantics/smoke.py | uncommitted | D-102 |

@@ -16,6 +16,7 @@ from arctrellis.frameworks.flow_models import PreHandlerKind, PreHandlerObservat
 from arctrellis.frameworks.models import HttpRouteObservation, _contains, _route_order
 from arctrellis.graph import CodeGraph
 from arctrellis.ingestion import DiscoveredFile, Language, RepositoryInventory
+from arctrellis.test_semantics.models import TestObservation, _test_order
 
 
 class FileIndexStatus(StrEnum):
@@ -38,6 +39,7 @@ class FileIndexResult:
     route_observation_count: int = 0
     pre_handler_observation_count: int = 0
     router_observation_count: int = 0
+    test_observation_count: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.language, Language) or not isinstance(self.status, FileIndexStatus):
@@ -51,6 +53,7 @@ class FileIndexResult:
             self.route_observation_count,
             self.pre_handler_observation_count,
             self.router_observation_count,
+            self.test_observation_count,
         ):
             if type(count) is not int:
                 raise TypeError("counts must be non-boolean integers")
@@ -65,6 +68,7 @@ class FileIndexResult:
                     self.route_observation_count,
                     self.pre_handler_observation_count,
                     self.router_observation_count,
+                    self.test_observation_count,
                 )
             ):
                 raise ValueError("failed files cannot contribute graph records")
@@ -97,6 +101,7 @@ class RepositoryIndexResult:
     pre_handler_observations: tuple[PreHandlerObservation, ...] = ()
     router_prefix_observations: tuple[RouterPrefixObservation, ...] = ()
     router_mount_observations: tuple[RouterMountObservation, ...] = ()
+    test_observations: tuple[TestObservation, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.inventory, RepositoryInventory) or not isinstance(self.graph, CodeGraph):
@@ -313,6 +318,52 @@ class RepositoryIndexResult:
                 router_counts[r.path] = router_counts.get(r.path, 0) + 1
         if any(router_counts.get(f.path, 0) != f.router_observation_count for f in self.file_results):
             raise ValueError("router observation counts must match file summaries")
+
+        if not isinstance(self.test_observations, tuple) or any(
+            not isinstance(o, TestObservation) for o in self.test_observations
+        ):
+            raise TypeError("tests must be an immutable observation tuple")
+        if self.test_observations != tuple(sorted(self.test_observations, key=_test_order)) or len(
+            {o.id for o in self.test_observations}
+        ) != len(self.test_observations):
+            raise ValueError("test observations must be ordered and unique")
+        test_counts: dict[str, int] = {}
+        for observation in self.test_observations:
+            parent = entities.get(observation.parent_id)
+            summary = summaries.get(observation.path)
+            if (
+                parent is None
+                or parent.kind not in (EntityKind.MODULE, EntityKind.CLASS)
+                or parent.language != observation.language.value
+                or parent.location is None
+                or parent.location.file_path != observation.path
+                or summary is None
+                or summary.status is FileIndexStatus.FAILED
+                or not _contains(_entity_span(parent), observation.span)
+            ):
+                raise ValueError("test requires an analyzed matching parent")
+            if observation.declaration_entity_id is not None:
+                declaration = entities.get(observation.declaration_entity_id)
+                if (
+                    declaration is None
+                    or declaration.kind not in (EntityKind.FUNCTION, EntityKind.METHOD)
+                    or declaration.parent_id != parent.id
+                    or declaration.name != observation.name
+                    or _entity_span(declaration) != observation.span
+                    or observation.language is not Language.PYTHON
+                    or not declaration.name.startswith("test_")
+                    or (parent.kind is EntityKind.CLASS and not parent.name.startswith("Test"))
+                ):
+                    raise ValueError("test must match its canonical declaration")
+            elif parent.kind is not EntityKind.MODULE or observation.language is Language.PYTHON:
+                raise ValueError("callback test must be module-owned")
+            test_counts[observation.path] = test_counts.get(observation.path, 0) + 1
+        if any(test_counts.get(f.path, 0) != f.test_observation_count for f in self.file_results):
+            raise ValueError("test counts must match file summaries")
+
+    @property
+    def test_observation_count(self) -> int:
+        return len(self.test_observations)
 
     @property
     def router_observation_count(self) -> int:

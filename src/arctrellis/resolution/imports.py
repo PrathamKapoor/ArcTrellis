@@ -55,6 +55,7 @@ def resolve_imports(index: RepositoryIndexResult) -> ImportResolutionResult:
             index.pre_handler_observations,
             index.router_prefix_observations,
             index.router_mount_observations,
+            index.test_observations,
         )
         for entity in index.graph.entities():
             graph.add_entity(entity)

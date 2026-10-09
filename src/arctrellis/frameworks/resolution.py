@@ -56,6 +56,7 @@ def _validate_snapshots(
         index.pre_handler_observations,
         index.router_prefix_observations,
         index.router_mount_observations,
+        index.test_observations,
     )
     ImportResolutionResult(imports.graph, imports.resolutions)
     CallResolutionResult(calls.graph, calls.resolutions)

@@ -720,3 +720,23 @@ Verified local commands:
 .venv\Scripts\python.exe -m unittest tests.frameworks.test_composition -q
 .venv\Scripts\python.exe -m tests.frameworks.flow_smoke
 ```
+
+## Static test semantics
+
+`arctrellis.test_semantics.analyze_tests(index, imports, calls, base_graph=flow.graph)` adds TEST identities
+and direct TESTS evidence to a fresh graph. Omit base_graph to use the call graph. Indexing retains lightweight
+TestObservation values while syntax is available. Python module test_ functions and methods under Test* classes
+qualify; arbitrary nested helpers and production-class test_ methods do not. Decorators are retained, not evaluated.
+Unittest inheritance recognition is deferred. JS/TS supports direct test/it with nonempty unpadded unescaped quoted
+names and inline arrow/function callbacks, at module scope or direct describe suite scope. Framework identity remains
+unknown_js_test_api. Dynamic/template names, member/optional APIs, skip/each/todo and arbitrary scopes are omitted.
+
+TEST entities preserve Python declaration IDs in metadata without replacing FUNCTION/METHOD. Anonymous callbacks
+use TEST execution ownership, never fabricated FUNCTION identities. Callback/suite local binding contradictions
+conservatively omit affected calls. Direct resolved CALLS yield TESTS to non-test FUNCTION/METHOD targets,
+LIKELY/0.85, with actual invocation Evidence and the underlying CALLS ID. Unresolved/ambiguous calls yield no edge.
+There are no transitive TESTS or endpoint coverage claims. Static test relationships are **not runtime coverage**,
+proof of passing tests, CI execution, or assertion quality. Existing call-resolution runtime binding limitations remain.
+
+Run `.venv\Scripts\python.exe -m unittest tests.test_semantics.test_analysis -q` and
+`.venv\Scripts\python.exe -m tests.test_semantics.smoke` for contracts and measured Python/JS evidence.

@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from arctrellis.core import EntityKind
+from arctrellis.core import CodeEntity, EntityKind
 from arctrellis.extraction import ExtractionResult
 from arctrellis.extraction.models import _entity_span
 from arctrellis.extraction.python import _recovery_subtrees
@@ -68,6 +68,15 @@ def _optional_call(parsed: ParsedSource, node: SyntaxNode, function: SyntaxNode,
 
 
 def extract_call_sites(parsed_source: ParsedSource, extraction_result: ExtractionResult) -> tuple[CallSite, ...]:
+    """Extract body-owned invocations from canonical module/function/method scopes."""
+    return _extract_call_sites(parsed_source, extraction_result)
+
+
+def _extract_call_sites(
+    parsed_source: ParsedSource,
+    extraction_result: ExtractionResult,
+    execution_roots: tuple[tuple[SyntaxNode, CodeEntity], ...] = (),
+) -> tuple[CallSite, ...]:
     """Extract stable callee spellings, never declarations or resolved targets.
 
     Only represented function/method bodies and executable module statements are
@@ -96,7 +105,7 @@ def extract_call_sites(parsed_source: ParsedSource, extraction_result: Extractio
     visited = set()
     unsafe = _recovery_subtrees(parsed.root)
     sites = []
-    pending = [(parsed.root, result.module)]
+    pending = [(parsed.root, result.module), *execution_roots]
     while pending:
         node, parent = pending.pop()
         if node.is_error or node.is_missing:
