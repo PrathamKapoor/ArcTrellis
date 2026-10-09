@@ -2,7 +2,7 @@
 
 ## 1. Current Phase
 
-Phase 2.0A: static test semantics complete and verified. Phase 2.0B foundation work is uncommitted and paused for the completed test-semantics correction gate. Implementation commit: 561382be859f04e4605ff8e7db1f2abe038ba834.
+Phase 2.0A: static test semantics complete and verified. Phase 2.0B foundation work is uncommitted; the repeated test-semantics correction gate is complete. Correction commit: f1ad053fefffe7dd9d44d1841b509c78c76a0cd1. Implementation commit: 561382be859f04e4605ff8e7db1f2abe038ba834.
 
 ## 2. Work Completed
 

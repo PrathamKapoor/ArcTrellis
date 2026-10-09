@@ -878,7 +878,7 @@ No transitive TESTS, endpoint test classification, target execution, source rere
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Callback binding safety | Exclude shorthand destructuring and named callback self-bindings; repeat the full gate before resuming2.0B. | src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-103 |
+| Callback binding safety | Exclude shorthand destructuring and named callback self-bindings; repeat the full gate before resuming2.0B. | src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md, decisions.md, flow.md, handoff.md | f1ad053fefffe7dd9d44d1841b509c78c76a0cd1 | D-103 |
 
 _callback_shadows now recognizes identifier and shorthand_property_identifier_pattern in binding positions,
 and the callback function-expression name. Affected direct callback calls are omitted before resolution;
