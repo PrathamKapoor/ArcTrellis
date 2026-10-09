@@ -740,3 +740,6 @@ proof of passing tests, CI execution, or assertion quality. Existing call-resolu
 
 Run `.venv\Scripts\python.exe -m unittest tests.test_semantics.test_analysis -q` and
 `.venv\Scripts\python.exe -m tests.test_semantics.smoke` for contracts and measured Python/JS evidence.
+
+Callback binding exclusions include shorthand destructuring in local declarations/parameters/suites and
+named callback function self-bindings; affected calls do not resolve to unrelated module functions.

@@ -1051,3 +1051,15 @@ Append-only record of engineering decisions.
 - Alternatives considered: Starting database work before green gates would violate phase ordering. No dependency or quality configuration changes are necessary.
 - Consequences: Seven pre-existing platform skips remain: six Windows symlink privilege cases and one absent FIFO API. Static coverage, unittest inheritance, dynamic rebinding and other deferred patterns remain explicit.
 - Files: README.md, decisions.md, flow.md, handoff.md, tests/test_semantics/smoke.py
+
+### D-103: Exclude shorthand and named callback bindings from direct test proof
+- Date / phase / commit: 2026-10-09, Phase 2.0A correction, uncommitted
+- Context: Independent review after the first committed gate reproduced false TESTS to module functions from shorthand local/parameter/suite bindings and named callback self-references. Database work was paused pending correction and a repeated complete gate.
+- Decision: Include normalized shorthand_property_identifier_pattern alongside identifier in callback/suite binding exclusion, and retain the callback function-expression name as a local contradiction. Keep TEST identity but omit affected callback CALLS/TESTS. Add ten JS/TS subcases and repeat targeted/full quality gates before resuming database work.
+- Why: The new regression failed ten assertions before the correction. Normalized syntax inspection confirmed shorthand bindings use a distinct node kind and function_expression carries a name field. The initial inspection used the wrong parse_source positional order and failed with TypeError before parsing; the corrected inspection used path/language/bytes and succeeded. Corrected targeted suite ran12 tests OK; full suite393 tests OK/skipped7 (including10 uncommitted database-foundation tests). Ruff lint/110-file format check, strict mypy62 files, compileall, pip check and2 architecture tests passed.
+- Alternatives considered: Treating this as a generic runtime limitation ignores explicit statically visible bindings; guessing local targets or creating fake functions is unsupported. Conservative omission is the intended policy.
+- Consequences: Callback binding exclusions still deliberately over-approximate names. No target source execution, dependency or graph contract change. The previous green gate was insufficient to expose these grammar forms; its historical results remain truthful.
+- Files: src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md, decisions.md, flow.md, handoff.md
+- Symptom: Shorthand destructuring and named callbacks falsely linked tests to unrelated module functions.
+- Root cause: The binding guard collected only identifier nodes and omitted the callback function-expression name.
+- Regression test: tests.test_semantics.test_analysis.TestSemanticsTests.test_callback_destructuring_and_named_function_shadowing (five cases each for JS and TS).

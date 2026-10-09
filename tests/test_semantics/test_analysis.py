@@ -20,6 +20,23 @@ def analyze(sources):
 
 
 class TestSemanticsTests(unittest.TestCase):
+    def test_callback_destructuring_and_named_function_shadowing(self):
+        cases = (
+            'test("x", () => { const {validate} = obj; validate(); });',
+            'test("x", ({validate}) => { validate(); });',
+            'describe("s", () => { const {validate} = obj; test("x", () => { validate(); }); });',
+            'test("x", function validate() { validate(); });',
+            'describe("s", function validate() { test("x", () => { validate(); }); });',
+        )
+        for extension in ("js", "ts"):
+            for source in cases:
+                with self.subTest(extension=extension, source=source):
+                    _, _, result = analyze({f"a.{extension}": "function validate() {} " + source})
+                    self.assertEqual(result.test_count, 1)
+                    self.assertEqual(result.resolved_test_relationship_count, 0)
+                    test_id = result.test_entities[0].id
+                    self.assertFalse(result.graph.outgoing(test_id, kind=RelationshipKind.CALLS))
+
     def test_callback_binding_and_optional_call_boundaries(self):
         _, _, result = analyze(
             {

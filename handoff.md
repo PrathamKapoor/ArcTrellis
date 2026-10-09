@@ -2,7 +2,7 @@
 
 ## 1. Current Phase
 
-Phase 2.0A: static test semantics complete and verified. Phase 2.0B has not started. Implementation commit: 561382be859f04e4605ff8e7db1f2abe038ba834.
+Phase 2.0A: static test semantics complete and verified. Phase 2.0B foundation work is uncommitted and paused for the completed test-semantics correction gate. Implementation commit: 561382be859f04e4605ff8e7db1f2abe038ba834.
 
 ## 2. Work Completed
 
@@ -35,6 +35,7 @@ D-099: conservative Python/JS/TS naming and syntax policy.
 D-100: direct CALLS-backed TESTS and source-free independent graphs.
 D-101: callback ownership, optional punctuation and local binding corrections.
 D-102: verified gate and local commit/reference finalization.
+D-103: reviewed shorthand/named callback regression and repeated full gate.
 
 ## 6. Requirements and Constraints
 
@@ -46,7 +47,10 @@ No dependency, native parsing boundary, core enum or quality configuration chang
 ## 7. Testing and Verification
 
 Python3.13.14, required Git identity, clean initial tree, no remotes. Baseline371 tests OK/skipped7.
-Targeted: .venv\Scripts\python.exe -m unittest tests.test_semantics.test_analysis -q:11 tests OK.
+Correction gate:12 targeted test-semantics tests,393 full tests OK/skipped7 (including10 uncommitted database tests),
+Ruff/110-file format, strict mypy62 files, compileall, pip check and2 architecture tests pass.
+Ten shorthand/named callback subcases failed before the correction, then passed.
+Initial gate targeted: .venv\Scripts\python.exe -m unittest tests.test_semantics.test_analysis -q:11 tests OK.
 Full: .venv\Scripts\python.exe -m unittest discover -s tests -q:382 tests OK/skipped7.
 Ruff check src tests and format --check src tests pass (105 formatted files).
 Mypy src/arctrellis passes60 source files; compileall -q src exits0; pip check finds no broken requirements.
@@ -68,7 +72,7 @@ IDs are revision-deterministic, not edit-stable or repository-namespaced. Other 
 ## 9. Unfinished Work
 
 Phase 2.0B database-operation foundation remains authorized after local2.0A commit finalization.
-No ORM extractor, database graph conversion or database model has been added yet.
+Database models/tests are uncommitted; no ORM extractor or database graph conversion exists.
 
 ## 10. Next Subphase
 

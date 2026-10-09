@@ -873,3 +873,13 @@ No transitive TESTS, endpoint test classification, target execution, source rere
 | Direct proof | Derive evidence-backed direct TESTS, preserve enriched graphs and provide realistic static smoke. | src/arctrellis/test_semantics/resolution.py, tests/test_semantics/ | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-100 |
 | Boundary corrections | Fix callback parentage, optional calls and local binding contradictions. | src/arctrellis/test_semantics/, tests/test_semantics/test_analysis.py | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-101 |
 | Verification gate | Record targeted/full quality gates, static smoke and local audits. | README.md, decisions.md, flow.md, handoff.md, tests/test_semantics/smoke.py | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-102 |
+
+## Changes in this session (Phase 2.0A correction)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Callback binding safety | Exclude shorthand destructuring and named callback self-bindings; repeat the full gate before resuming2.0B. | src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-103 |
+
+_callback_shadows now recognizes identifier and shorthand_property_identifier_pattern in binding positions,
+and the callback function-expression name. Affected direct callback calls are omitted before resolution;
+TEST identity remains. This applies to test callbacks and inherited describe suite bindings.

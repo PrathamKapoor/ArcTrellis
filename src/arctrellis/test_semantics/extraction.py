@@ -18,6 +18,10 @@ from .models import TestObservation, _test_entity, _test_order
 def _callback_shadows(parsed: ParsedSource, callback: SyntaxNode) -> set[str]:
     """Over-approximate local binding contradictions; never choose a target."""
     shadows: set[str] = set()
+    name = callback.child_by_field("name")
+    if name is not None:
+        shadows.add(parsed.bytes_for(name).decode("utf-8"))
+    binding_kinds = {"identifier", "shorthand_property_identifier_pattern"}
     for node in callback.walk():
         fields: tuple[SyntaxNode, ...] = ()
         if node.kind in ("formal_parameters", "required_parameter", "optional_parameter"):
@@ -29,10 +33,10 @@ def _callback_shadows(parsed: ParsedSource, callback: SyntaxNode) -> set[str]:
             bound = node.child_by_field("left") or node.child_by_field("argument")
             fields = () if bound is None else (bound,)
         for field in fields:
-            shadows.update(parsed.bytes_for(n).decode("utf-8") for n in field.walk() if n.kind == "identifier")
+            shadows.update(parsed.bytes_for(n).decode("utf-8") for n in field.walk() if n.kind in binding_kinds)
     parameter = callback.child_by_field("parameter")
     if parameter is not None:
-        shadows.update(parsed.bytes_for(n).decode("utf-8") for n in parameter.walk() if n.kind == "identifier")
+        shadows.update(parsed.bytes_for(n).decode("utf-8") for n in parameter.walk() if n.kind in binding_kinds)
     return shadows
 
 
