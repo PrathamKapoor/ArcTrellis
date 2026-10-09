@@ -65,6 +65,7 @@ D-104: immutable common database observations, canonical-owner factory, IDs and 
 D-105: defer graph materialization until adapter-specific proof/confidence exists.
 D-106: correct computed-ID test expectation and stale README capability summary; synthetic smoke.
 D-107: final verified Phase2.0 handoff and stop before adapters.
+D-108: independent review interpreter failures and correct file-outcome interpretation.
 
 ## 6. Requirements and Constraints
 
@@ -106,6 +107,9 @@ regressions, strict annotation errors and lint/format findings were corrected (D
 One grammar inspection used wrong parse_source argument order and failed before parsing; corrected call passed.
 Database init=False ID replacement raises TypeError, not the initially expected ValueError; test corrected.
 Synthetic owner location was aligned with exclusive span end. README stale summary was corrected (D-106).
+Review system python first failed to import arctrellis; PYTHONPATH=src then yielded FAILED file/
+ParserConfigurationError rather than valid empty semantics. Repeating with the project interpreter exposed
+the defect; file_results were inspected before interpreting output (D-108).
 Independent review rechecked22 targeted tests and found no remaining important issue in reviewed scope.
 Seven existing skips: six Windows symlink privilege cases (WinError1314), one missing os.mkfifo API.
 
@@ -122,8 +126,8 @@ and actual database behavior are unverified. Existing concurrent filesystem/nati
 
 No required work remains in Phase2.0A/B. No ORM adapter or database graph conversion exists by design.
 Test implementation561382be859f04e4605ff8e7db1f2abe038ba834; callback correction
-f1ad053fefffe7dd9d44d1841b509c78c76a0cd1. Database implementation reference is finalized separately
-under D-004/D-067 after its actual local commit. All prior decision prose/session tables are preserved.
+f1ad053fefffe7dd9d44d1841b509c78c76a0cd1. Database implementation: 3d8ec6b71d02181ca80738a451230d669c5ea0e1. References are finalized separately
+under D-004/D-067 without rewriting history. All prior decision prose/session tables are preserved.
 
 ## 10. Next Subphase
 
