@@ -493,6 +493,8 @@ index_repository()                       src/arctrellis/indexing/repository.py; 
      │   ├─ extract_framework_observations() frameworks/extraction.py; retain route/provenance syntax before release
      │   ├─ extract_pre_handler_observations() frameworks/flow_extraction.py; preserve precise pre-handler occurrences
      │   ├─ extract_router_observations()  frameworks/composition_extraction.py; preserve constructor/prefix/mount proof
+     │   ├─ extract_test_observations() test_semantics/extraction.py; retain semantic tests before release
+     │   ├─ extract_database_operations() database/extraction.py; retain provenance-backed DB observations
      │   ├─ build_lexical_graph()        extraction/lexical.py; retain existing parent proof
      │   ├─ _file_entity()               create path-based FILE with analyzed byte size
      │   │   └─ _file_id()               indexing/ids.py; content-independent structural identity
@@ -884,17 +886,16 @@ _callback_shadows now recognizes identifier and shorthand_property_identifier_pa
 and the callback function-expression name. Affected direct callback calls are omitted before resolution;
 TEST identity remains. This applies to test callbacks and inherited describe suite bindings.
 
-## 22. Database-operation foundation (separate future boundary)
+## 22. Database-operation foundation
 
-Implemented standalone construction only:
+Common construction boundary:
 make_database_operation_observation -> validate canonical execution owner and operation coordinates
 -> DatabaseOperationObservation (computed UUID5, owner ID/kind, provider/kind/name/target, immutable metadata)
 -> DatabaseAnalysisResult.from_observations -> deterministic ordering and operation/provider counts.
 
-No database stage runs in index_repository, analyze_tests or framework enrichment.
-Future-only boundary: ORM-specific adapter -> DatabaseOperationObservation -> language-independent semantics
--> future evidence-backed DATABASE_OPERATION / READS_DATABASE / WRITES_DATABASE conversion.
-Graph conversion and adapters are deferred, not production call paths. No source bytes/native parser objects,
+Phase2.1 adds database extraction during index_repository and optional source-free materialization after
+existing semantic enrichments (section25). SQLAlchemy/Prisma -> DatabaseOperationObservation -> validated
+DATABASE_OPERATION / eligible READS_DATABASE / WRITES_DATABASE facts. No source bytes/native parser objects,
 owner objects, credentials, connection handles, SQL execution or universal DB confidence are retained/introduced.
 
 ## Changes in this session (Phase 2.0B)
@@ -919,7 +920,7 @@ extract_sqlalchemy_operations(parsed_source, extraction_result)
  └─ make_database_operation_observation retain intent/capability, exact invocation and witness IDs
 ```
 
-This standalone adapter does not run during indexing yet. Context managers/factories/typed parameters
+This adapter also runs through extract_database_operations during indexing (section25). Context managers/factories/typed parameters
 and comprehension binding environments are omitted. Staged mutation is not database write evidence.
 Recovery suppresses affected constructs while unaffected canonical calls survive; internal invalid
 revision/owner invariants raise rather than silently disappearing. No filesystem reads or target imports.
@@ -940,7 +941,7 @@ extract_prisma_operations(parsed_source, extraction_result)
  └─ make_database_operation_observation   retain client_request/transaction_control and accessor, not table
 ```
 
-No repository database pass runs yet. Catch/with, comprehensions, raw queries, computed access,
+The repository database pass now dispatches this adapter (section25). Catch/with, comprehensions, raw queries, computed access,
 anonymous bodies, factories and arbitrary aliases are omitted; no target code/package/SQL execution.
 
 ## Changes in this session (Phase 2.1B)
@@ -951,3 +952,47 @@ anonymous bodies, factories and arbitrary aliases are omitted; no target code/pa
 | Scope guard | Defer catch/with environments and record named function self-bindings. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, handoff.md | b0ecb51aea242e78fc25b25f3eccbc348f937195 | D-112 |
 
 | Cross-scope contradictions | Invalidate explicitly mutated root names and TS enum/namespace names conservatively. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, README.md, handoff.md | b0ecb51aea242e78fc25b25f3eccbc348f937195 | D-113 |
+
+## 25. Repository database interactions (Phase 2.1C)
+
+```text
+index_repository(root)
+ ├─ scan_repository / _blocked_providers    inventory detects conventional root/src package collisions
+ └─ _analyze_file
+     ├─ parse_discovered_file              existing safe single source read/normalized parse
+     ├─ extract_entities / extract_call_sites canonical declarations and body ownership
+     ├─ framework/router/test extraction   existing independent observations
+     ├─ extract_database_operations        same ParsedSource/ExtractionResult, never reopen source
+     │   ├─ extract_sqlalchemy_operations  Session/statement import + unique constructor binding
+     │   └─ extract_prisma_operations      named import + unique new binding
+     ├─ lexical/file graph assembly        unchanged declaration graph counts
+     └─ FileIndexResult                   DB count; release ParsedSource when helper returns
+RepositoryIndexResult                     lightweight database_observations only
+ └─ validate_database_observation         canonical owners/calls/imports, effect contract, statement call proof
+resolve_imports -> resolve_calls -> resolve_http_endpoints -> resolve_framework_flow -> analyze_tests
+materialize_database_graph(index, base_graph=tests.graph)
+ ├─ replace(index)                        revalidate counts/proof without rereading syntax
+ ├─ check preserved index/no prior DB facts reject mismatched snapshot before changes
+ ├─ copy CodeGraph records                independent mutable graph; preserve all supplied enrichment
+ ├─ _operation_entity                     deterministic DATABASE_OPERATION; parent owner, no DEFINES
+ ├─ _database_edge                        eligible read/write/delete capability only; LIKELY/0.85
+ │   └─ Evidence                          exact invocation, coordinates, provider/method/effect metadata
+ └─ DatabaseGraphResult                   ordered nodes/proof, counts, explicit unlinked/staged values
+CodeGraph.shortest_path                   existing filtered traversal retains each original proof edge
+```
+
+Database observations share COMPLETE/PARTIAL/FAILED file contracts. Recovery excludes affected syntax;
+unaffected observations survive PARTIAL. Existing typed extraction/parsing errors return bounded FAILED
+stage/type summaries and zero records; internal ValueError/TypeError invariants propagate loudly.
+Standalone and result constructors validate structure, not source authenticity. Unknown/staged/transaction
+sites have nodes but no fabricated database edge. No source/tree/native types escape, no materialization
+parse/read, no SQL/target/runtime dependency execution and no new dependencies or core kinds.
+
+## Changes in this session (Phase 2.1C)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Index lifecycle | Capture and validate lightweight operations/counts; preserve all snapshot fields. | src/arctrellis/database/extraction.py, validation.py, syntax.py, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/resolution/imports.py | uncommitted | D-114 |
+| Database graphs | Materialize site entities and eligible evidence-backed capabilities in independent graph. | src/arctrellis/database/graph.py, __init__.py, tests/database/test_graph.py | uncommitted | D-115 |
+| Statement proof | Require actual nested statement invocation coordinates/ID, not unrelated import existence. | src/arctrellis/database/sqlalchemy.py, validation.py, tests/database/test_graph.py | uncommitted | D-116 |
+| Verification | Mixed static smoke, traces, isolation, negatives, public imports and final documentation. | tests/database/smoke.py, tests/database/test_graph.py, tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | uncommitted | D-117 |

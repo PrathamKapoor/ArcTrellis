@@ -168,6 +168,7 @@ def resolve_calls(index: RepositoryIndexResult, imports: ImportResolutionResult)
             index.router_prefix_observations,
             index.router_mount_observations,
             index.test_observations,
+            index.database_observations,
         )
         ImportResolutionResult(imports.graph, imports.resolutions)
         entities = {e.id: e for e in index.graph.entities()}

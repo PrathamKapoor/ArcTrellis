@@ -41,6 +41,7 @@ def extract_sqlalchemy_operations(
     if parsed_source.language is not Language.PYTHON or "sqlalchemy" in blocked_providers:
         return ()
     observations = []
+    sites = {(s.owner_entity_id, s.span.start_byte, s.span.end_byte): s for s in context.sites}
     for site in context.sites:
         if len(site.callee_parts) != 2 or site.callee_parts[1] not in SQLALCHEMY_METHODS:
             continue
@@ -66,8 +67,19 @@ def extract_sqlalchemy_operations(
                         parts[0], site.owner_entity_id, statement.span.start_byte, "sqlalchemy", symbol, "from"
                     )
                     if witness is not None:
+                        statement_site = sites.get(
+                            (site.owner_entity_id, statement.span.start_byte, statement.span.end_byte)
+                        )
+                        if statement_site is None:
+                            continue
                         kind, effect = category, "statement_execution"
-                        metadata += (("statement_kind", symbol), ("statement_import_id", witness.id))
+                        metadata += (
+                            ("statement_kind", symbol),
+                            ("statement_import_id", witness.id),
+                            ("statement_call_id", statement_site.id),
+                            ("statement_start_byte", str(statement.span.start_byte)),
+                            ("statement_end_byte", str(statement.span.end_byte)),
+                        )
                         statement_args = _arguments(statement)
                         if statement_args and statement_args[0].kind == "identifier":
                             target = context.text(statement_args[0])

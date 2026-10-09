@@ -1165,3 +1165,43 @@ Append-only record of engineering decisions.
 - Symptom: Replaced client/method and local enum produced Prisma operations through outer client provenance.
 - Root cause: Per-scope write collection excludes nested callable writes and does not represent TS enum/namespace bindings; operation callee filtering also omitted computed mutation roots and JS unary delete.
 - Regression test: PrismaTests.test_negatives (replace member, replace let binding, enum shadow).
+
+### D-114: Retain database observations within the existing indexing lifetime
+- Date / phase / commit: 2026-10-09, Phase 2.1C, uncommitted
+- Context: Verified standalone adapters need repository orchestration without rereads or retained syntax.
+- Decision: Add database/extraction.py dispatcher and validation.py; extend index models with final default database_observations/database_operation_count fields. Extract after tests while ParsedSource exists; use inventory to block conventional root/src provider collisions, including failed sources. Preserve fields in import/call/framework snapshot validators. Validate canonical owner/site/import witnesses, receiver binding_name, effect/method/category, ordering and file counts. Existing typed failures remain bounded FAILED; internal invariants propagate.
+- Why: Shared source lifetime avoids second parsing/I/O and immutable scalar observations bound repository retention. Canonical existing calls establish execution ownership. No dependency/core type changes.
+- Alternatives considered: Reopening files risks revision mismatch; retaining ParsedSource violates memory boundary; silent catch-all extraction failure hides defects; arbitrary runtime search paths are not defensible.
+- Consequences: No general package identity certification or complete lexical/dataflow proof. Structural snapshot validation does not authenticate fabricated caller records. Conventional collisions sacrifice recall. Public signatures preserve prior positional fields.
+- Files: src/arctrellis/database/extraction.py, validation.py, syntax.py, __init__.py, src/arctrellis/indexing/models.py, repository.py, src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py, src/arctrellis/frameworks/resolution.py, tests/database/test_graph.py, README.md, flow.md, handoff.md
+
+### D-115: Materialize operation sites and only eligible database capabilities
+- Date / phase / commit: 2026-10-09, Phase 2.1C, uncommitted
+- Context: Core DATABASE_OPERATION and database relationship kinds exist; adapters now supply bounded proof.
+- Decision: Add graph.py with DatabaseGraphResult/materialize_database_graph. Copy a validated index or matching enriched base graph; never mutate prior graph. Versioned UUID5 operation IDs include observation ID and metadata; qualified names path::database:provider:target.method@byte. Parent is canonical execution owner, without DEFINES. Emit owner-to-operation READS_DATABASE for read_capable/statement_execution/client_request READ; WRITES_DATABASE for statement_execution/client_request WRITE/DELETE. Every edge is LIKELY/0.85 with exact invocation Evidence and deterministic proof/edge IDs. Staged/transaction/UNKNOWN retain nodes without DB edges. Return ordered observations/entities/relationships, operation/provider counts and staged/unlinked/unmaterialized counts.
+- Why: Expression nodes avoid fake tables or declarations. Static recognized capability never establishes SQL execution, changed rows or transaction outcome. Existing traversal preserves original multi-stage Evidence.
+- Alternatives considered: Staged mutation writes or transaction-implies-write fabricates effects; fake TABLE targets invent schema; new transaction vocabulary and query APIs exceed scope; deep immutability claims would contradict mutable CodeGraph.
+- Consequences: All supported observations currently materialize nodes (unmaterialized zero); unlinked includes staged/transaction/unknown. Repeated database enrichment is explicitly rejected. No transitive database edges or new graph algorithm.
+- Files: src/arctrellis/database/graph.py, __init__.py, tests/database/test_graph.py, README.md, flow.md, handoff.md
+- Supersedes: D-105 (graph conversion deferral, now supplied with adapter proof)
+
+### D-116: Bind classified SQLAlchemy execute proof to its nested invocation
+- Date / phase / commit: 2026-10-09, Phase 2.1C, uncommitted
+- Context: Independent review found a coherent UNKNOWN-to-WRITE snapshot relabeling could borrow an unrelated insert import.
+- Decision: Retain statement_call_id/start/end from canonical calls during extraction; require exact same-owner nested statement invocation, matching imported binding and containment in its execute span before accepting classified statement effects.
+- Why: test_unknown_execute_cannot_borrow_other_statement_proof failed with expected ValueError not raised, then passed after correction. Import existence alone does not associate a statement with an execute argument.
+- Alternatives considered: Source reread violates lifetime; trusting unrelated imports fabricates WRITE; source authenticity of arbitrary caller-created metadata remains outside structural validation.
+- Consequences: Source-free materialization has stronger retained statement witnesses. No ORM/SQL execution or parser object retention.
+- Files: src/arctrellis/database/sqlalchemy.py, validation.py, tests/database/test_graph.py, decisions.md, flow.md, handoff.md
+- Symptom: UNKNOWN execute(command) accepted borrowed insert metadata and could emit WRITES_DATABASE.
+- Root cause: Snapshot checks validated statement import identity but omitted exact nested statement invocation association.
+- Regression test: DatabaseGraphTests.test_unknown_execute_cannot_borrow_other_statement_proof.
+
+### D-117: Verify mixed database traces and finalize the local Phase 2.1 boundary
+- Date / phase / commit: 2026-10-09, Phase 2.1C, uncommitted
+- Context: All three stages need reproducible verification, accurate capability documentation and bounded continuation.
+- Decision: Replace synthetic database smoke with real temporary Python/TS static indexing, enrichment and evidence paths; extend graph, negative, lifetime, import-order and isolation tests. Update current README/flow and rewrite all twelve handoff sections; finalize new reference fields separately after local commits. Stop before Phase2.2. No dependency/core/quality configuration changes.
+- Why: Final pre-commit full417 tests OK/skipped7; database33 and architecture3 tests pass. Ruff119-file format and lint, strict mypy68 files, compileall and pip check pass. Mixed smoke measures SQLAlchemy6/Prisma3, nodes9, reads2/writes3, staged1/unmaterialized0/unlinked4/unknown1; rerun identical. Python and TS EXPOSES/CALLS/WRITES paths preserve actual call-site Evidence and .85 database confidence. Security search finds only fixed parsing grammar loading; attribution/forbidden-path/credential searches empty. Remotes remain empty.
+- Alternatives considered: Runtime ORM execution, future query API and broader dataflow exceed scope; source-free validation cannot authenticate arbitrary coherently fabricated metadata, so its structural boundary remains explicit. Normal transform(insert(...)) execution remains UNKNOWN and is regression tested.
+- Consequences: Seven existing Windows symlink/FIFO skips remain. Independent reviews found and verified corrections D-110/D-112/D-113/D-116. StageA API absence/lint/type narrowing, StageB API absence/lint and catch/mutation regressions, StageC API absence/lint/one union annotation and proof regression were corrected. The new ORM import audit initially mistook six relative adapter imports for runtime package imports; checking ImportFrom.level==0 corrected the test, not production behavior. No other platform/runtime execution claim.
+- Files: README.md, decisions.md, flow.md, handoff.md, tests/database/smoke.py, test_graph.py, test_sqlalchemy.py, tests/test_architecture.py, src/arctrellis/database/, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/resolution/imports.py

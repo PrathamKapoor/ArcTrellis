@@ -6,19 +6,19 @@ ArcTrellis is intended to become an evidence-first repository intelligence syste
 static analysis will identify code entities and relationships, and explanations
 will point to verifiable source evidence.
 
-The analysis engine establishes what can be proven. The explanation layer
+The analysis engine establishes what can be defended by source evidence. The explanation layer
 explains that evidence. Structural truth must remain independent of an explanation
 provider.
 
 ## Current status
 
-Early implementation: Phase 2.0 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 2.1 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
 internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
 and Express adapters identify HTTP endpoints with handler evidence. Inheritance resolution,
 global middleware execution and runtime test coverage are not implemented. Static test declarations/direct TESTS
-and a common database-operation model are available. A standalone SQLAlchemy static extractor is available (Phase 2.1A). There is no
+and provenance-backed SQLAlchemy/Prisma database observations and graph interactions are available. There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
 
@@ -759,14 +759,12 @@ Counts by operation kind/provider include only nonzero observed categories.
 
 A standalone SQLAlchemy static extractor is available (Phase 2.1A). This model does not classify arbitrary `execute()` calls.
 No TABLE/MODEL/DATABASE entities, connections, credentials, SQL parsing or query execution are introduced.
-Core already contains DATABASE_OPERATION, READS_DATABASE and WRITES_DATABASE, but conversion is deferred until
-an adapter supplies defensible operation proof and its own confidence policy. No universal confidence is assigned.
-Future adapters will supply observations to language-independent semantics and future graph conversion;
-there is no database stage in `index_repository` today.
+Indexing captures supported SQLAlchemy/Prisma observations during its existing parse lifetime.
+`materialize_database_graph(index, base_graph=tests.graph)` produces a new database-enriched graph;
+omit base_graph to preserve only the index graph. No source is reread during materialization.
 
 Run `.venv\Scripts\python.exe -m unittest tests.database.test_foundation -q` and
-`.venv\Scripts\python.exe -m tests.database.smoke`. The latter constructs a synthetic model;
-it is not output from an ORM extractor.
+`.venv\Scripts\python.exe -m tests.database.smoke`. The latter analyzes temporary mixed Python/TS source and prints measured evidence paths without executing it.
 
 Callback binding exclusions include shorthand destructuring in local declarations/parameters/suites and
 named callback function self-bindings; affected calls do not resolve to unrelated module functions.
@@ -783,7 +781,7 @@ Supported: get (READ/read_capable); execute of directly imported sqlalchemy sele
 (READ/WRITE/WRITE/DELETE, statement_execution); add/add_all and delete (staged_mutation intent);
 flush/commit/rollback (TRANSACTION/transaction_control); other execute arguments (UNKNOWN).
 Targets are source identifiers, never verified mapped models or tables. get can use an identity map;
-staged mutations and transaction controls do not prove database writes. No graph conversion runs yet.
+staged mutations and transaction controls do not prove database writes. Graph eligibility is restricted by effect stage as described below.
 Context managers, AsyncSession, sessionmaker, typed parameters, aliases, comprehensions and complete
 control/dataflow are deferred. Visible rebinding anywhere in a scope excludes provenance, even before the rebind.
 Run `.venv\Scripts\python.exe -m unittest tests.database.test_sqlalchemy -q`.
@@ -803,3 +801,34 @@ Run `.venv\Scripts\python.exe -m unittest tests.database.test_prisma -q`.
 Explicit root-name mutations anywhere in the file (including another function) and TS enum/namespace
 bindings invalidate ORM provenance conservatively. Unrelated same-spelled locals can therefore reduce recall;
 this is not complete interprocedural mutation or alias analysis.
+
+## Evidence-backed database graphs
+
+`arctrellis.database` exports `extract_database_operations`, provider-specific extractors,
+`materialize_database_graph` and `DatabaseGraphResult`. Operations become deterministic
+DATABASE_OPERATION site entities named provider:target.method@byte (target omitted if unknown),
+qualified as path::database:name. parent_id records MODULE/FUNCTION/METHOD execution ownership;
+no lexical DEFINES edge is fabricated for an expression.
+
+Owner READS_DATABASE operation means a recognized read-capable source operation. Owner WRITES_DATABASE
+operation means a recognized direct write/delete-capable source request or statement. Both are LIKELY/0.85,
+with actual invocation Evidence, exact coordinates, provider/method/effect metadata and UUID5 identities.
+Recognition confidence and category confidence do not establish runtime execution certainty.
+SQLAlchemy staged add/add_all/delete, transactions and UNKNOWN retain nodes without read/write edges;
+commit/flush never imply pending rows changed. get can avoid SQL through the identity map. Prisma calls
+need not be awaited to be observed, and neither promise completion nor transaction outcome is inferred.
+
+DatabaseGraphResult retains ordered observations/entities/relationships and operation/provider counts,
+unmaterialized/staged/unlinked counts. The frozen result owns a separate mutable CodeGraph; treat it as
+a completed snapshot. Existing graph traversal preserves original EXPOSES/CALLS/database Evidence along
+endpoint-to-database paths. It does not materialize new transitive edges or imply runtime reachability.
+
+Known conventional root/src package collisions block provider recognition, including failed source files.
+Source-free snapshot validation checks canonical owner/call/import witnesses, effect/method consistency and
+nested statement invocation proof. It is structural validation of extractor output, not authentication of
+arbitrary fabricated metadata or runtime package identity. No second parse or source read occurs.
+
+Limits: static subset only; no schema/table resolution, SQL parsing, connections, implicit flush effects,
+complete session/dataflow/aliases, arbitrary client alias resolution, query results or transaction outcomes.
+Catch/with/comprehension bodies and unrepresented anonymous callbacks are deliberately omitted.
+No Mongoose or other new ORM adapters are included. Phase 2.2 queries are not implemented.

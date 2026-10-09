@@ -82,6 +82,15 @@ class SQLAlchemyTests(unittest.TestCase):
                 "from sqlalchemy.orm import Session\n" + prefix + "db = Session(engine)\ndb.execute(select(Payment))\n"
             )
             self.assertEqual(operations[0].operation_kind, Kind.UNKNOWN)
+        _, _, operations = extract(HEADER + "db = Session(engine)\ndb.execute(transform(insert(Payment)))\n")
+        self.assertEqual(operations[0].operation_kind, Kind.UNKNOWN)
+
+    def test_aliased_statement_constructor(self):
+        _, _, operations = extract(
+            "from sqlalchemy.orm import Session as S\nfrom sqlalchemy import select as pick\n"
+            "db = S(engine)\ndb.execute(pick(Item))\n"
+        )
+        self.assertEqual((operations[0].operation_kind, operations[0].target_name), (Kind.READ, "Item"))
 
     def test_partial_and_provider_collision(self):
         source = HEADER + "db = Session(engine)\ndb.get(Payment, 1)\ndef broken(:\n"

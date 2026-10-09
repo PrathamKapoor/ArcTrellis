@@ -2,172 +2,171 @@
 
 ## 1. Current Phase
 
-Phase 2.1A complete: standalone SQLAlchemy adapter verified; references finalized separately under D-004.
-Phase 2.1B verified; Phase 2.1C has not started. Previous Phase 2.0 records below remain historical until final rewrite.
+Phase 2.1A/B/C complete: bounded SQLAlchemy extraction, Prisma extraction and evidence-backed database
+operation graphs. Final local commit/reference finalization pending. Phase 2.2 has not started.
+Repository C:/Projects/ArcTrellis, Python3.13.14, required Git identity, no remotes.
 
 ## 2. Work Completed
 
-Separate TEST identities represent Python module test_ declarations and test_ methods under Test* classes.
-JS/TS direct static-string test/it inline callbacks at module or recognized describe scope become observations.
-Python tests retain declaration_entity_id metadata; original FUNCTION/METHOD remain. Anonymous callbacks
-own test-specific CallSite records without fabricated FUNCTION identities. Direct existing CALLS derive
-TESTS to non-test FUNCTION/METHOD, LIKELY/0.85, with actual call-site evidence and original relationship ID.
-Unresolved/ambiguous/transitive/endpoint test relationships are absent. Callback local/suite/parameter,
-shorthand destructuring and named function self-bindings conservatively exclude contradictory calls.
+SQLAlchemy: direct/aliased sqlalchemy.orm Session import and unique preceding direct constructor assignment;
+get READ/read_capable; execute of imported select/insert/update/delete as READ/WRITE/WRITE/DELETE and
+statement_execution. add/add_all/delete are staged intent; flush/commit/rollback transaction_control;
+other execute UNKNOWN. Targets are source identifiers, never mapped models/tables. Statement provenance
+retains exact nested canonical call ID/span plus import witness. No runtime SQLAlchemy imported.
 
-Common database model: READ, WRITE, DELETE, TRANSACTION, UNKNOWN; immutable observations with computed
-UUID5, owner ID/kind, path/language, operation/provider/name, optional target, exact coordinates and metadata.
-Canonical-owner factory validates MODULE/FUNCTION/METHOD language, location and byte/point containment.
-DatabaseAnalysisResult provides deterministic ordered tuples and operation/provider counts.
-Standalone SQLAlchemy extraction is available; repository integration and graph conversion are pending. Generic execute() creates no DB semantics.
+Prisma: named/aliased PrismaClient import @prisma/client, unique preceding new assignment; JS/TS eight read
+methods, five write methods, two delete methods and direct $transaction. Targets retain accessor spelling.
+Requests do not establish await/completion/success/commit or changed rows. Raw queries are omitted.
+
+Canonical call ownership is reused. Whole-scope writes/parameters/imports/self-bindings exclude provenance;
+file-wide explicit mutation root names and enum/namespace names conservatively invalidate it. Catch/with/
+comprehension bodies are omitted. Inventory blocks conventional root/src package-name collisions.
+
+Repository indexing retains lightweight observations/counts during the existing parse lifetime. Snapshot
+validators preserve/check the new fields. Source-free materialization produces deterministic operation
+site entities and only eligible READS_DATABASE/WRITES_DATABASE relationships with LIKELY/0.85 invocation
+Evidence. Staged/transaction/UNKNOWN nodes have no database edge. Python and TS endpoint traces verified.
 
 ## 3. Files Changed
 
-- src/arctrellis/test_semantics/__init__.py: intentional public API.
-- src/arctrellis/test_semantics/models.py: immutable observations/entities/results/derivations and validation.
-- src/arctrellis/test_semantics/extraction.py: naming/callback/suite syntax and binding exclusion.
-- src/arctrellis/test_semantics/resolution.py: snapshot validation, callback CALLS and direct TESTS proof.
-- src/arctrellis/test_semantics/errors.py: explicit inconsistent analysis snapshot error.
-- src/arctrellis/indexing/models.py: final default observation/count fields and canonical snapshot checks.
-- src/arctrellis/indexing/repository.py: capture test observations before parse release.
-- src/arctrellis/calls/extraction.py: private explicit execution roots; original public behavior unchanged.
+- src/arctrellis/database/__init__.py: deliberate adapter/dispatcher/graph/result exports.
+- src/arctrellis/database/models.py: accurate common-model module description; existing contract retained.
+- src/arctrellis/database/syntax.py: temporary normalized binding indexes, scope/mutation exclusions.
+- src/arctrellis/database/sqlalchemy.py: provenance-backed Session intent/statement observations.
+- src/arctrellis/database/prisma.py: provenance-backed JS/TS client requests.
+- src/arctrellis/database/extraction.py: language dispatcher and inventory collision guard.
+- src/arctrellis/database/validation.py: source-free canonical owner/call/import/effect proof checks.
+- src/arctrellis/database/graph.py: independent operation graph and DatabaseGraphResult/counts.
+- src/arctrellis/indexing/models.py, repository.py: parse-lifetime observations/counts and validation.
 - src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py,
-  src/arctrellis/frameworks/resolution.py: preserve new index observation fields during validation.
-- src/arctrellis/database/__init__.py, models.py: common DB contract, validated factory and results.
-- tests/test_semantics/__init__.py, test_analysis.py, smoke.py: contracts, regressions and realistic static smoke.
-- tests/database/__init__.py, test_foundation.py, smoke.py: model/negative contracts and synthetic construction smoke.
-- README.md, decisions.md, flow.md, handoff.md: accurate capability, decisions, actual flow and continuation state.
+  src/arctrellis/frameworks/resolution.py: preserve database fields in snapshot checks.
+- tests/database/test_sqlalchemy.py, test_prisma.py: method/provenance/scope/recovery/identity subcases.
+- tests/database/test_graph.py: mixed integration, evidence, snapshots, corruption, effects, lifecycle/negatives.
+- tests/database/smoke.py: measured temporary Python/TS database traces and deterministic rerun.
+- tests/test_architecture.py: absolute ORM import isolation audit.
+- README.md, decisions.md, flow.md, handoff.md: accurate capabilities, records and continuation.
 
 ## 4. Current Architecture / State
 
-index_repository -> safe discovery -> bounded parse -> extract_entities -> extract_call_sites
--> framework/pre-handler/router observations -> extract_test_observations -> release ParsedSource.
-RepositoryIndexResult retains lightweight immutable tuples and graph/file summaries, never bytes/trees.
-resolve_imports -> resolve_calls -> optional endpoint/framework enrichment -> analyze_tests.
-analyze_tests validates matching index/import/call snapshots, preserves optional enriched base_graph,
-adds TEST/DEFINES, resolves callback calls using shared _Symbols/_resolve/_edge and derives direct TESTS.
-Every analysis graph is a separate CodeGraph; frozen result shells still own mutable graph instances.
+index_repository -> scan_repository -> _blocked_providers -> _analyze_file -> parse_discovered_file
+-> extract_entities -> extract_call_sites -> framework/pre-handler/router -> extract_test_observations
+-> extract_database_operations -> lexical/file assembly -> FileIndexResult -> release ParsedSource.
+RepositoryIndexResult retains immutable lightweight tuples only, with explicit COMPLETE/PARTIAL/FAILED.
+resolve_imports -> resolve_calls -> resolve_http_endpoints -> resolve_framework_flow -> analyze_tests
+-> materialize_database_graph(index, base_graph=tests.graph). All prior facts are preserved in new storage.
+Omit base_graph for index-only enrichment. No second parse/read during database materialization.
 
-Standalone DB foundation: make_database_operation_observation -> DatabaseOperationObservation
--> DatabaseAnalysisResult.from_observations. No DB stage is integrated into repository indexing.
-Future-only: ORM adapter -> common observations -> language-independent semantics -> future graph proof.
-Core already has DATABASE_OPERATION, READS_DATABASE and WRITES_DATABASE; none is fabricated by this phase.
+DATABASE_OPERATION qualified name is path::database:provider:target.method@start_byte; unknown target is
+omitted. parent_id is execution owner, with no fabricated DEFINES for an expression. READS/WRITES point
+owner -> operation. GraphResult observations/entities/relationships follow deterministic source order;
+operation/provider counts and staged/unlinked/unmaterialized counts are derived. Frozen shells own mutable
+CodeGraph instances; treat completed results as snapshots. Source/metadata authenticity is not guaranteed
+for arbitrary caller-fabricated records; source-free validation is structural, while adapters establish syntax.
 
 ## 5. Decisions Made
 
-D-111 direct PrismaClient provenance and method mapping; D-112 catch/with/self-binding guards.
-
-Current: D-109 bounded Session/statement provenance and effect stages; D-110 scope review corrections.
-
-
-D-098: separate static TEST identities, callback ownership and bounded index retention.
-D-099: conservative Python container and JS/TS syntax policy; unittest inheritance deferred.
-D-100: direct CALLS-backed TESTS, evidence/confidence and independent enriched graph preservation.
-D-101: initial callback parentage, optional calls and binding exclusions.
-D-102: initial2.0A green gate/local commit finalization.
-D-103: independently reviewed shorthand/named callback correction and repeated complete gate.
-D-104: immutable common database observations, canonical-owner factory, IDs and ordered counts.
-D-105: defer graph materialization until adapter-specific proof/confidence exists.
-D-106: correct computed-ID test expectation and stale README capability summary; synthetic smoke.
-D-107: final verified Phase2.0 handoff and stop before adapters.
-D-108: independent review interpreter failures and correct file-outcome interpretation.
+D-109: bounded SQLAlchemy Session/statement provenance and effect stages; optional forms deferred.
+D-110: omit comprehension environments, remove supplied-site override, disambiguate nested scope names.
+D-111: direct PrismaClient construction and full bounded JS/TS method mapping.
+D-112: catch/with omissions and named function self-binding guards.
+D-113: file-wide explicit mutation/computed/delete and TS enum/namespace contradictions.
+D-114: existing parse-lifetime integration, collision guard, lightweight validation and field preservation.
+D-115: deterministic operation nodes and eligible capabilities/evidence in independent graph; supersedes D-105.
+D-116: exact contained statement invocation proof prevents borrowing unrelated insert imports/calls.
+D-117: complete local gate, reproducible mixed traces, documentation and stop before Phase2.2.
 
 ## 6. Requirements and Constraints
 
-Local only. No remote/push/GitHub API/upload/publishing. All commits author and committer solely
-PrathamKapoor <prathamkapoor027@gmail.com>; no attribution/forbidden paper/research/tex files/secrets.
-No target source/tests execution/import, Node, target dependency installation, ORM import, DB contact or SQL.
-No dependencies, core enums, parser pins, quality settings or architecture isolation rules changed.
-Phase2.1A/B/C are authorized in this session; Phase2.2 is not authorized. Preserve evidence-first conservative uncertainty.
+Local only: no remote/GitHub API/push/upload/package/release/publishing. Every author/committer solely
+PrathamKapoor <prathamkapoor027@gmail.com>; no coauthors/tool attribution or paper/research/tex files.
+No target source/tests/modules/packages executed/imported; no Node, dependency install, ORM/runtime
+constructor/decorator evaluation, DB connection, credentials or SQL execution. Source is untrusted data.
+No runtime dependencies, core vocabularies, parser pins, quality settings or graph algorithms changed.
+Stop after Phase2.1C; Phase2.2 query engine is future work, not implemented this session.
 
 ## 7. Testing and Verification
 
-Phase2.1B: four Prisma tests (both languages/all supported methods/negative subcases) and seven SQLAlchemy
-tests pass. Full404 tests OK/skipped7; Ruff/115-file format, strict mypy65 files, compileall, pip check and
-architecture2 tests pass. Initial missing API, lint line lengths and catch2/cross-scope/computed/delete9 regressions corrected.
-D-113 records independent review mutations/enum fix and conservative name-level omissions.
+Verified .venv/Scripts/python.exe Python3.13.14. Baseline393 tests OK/skipped7; StageA400 OK/skipped7;
+StageB404 OK/skipped7; final pre-commit417 OK/skipped7. Seven existing skips: six Windows symlink privilege
+(WinError1314) cases and one absent os.mkfifo API. No skipped database test.
 
-Phase2.1A: seven SQLAlchemy tests pass (multiple operation/provenance subcases); full400 tests OK/skipped7.
-Ruff/113-file format, strict mypy/64 files, compileall, pip check, architecture2 tests and whitespace pass.
-Initial missing adapter API, lint/format and strict type narrowing errors corrected; review regressions
-failed before correction (comprehension2, nested scope1). No dependency changes; remote remains empty.
-
-
-Observed project interpreter .venv\Scripts\python.exe: Python3.13.14; required Git identity; no remotes.
-Initial tree clean. Baseline full371 tests OK/skipped7. Initial2.0A gate382 tests OK/skipped7.
-Review found an important binding defect after that initial gate; database work paused, regression failed
-all ten JS/TS subcases, then correction passed and the complete gate repeated before resuming2.0B.
-Final commands (all with the project interpreter):
-
-- -m unittest tests.test_semantics.test_analysis -q:12 tests OK.
-- -m unittest tests.database.test_foundation -q:10 tests OK.
-- -m unittest discover -s tests -q:393 tests OK, skipped7.
+Final verified commands with .venv\Scripts\python.exe:
+- -m unittest tests.database.test_sqlalchemy -q:8 tests (many operation/negative subcases), OK.
+- -m unittest tests.database.test_prisma -q:4 tests (all CRUD methods in JS/TS and negatives), OK.
+- -m unittest tests.database.test_graph -q:11 tests, OK.
+- -m unittest tests.database.test_foundation -q:10 tests, OK.
+- -m unittest discover -s tests -q:417 tests, OK/skipped7.
 - -m ruff check src tests:All checks passed.
-- -m ruff format --check src tests:110 files already formatted.
-- -m mypy src/arctrellis:62 source files, no issues.
+- -m ruff format --check src tests:119 files already formatted.
+- -m mypy src/arctrellis:68 source files, no issues.
 - -m compileall -q src:exit0.
 - -m pip check:No broken requirements found.
-- -m unittest tests.test_architecture -q:2 tests OK.
-- -m tests.test_semantics.smoke:2 observations,2 entities,2 linked,0 unlinked,2 TESTS, deterministic=True.
-  service.test.js:3 ecmascript_direct_test_call and test_service.py:3 python_direct_test_call, LIKELY/0.85.
-- -m tests.database.smoke:model available, provider unknown, graph conversion deferred; synthetic WRITE,
-  synthetic_write, owner=owner, target=None, a.py:2, UUID1845035a-686f-5e06-9490-3a441d76505e.
-- Fresh project interpreter public API imports pass for database/test_semantics/indexing/calls/frameworks.
-- Source security search finds only existing fixed native grammar imports/loading inside parsing.
-- Git whitespace checks pass; remotes/forbidden tracked files/attribution search are empty.
-- Git author/committer identities match the required account for all session commits.
+- -m unittest tests.test_architecture -q:3 tests, OK.
+- -m tests.database.smoke:SQLAlchemy6, Prisma3, operation9, reads2, writes3, staged1,
+  unmaterialized0, without-DB-edge4, unknown1; deterministic=True.
+  Python POST/payment path: app.py:12 fastapi_decorated_handler PROVEN/1.0,
+  app.py:14 python_lexical_call_resolution LIKELY/0.85,
+  app.py:7 sqlalchemy_execute_insert LIKELY/0.85.
+  TS POST/payment path: app.ts:10 express_local_handler_resolution LIKELY/0.85,
+  app.ts:8 ecmascript_lexical_call_resolution LIKELY/0.85,
+  app.ts:6 prisma_model_create LIKELY/0.85.
+- Fresh interpreter public package import orders pass; no retained bytes/trees, original graphs unchanged,
+  materialization read guards and source execution/ORM import guards pass.
+- Git whitespace passes; remotes/forbidden files/attribution/credential matches absent.
+  Execution search finds only existing fixed parsing grammar imports/loading; pyproject diff empty.
 
-Initial missing APIs failed as expected before implementation. Reversed positional parent/language,
-nonexistent classification test attribute, incorrect snapshot exception expectation, optional-call/binding
-regressions, strict annotation errors and lint/format findings were corrected (D-101/D-103).
-One grammar inspection used wrong parse_source argument order and failed before parsing; corrected call passed.
-Database init=False ID replacement raises TypeError, not the initially expected ValueError; test corrected.
-Synthetic owner location was aligned with exclusive span end. README stale summary was corrected (D-106).
-Review system python first failed to import arctrellis; PYTHONPATH=src then yielded FAILED file/
-ParserConfigurationError rather than valid empty semantics. Repeating with the project interpreter exposed
-the defect; file_results were inspected before interpreting output (D-108).
-Independent review rechecked22 targeted tests and found no remaining important issue in reviewed scope.
-Seven existing skips: six Windows symlink privilege cases (WinError1314), one missing os.mkfifo API.
+Initial missing APIs failed before implementations. StageA initial lint/format and seven typing errors,
+then three name-inference errors were fixed without suppressions. Comprehension2/nested scope1 regressions
+failed before correction. StageB catch2 and mutation/enum/computed/delete9 negative subcases failed before
+fixes. StageC initial lint and one union annotation were corrected. Coherent UNKNOWN-to-WRITE borrowing
+regression failed before statement-call proof fix. New architecture audit initially flagged six relative
+adapter imports; restricting absolute import analysis corrected its test assumption. All gates repeated.
+Independent read-only reviews verified corrections; no important normal-extraction defect remains confirmed.
 
 ## 8. Known Issues / Risks
 
-No confirmed unresolved important defect found in the permitted subset after review/correction.
-General call resolver runtime rebinding, assignment/parameter shadowing outside the callback-specific guard,
-monkey patching and complete lexical environments remain unmodeled. Callback binding exclusions over-approximate
-and can omit valid calls. Result graphs remain mutable; completed graphs should be treated as snapshots.
-IDs are revision-deterministic, not edit-stable or repository-namespaced. Other platforms/runtime frameworks
-and actual database behavior are unverified. Existing concurrent filesystem/native parser resource limits remain.
+No confirmed unresolved important defect in supported extraction/graph semantics. Static relationships are
+not runtime effects; get may avoid SQL and Prisma requests may never execute. Conservative global name
+exclusions can omit unrelated valid operations. Generic call resolution still has its historical limited
+runtime/shadowing model; endpoint traces inherit existing confidence, not stronger certainty.
+
+Source-free structural validation cannot authenticate arbitrary coherent fabrication of observation/call
+metadata, including replacing UNKNOWN transform(insert(...)) with metadata borrowing its nested insert;
+normal extraction correctly keeps that source UNKNOWN and emits no write edge. External package installation
+identity, arbitrary search paths, monkey patches, dynamic alias effects and other platforms are unverified.
+Existing native parser resource/filesystem race limits and revision-only/non-namespaced IDs remain.
 
 ## 9. Unfinished Work
 
-No required work remains in Phase2.0A/B. No ORM adapter or database graph conversion exists by design.
-Test implementation561382be859f04e4605ff8e7db1f2abe038ba834; callback correction
-f1ad053fefffe7dd9d44d1841b509c78c76a0cd1. Database implementation: 3d8ec6b71d02181ca80738a451230d669c5ea0e1. References are finalized separately
-under D-004/D-067 without rewriting history. All prior decision prose/session tables are preserved.
+No required Phase2.1 implementation remains. Final local commit and reference finalization pending.
+No ORM runtime/schema/query execution or Phase2.2 implementation was started. References use real
+implementation hashes in later docs commits without history rewrite under D-004/D-067.
 
 ## 10. Next Subphase
 
-Phase 2.1 — Database semantic adapters. Recommended SQLAlchemy and Prisma first, then potentially Mongoose.
-Do not begin until a new authorized session. Adapters must supply real syntax/provenance and their own evidence
-and confidence policies; map to the common model before graph materialization.
+Phase 2.2 — Deterministic structural query engine and evidence-path API, only in a later authorized session.
+Use existing graph traversal and original Evidence; never invent semantic edges. Do not begin it now.
 
 ## 11. Critical Context
 
-TEST qualified name is path::test:name@start_byte; parent matches Python declaration parent or JS module.
-Framework metadata is pytest_naming_convention or unknown_js_test_api, never runtime framework certification.
-Original Python declaration identities/metadata remain. JS anonymous test bodies own CALLS directly at TEST.
-TESTS uses actual direct CALLS proof and excludes recognized test declarations; no endpoint/transitive coverage.
-Unittest provenance, skip/todo/each, fixtures/mocks/assertion quality/HTTP semantics/runtime coverage are deferred.
-Database provider is an extensible lowercase string, not a list of supported adapters. Direct model construction
-validates structure only; use canonical-owner factory for owner/location consistency. No universal DB confidence.
-Database observation id is computed init=False; dataclasses.replace cannot supply it. Metadata is immutable strings.
-No TABLE/MODEL/DATABASE targets, raw SQL parser, schema, connection config/credentials or query execution exists.
+Common DatabaseOperationObservation identity remains UUID5/version1; owner must be MODULE/FUNCTION/METHOD.
+Provider is extensible string, not inferred from method names. Adapters use verified direct import + unique
+constructor patterns and retain effect_stage. Result sorting is path/start/end/ID; source locations inclusive,
+syntax spans half-open exact bytes/points. Statement first-argument recognition belongs to SQLAlchemy syntax
+extraction; retained canonical invocation witnesses strengthen structural validation without reparsing.
+
+No TABLE/MODEL/DATABASE entities. Staged SQLAlchemy mutations/commit/flush/rollback/UNKNOWN never emit
+WRITES_DATABASE; DELETE direct statements/client requests are write-capable. No runtime PROVEN DB claim.
+Context-manager Session, AsyncSession, sessionmaker, typed params, full aliases/dataflow, Python comprehensions,
+catch/with/anonymous bodies, CommonJS/custom clients, Prisma schema/extensions/raw queries, SQL parsing,
+physical table resolution, transaction outcomes, implicit flush and other ORM adapters are deferred.
+Existing static TESTS, framework/middleware/router behavior remains preserved, with historical limitations.
 
 ## 12. Agent Instructions
 
-Read all root records completely and inspect actual implementation before modifying. Preserve append-only
-D-NNN records/session tables and finalize only new commit-reference fields after real commits; never rewrite history.
-Keep exact local author/committer, verify identity before each commit and empty remotes at phase boundaries.
-Use regression evidence for defects and complete targeted/full quality gates before completion claims.
-Keep all target source static and local; no target execution/import/install/DB, remote or publishing operations.
-Do not broaden test certainty or advertise DB extraction from this foundation. Stop after the final handoff.
+Read root records completely and inspect actual code before editing. Preserve historical decisions/session
+tables, continue D-numbering, document bugs with symptoms/root cause/regression and finalize only new commit
+reference fields separately. Verify exact local Git identity before every commit and empty remotes at gates.
+Use .venv interpreter, complete quality gates and inspect explicit file outcomes before interpreting empty
+semantics. All target input remains static/local. No target execution/import/install/DB/SQL/remote/publishing.
+Treat graphs as independent mutable snapshots and preserve confidence/evidence limits. Stop after handoff.

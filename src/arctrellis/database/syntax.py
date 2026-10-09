@@ -20,6 +20,7 @@ class Binding:
     scope_id: str
     assignment: SyntaxNode
     constructor_import: CodeEntity
+    name: str
 
 
 class SyntaxContext:
@@ -234,7 +235,7 @@ class SyntaxContext:
         if value is None or value.kind != constructor_kind or function is None or function.kind != "identifier":
             return None
         witness = self.imported(self.text(function), scope, span.start_byte, module, symbol, form)
-        return None if witness is None else Binding(scope, assignment, witness)
+        return None if witness is None else Binding(scope, assignment, witness, name)
 
     def parts(self, node: SyntaxNode | None) -> tuple[str, ...]:
         return _parts(node, self.text)
@@ -243,6 +244,7 @@ class SyntaxContext:
 def provenance(binding: Binding) -> tuple[tuple[str, str], ...]:
     return (
         ("constructor_import_id", binding.constructor_import.id),
+        ("binding_name", binding.name),
         ("binding_owner_id", binding.scope_id),
         ("binding_start_byte", str(binding.assignment.span.start_byte)),
         ("binding_end_byte", str(binding.assignment.span.end_byte)),

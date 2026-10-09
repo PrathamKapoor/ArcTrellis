@@ -5,6 +5,9 @@ from enum import StrEnum
 
 from arctrellis.calls.models import CallSite, _site_order
 from arctrellis.core import EntityKind
+from arctrellis.database.extraction import _blocked_providers
+from arctrellis.database.models import DatabaseAnalysisResult, DatabaseOperationObservation
+from arctrellis.database.validation import validate_database_observation
 from arctrellis.extraction.models import _entity_span
 from arctrellis.frameworks.composition_models import (
     RouterMountObservation,
@@ -40,6 +43,7 @@ class FileIndexResult:
     pre_handler_observation_count: int = 0
     router_observation_count: int = 0
     test_observation_count: int = 0
+    database_operation_count: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.language, Language) or not isinstance(self.status, FileIndexStatus):
@@ -54,6 +58,7 @@ class FileIndexResult:
             self.pre_handler_observation_count,
             self.router_observation_count,
             self.test_observation_count,
+            self.database_operation_count,
         ):
             if type(count) is not int:
                 raise TypeError("counts must be non-boolean integers")
@@ -69,6 +74,7 @@ class FileIndexResult:
                     self.pre_handler_observation_count,
                     self.router_observation_count,
                     self.test_observation_count,
+                    self.database_operation_count,
                 )
             ):
                 raise ValueError("failed files cannot contribute graph records")
@@ -102,6 +108,7 @@ class RepositoryIndexResult:
     router_prefix_observations: tuple[RouterPrefixObservation, ...] = ()
     router_mount_observations: tuple[RouterMountObservation, ...] = ()
     test_observations: tuple[TestObservation, ...] = ()
+    database_observations: tuple[DatabaseOperationObservation, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.inventory, RepositoryInventory) or not isinstance(self.graph, CodeGraph):
@@ -360,6 +367,26 @@ class RepositoryIndexResult:
             test_counts[observation.path] = test_counts.get(observation.path, 0) + 1
         if any(test_counts.get(f.path, 0) != f.test_observation_count for f in self.file_results):
             raise ValueError("test counts must match file summaries")
+        DatabaseAnalysisResult(self.database_observations)
+        database_counts: dict[str, int] = {}
+        sites = {(s.owner_entity_id, s.span.start_byte, s.span.end_byte): s for s in self.call_sites}
+        blocked = _blocked_providers(self.inventory)
+        for operation in self.database_observations:
+            summary = summaries.get(operation.path)
+            if (
+                summary is None
+                or summary.status is FileIndexStatus.FAILED
+                or summary.language is not operation.language
+            ):
+                raise ValueError("database operation requires an analyzed matching file")
+            validate_database_observation(operation, entities, sites, blocked)
+            database_counts[operation.path] = database_counts.get(operation.path, 0) + 1
+        if any(database_counts.get(f.path, 0) != f.database_operation_count for f in self.file_results):
+            raise ValueError("database counts must match file summaries")
+
+    @property
+    def database_operation_count(self) -> int:
+        return len(self.database_observations)
 
     @property
     def test_observation_count(self) -> int:

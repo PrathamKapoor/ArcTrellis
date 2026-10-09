@@ -1,5 +1,7 @@
 """Common operation observations and bounded static ORM adapters."""
 
+from .extraction import extract_database_operations
+from .graph import DatabaseGraphResult, materialize_database_graph
 from .models import (
     DatabaseAnalysisResult,
     DatabaseOperationKind,
@@ -16,4 +18,7 @@ __all__ = [
     "make_database_operation_observation",
     "extract_sqlalchemy_operations",
     "extract_prisma_operations",
+    "extract_database_operations",
+    "DatabaseGraphResult",
+    "materialize_database_graph",
 ]

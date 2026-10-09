@@ -5,6 +5,8 @@ from pathlib import PurePosixPath
 
 from arctrellis.calls import CallExtractionError, CallSite, extract_call_sites
 from arctrellis.core import CodeEntity, Confidence, EntityKind, Evidence, Relationship, RelationshipKind
+from arctrellis.database.extraction import _blocked_providers, extract_database_operations
+from arctrellis.database.models import DatabaseOperationObservation
 from arctrellis.extraction import ExtractionError, build_lexical_graph, extract_entities
 from arctrellis.frameworks import (
     FrameworkExtractionError,
@@ -66,7 +68,7 @@ def _membership(file: CodeEntity, module: CodeEntity) -> Relationship:
 
 
 def _analyze_file(
-    root: str | os.PathLike[str], file: DiscoveredFile, limit: int
+    root: str | os.PathLike[str], file: DiscoveredFile, limit: int, blocked: frozenset[str]
 ) -> tuple[
     FileIndexResult,
     CodeGraph | None,
@@ -76,6 +78,7 @@ def _analyze_file(
     tuple[RouterPrefixObservation, ...],
     tuple[RouterMountObservation, ...],
     tuple[TestObservation, ...],
+    tuple[DatabaseOperationObservation, ...],
 ]:
     if file.language is None:
         raise RepositoryIndexInvariantError("unsupported file reached analysis")
@@ -96,6 +99,8 @@ def _analyze_file(
         prefixes, mounts = extract_router_observations(parsed, result)
         stage = "test_extraction"
         tests = extract_test_observations(parsed, result)
+        stage = "database_extraction"
+        database = extract_database_operations(parsed, result, blocked_providers=blocked)
     except (ParsingError, ExtractionError, CallExtractionError, FrameworkExtractionError) as error:
         error_type = type(error).__name__[:128]
         return (
@@ -110,6 +115,7 @@ def _analyze_file(
                 f"{stage} failed ({error_type})",
             ),
             None,
+            (),
             (),
             (),
             (),
@@ -139,6 +145,7 @@ def _analyze_file(
             pre_handler_observation_count=len(pre_handlers),
             router_observation_count=len(prefixes) + len(mounts),
             test_observation_count=len(tests),
+            database_operation_count=len(database),
         ),
         local,
         call_sites,
@@ -147,6 +154,7 @@ def _analyze_file(
         prefixes,
         mounts,
         tests,
+        database,
     )
 
 
@@ -165,6 +173,8 @@ def index_repository(
     prefixes: list[RouterPrefixObservation] = []
     mounts: list[RouterMountObservation] = []
     tests: list[TestObservation] = []
+    database: list[DatabaseOperationObservation] = []
+    blocked = _blocked_providers(inventory)
     for file in inventory.supported_files:
         (
             summary,
@@ -175,7 +185,8 @@ def index_repository(
             prefix_observations,
             mount_observations,
             test_observations,
-        ) = _analyze_file(root, file, max_source_bytes)
+            database_observations,
+        ) = _analyze_file(root, file, max_source_bytes, blocked)
         if local is not None:
             try:
                 for entity in local.entities():
@@ -191,6 +202,7 @@ def index_repository(
         prefixes.extend(prefix_observations)
         mounts.extend(mount_observations)
         tests.extend(test_observations)
+        database.extend(database_observations)
     try:
         return RepositoryIndexResult(
             inventory,
@@ -202,6 +214,7 @@ def index_repository(
             tuple(prefixes),
             tuple(mounts),
             tuple(tests),
+            tuple(database),
         )
     except (TypeError, ValueError) as error:
         raise RepositoryIndexInvariantError("repository summary does not match merged graph") from error
