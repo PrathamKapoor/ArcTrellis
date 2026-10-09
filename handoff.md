@@ -2,8 +2,8 @@
 
 ## 1. Current Phase
 
-Phase 2.0 complete: 2.0A static test semantics and 2.0B database-operation foundation.
-Phase 2.1 has not started. All implementation and required verification are complete.
+Phase 2.1A complete: standalone SQLAlchemy adapter verified; commit finalization pending.
+Phase 2.1B/C have not started. Previous Phase 2.0 records below remain historical until final rewrite.
 
 ## 2. Work Completed
 
@@ -19,7 +19,7 @@ Common database model: READ, WRITE, DELETE, TRANSACTION, UNKNOWN; immutable obse
 UUID5, owner ID/kind, path/language, operation/provider/name, optional target, exact coordinates and metadata.
 Canonical-owner factory validates MODULE/FUNCTION/METHOD language, location and byte/point containment.
 DatabaseAnalysisResult provides deterministic ordered tuples and operation/provider counts.
-No ORM/database extractor or graph conversion is enabled. Generic execute() creates no DB semantics.
+Standalone SQLAlchemy extraction is available; repository integration and graph conversion are pending. Generic execute() creates no DB semantics.
 
 ## 3. Files Changed
 
@@ -55,6 +55,9 @@ Core already has DATABASE_OPERATION, READS_DATABASE and WRITES_DATABASE; none is
 
 ## 5. Decisions Made
 
+Current: D-109 bounded Session/statement provenance and effect stages; D-110 scope review corrections.
+
+
 D-098: separate static TEST identities, callback ownership and bounded index retention.
 D-099: conservative Python container and JS/TS syntax policy; unittest inheritance deferred.
 D-100: direct CALLS-backed TESTS, evidence/confidence and independent enriched graph preservation.
@@ -73,9 +76,15 @@ Local only. No remote/push/GitHub API/upload/publishing. All commits author and 
 PrathamKapoor <prathamkapoor027@gmail.com>; no attribution/forbidden paper/research/tex files/secrets.
 No target source/tests execution/import, Node, target dependency installation, ORM import, DB contact or SQL.
 No dependencies, core enums, parser pins, quality settings or architecture isolation rules changed.
-Phase2.1 is future work, not authorized in this session. Preserve evidence-first conservative uncertainty.
+Phase2.1A/B/C are authorized in this session; Phase2.2 is not authorized. Preserve evidence-first conservative uncertainty.
 
 ## 7. Testing and Verification
+
+Phase2.1A: seven SQLAlchemy tests pass (multiple operation/provenance subcases); full400 tests OK/skipped7.
+Ruff/113-file format, strict mypy/64 files, compileall, pip check, architecture2 tests and whitespace pass.
+Initial missing adapter API, lint/format and strict type narrowing errors corrected; review regressions
+failed before correction (comprehension2, nested scope1). No dependency changes; remote remains empty.
+
 
 Observed project interpreter .venv\Scripts\python.exe: Python3.13.14; required Git identity; no remotes.
 Initial tree clean. Baseline full371 tests OK/skipped7. Initial2.0A gate382 tests OK/skipped7.

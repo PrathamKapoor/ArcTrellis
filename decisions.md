@@ -1111,3 +1111,24 @@ Append-only record of engineering decisions.
 - Alternatives considered: Treating empty results from a failed index as a negative semantic proof is incorrect; installing grammars into the system interpreter is unnecessary.
 - Consequences: These are review environment failures, not further production defects. Root verification independently reproduced and corrected the D-103 issue and passed the final complete gate.
 - Files: decisions.md, flow.md, handoff.md
+
+### D-109: Extract bounded SQLAlchemy intent using canonical call ownership
+- Date / phase / commit: 2026-10-09, Phase 2.1A, uncommitted
+- Context: Database foundation exists but no adapter supplies defensible source patterns.
+- Decision: Add database/sqlalchemy.py and temporary syntax.py indexes; reuse common observations and canonical extract_call_sites ownership. Require direct imported sqlalchemy.orm Session (aliases allowed), one preceding direct constructor assignment and no competing scope writes. Require imported sqlalchemy statement constructors for classified execute. Retain constructor/binding/statement witness IDs, effect_stage and stable analysis_method. Model get as read_capable, add/add_all/delete as staged_mutation, flush/commit/rollback as transaction_control and unknown execute as UNKNOWN. Targets are source_identifier only. Defer context managers, AsyncSession, factories, typed parameters, alias propagation and complete flow. Standalone blocked_providers supports inventory collisions for later integration.
+- Why: Normalized grammar inspections verified assignment/call/attribute/argument and with/async-with shapes; optional context-manager scope support is deliberately omitted. Existing canonical owners avoid another execution-scope engine. No runtime dependency or ORM import is needed.
+- Alternatives considered: Name-only session/execute matching fabricates provider identity; full SSA/unit-of-work simulation exceeds scope; staged writes cannot support WRITES_DATABASE. A second database model is unnecessary.
+- Consequences: Conservative whole-scope exclusions lose valid operations. Adapter output is static intent/capability, never proof of SQL, mapped schema or runtime execution. No graph conversion yet.
+- Files: src/arctrellis/database/__init__.py, src/arctrellis/database/sqlalchemy.py, src/arctrellis/database/syntax.py, tests/database/test_sqlalchemy.py, README.md, flow.md, handoff.md
+
+### D-110: Exclude comprehension bindings and disambiguate nested same-name scopes
+- Date / phase / commit: 2026-10-09, Phase 2.1A, uncommitted
+- Context: Independent review found comprehension shadowing and an unsafe optional supplied-call-site boundary; a local regression also reproduced nested same-name scope collision.
+- Decision: Omit calls inside Python comprehensions/generators; derive call sites internally without caller override. Select the closest covering canonical declaration start among same-name/end candidates. Keep strict typing and format gates; fix local variable type narrowing without suppressions.
+- Why: New tests failed three assertions before correction (two comprehension false positives and one missing nested operation); corrected targeted suite passes. Supplied sites could change owner/callee at an actual span, bypassing parameter shadows. Removing the new optional argument eliminates that unsupported input contract.
+- Alternatives considered: Complete comprehension environments and trusted caller ownership add unnecessary scope; containment alone does not establish execution ownership.
+- Consequences: Comprehension operations remain absent. No changes to existing call semantics or core types.
+- Files: src/arctrellis/database/syntax.py, src/arctrellis/database/sqlalchemy.py, tests/database/test_sqlalchemy.py, decisions.md, flow.md, handoff.md
+- Symptom: Comprehension-local db/select names acquired outer ORM provenance; nested final same-name declaration lost a valid operation.
+- Root cause: Existing write helper omits for_in_clause, and a name/end dictionary overwrote enclosing canonical declarations.
+- Regression test: SQLAlchemyTests.test_comprehension_scopes_are_deferred; test_nested_final_same_name_keeps_correct_owner.

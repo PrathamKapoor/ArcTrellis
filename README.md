@@ -18,7 +18,7 @@ import sites become canonical CodeEntity values. Repository indexing and a conse
 internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
 and Express adapters identify HTTP endpoints with handler evidence. Inheritance resolution,
 global middleware execution and runtime test coverage are not implemented. Static test declarations/direct TESTS
-and a common database-operation model are available. **No ORM/database operation extractor is enabled yet.** There is no
+and a common database-operation model are available. A standalone SQLAlchemy static extractor is available (Phase 2.1A). There is no
 GitHub cloning, persistence, BM25/vector retrieval,
 LLM integration, API, frontend or change-impact product mode.
 
@@ -757,7 +757,7 @@ Direct record construction validates structure, not source truth or owner existe
 Result constructors require deterministic ordering/unique IDs; `from_observations` sorts an immutable tuple.
 Counts by operation kind/provider include only nonzero observed categories.
 
-**No ORM/database operation extractor is enabled yet.** This model does not classify arbitrary `execute()` calls.
+A standalone SQLAlchemy static extractor is available (Phase 2.1A). This model does not classify arbitrary `execute()` calls.
 No TABLE/MODEL/DATABASE entities, connections, credentials, SQL parsing or query execution are introduced.
 Core already contains DATABASE_OPERATION, READS_DATABASE and WRITES_DATABASE, but conversion is deferred until
 an adapter supplies defensible operation proof and its own confidence policy. No universal confidence is assigned.
@@ -770,3 +770,20 @@ it is not output from an ORM extractor.
 
 Callback binding exclusions include shorthand destructuring in local declarations/parameters/suites and
 named callback function self-bindings; affected calls do not resolve to unrelated module functions.
+
+## SQLAlchemy static operations
+
+`extract_sqlalchemy_operations(parsed_source, extraction_result)` consumes existing normalized syntax.
+Direct `from sqlalchemy.orm import Session` (including import aliases) plus a unique preceding direct
+assignment `db = Session(engine)` establishes source-level provenance. Calls use canonical execution
+owners and conservative whole-scope write/parameter/import exclusions. Repository callers can block
+known internal package collisions through `blocked_providers`. No installed SQLAlchemy identity is proven.
+
+Supported: get (READ/read_capable); execute of directly imported sqlalchemy select/insert/update/delete
+(READ/WRITE/WRITE/DELETE, statement_execution); add/add_all and delete (staged_mutation intent);
+flush/commit/rollback (TRANSACTION/transaction_control); other execute arguments (UNKNOWN).
+Targets are source identifiers, never verified mapped models or tables. get can use an identity map;
+staged mutations and transaction controls do not prove database writes. No graph conversion runs yet.
+Context managers, AsyncSession, sessionmaker, typed parameters, aliases, comprehensions and complete
+control/dataflow are deferred. Visible rebinding anywhere in a scope excludes provenance, even before the rebind.
+Run `.venv\Scripts\python.exe -m unittest tests.database.test_sqlalchemy -q`.

@@ -906,3 +906,27 @@ owner objects, credentials, connection handles, SQL execution or universal DB co
 | Documentation and synthetic smoke | Correct stale capability prose/test expectation and distinguish model construction from extraction. | tests/database/smoke.py, tests/database/test_foundation.py, README.md, decisions.md, flow.md | 3d8ec6b71d02181ca80738a451230d669c5ea0e1 | D-106 |
 | Final verification and handoff | Record393-test quality gate, reviewed correction, synthetic smokes and twelve-section continuation state. | README.md, decisions.md, flow.md, handoff.md | 3d8ec6b71d02181ca80738a451230d669c5ea0e1 | D-107 |
 | Review environment audit | Record system-interpreter import/parser failures and corrected project-interpreter verification. | decisions.md, flow.md, handoff.md | 3d8ec6b71d02181ca80738a451230d669c5ea0e1 | D-108 |
+
+## 23. Standalone SQLAlchemy extraction (Phase 2.1A)
+
+```text
+extract_sqlalchemy_operations(parsed_source, extraction_result)
+ ├─ SyntaxContext                       validate revision; temporary normalized syntax only
+ │   ├─ extract_call_sites               reuse canonical execution owners
+ │   ├─ _writes + parameters/imports     conservatively exclude competing bindings
+ │   └─ direct statement indexes         prove import/constructor assignment positions
+ ├─ SyntaxContext.client/imported        require Session and statement import witnesses
+ └─ make_database_operation_observation retain intent/capability, exact invocation and witness IDs
+```
+
+This standalone adapter does not run during indexing yet. Context managers/factories/typed parameters
+and comprehension binding environments are omitted. Staged mutation is not database write evidence.
+Recovery suppresses affected constructs while unaffected canonical calls survive; internal invalid
+revision/owner invariants raise rather than silently disappearing. No filesystem reads or target imports.
+
+## Changes in this session (Phase 2.1A)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| SQLAlchemy adapter | Require import/constructor provenance and retain operation effect stages. | src/arctrellis/database/, tests/database/test_sqlalchemy.py, README.md | uncommitted | D-109 |
+| Scope review | Omit comprehensions, remove supplied call override and disambiguate nested scopes. | src/arctrellis/database/syntax.py, tests/database/test_sqlalchemy.py, decisions.md, flow.md, handoff.md | uncommitted | D-110 |
