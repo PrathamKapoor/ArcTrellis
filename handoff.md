@@ -2,7 +2,7 @@
 
 ## 1. Current Phase
 
-Phase 2.0A: static test semantics complete and verified. Phase 2.0B has not started.
+Phase 2.0A: static test semantics complete and verified. Phase 2.0B has not started. Implementation commit: 561382be859f04e4605ff8e7db1f2abe038ba834.
 
 ## 2. Work Completed
 

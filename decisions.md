@@ -1005,7 +1005,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/frameworks/models.py, src/arctrellis/frameworks/flow_models.py, src/arctrellis/frameworks/composition_models.py, src/arctrellis/indexing/models.py, README.md, decisions.md, flow.md, handoff.md
 
 ### D-098: Separate static test identities from canonical declarations
-- Date / phase / commit: 2026-10-09, Phase 2.0A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.0A, 561382be859f04e4605ff8e7db1f2abe038ba834
 - Context: Tests are semantic declarations, not execution coverage; anonymous JS callbacks have no canonical FUNCTION identity.
 - Decision: Add test_semantics models/extraction/resolution/errors and public API. Retain TestObservation during indexing; derive separate TEST entities with versioned UUID5 IDs, same lexical parent and declaration_entity_id metadata for Python. Parent DEFINES TEST records structural identity. Callback TEST identities own lightweight CallSite values; the private shared call extractor accepts explicit execution roots without inventing FUNCTION entities. Public extract_call_sites behavior remains unchanged. TestAnalysisResult retains independent graph, observations, entities, callback decisions and direct derivation records.
 - Why: The canonical TEST kind already exists. Existing RelationshipKind has no correspondence relation; TESTS must never mean wrapper identity. Only immutable coordinates/scalars/tuples escape parsing.
@@ -1014,7 +1014,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/test_semantics/, src/arctrellis/indexing/, src/arctrellis/calls/extraction.py, src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py, src/arctrellis/frameworks/resolution.py, tests/test_semantics/
 
 ### D-099: Recognize only explicit static test syntax and naming containers
-- Date / phase / commit: 2026-10-09, Phase 2.0A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.0A, 561382be859f04e4605ff8e7db1f2abe038ba834
 - Context: Broad name matching would classify nested production helpers and arbitrary object methods as tests.
 - Decision: Python module-owned test_ declarations and test_ methods under immediate Test* CLASS parents qualify; preserve existing decorator metadata. Defer unittest inheritance provenance. JS/TS require direct identifier test/it calls in direct module expression statements or recognized describe callback statements, exactly two arguments, a nonempty unpadded unescaped quoted description and an inline arrow/function callback. Describe is grouping only. Omit dynamic/template descriptions, member APIs, optional calls, skip/todo/each, arbitrary production scopes and malformed enclosing syntax. Framework metadata is pytest_naming_convention or unknown_js_test_api; no installed framework identity is claimed.
 - Why: These are defensible syntactic conventions without target imports or execution. Exact JS framework provenance and full inheritance require more binding analysis than this subset.
@@ -1023,7 +1023,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/test_semantics/extraction.py, src/arctrellis/test_semantics/models.py, src/arctrellis/indexing/models.py, tests/test_semantics/test_analysis.py, README.md
 
 ### D-100: Derive direct TESTS exclusively from resolved invocation proof
-- Date / phase / commit: 2026-10-09, Phase 2.0A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.0A, 561382be859f04e4605ff8e7db1f2abe038ba834
 - Context: Test relationships must preserve direct evidence and existing analysis snapshots without inventing endpoint coverage.
 - Decision: analyze_tests validates matching index/import/call snapshots, copies the supplied call graph or matching framework-enriched base_graph, adds TEST identities, resolves callback calls using the existing _Symbols/_resolve/_edge machinery, then derives TESTS only from actual direct CALLS. Targets are canonical FUNCTION/METHOD excluding recognized test declarations. TESTS is LIKELY/0.85 with call-site Evidence, python_direct_test_call or ecmascript_direct_test_call, and the original CALLS relationship ID. Never materialize transitive or endpoint TESTS. Typed inconsistent-snapshot errors are exposed as TestAnalysisInvariantError.
 - Why: Existing resolved calls provide the permitted evidence contract; anonymous callback ownership is explicit and semantically test-specific. Python declaration CALLS remain unchanged; JS callback CALLS originate at TEST.
@@ -1032,7 +1032,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/test_semantics/resolution.py, src/arctrellis/test_semantics/models.py, src/arctrellis/test_semantics/errors.py, tests/test_semantics/test_analysis.py, tests/test_semantics/smoke.py
 
 ### D-101: Correct callback ownership and exclude visible binding contradictions
-- Date / phase / commit: 2026-10-09, Phase 2.0A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.0A, 561382be859f04e4605ff8e7db1f2abe038ba834
 - Context: Initial implementation and additional negative regressions exposed ownership and optional-call/binding mistakes before the phase gate.
 - Decision: Construct TEST CodeEntity with explicit keyword parent/language fields; omit optional test calls using the existing punctuation-aware helper. Over-approximate callback/suite parameter, local declaration and assignment names and omit affected callback call observations. Batch explicit execution roots through one shared extraction pass. Retain strict annotations and correct tests to use actual Relationship.confidence and typed snapshot failures.
 - Why: Initial six-test run raised dangling lexical parentage because parent/language positional arguments were reversed; another assertion used nonexistent classification. The focused optional-call regression failed by producing an extra TEST. Callback binding guards prevent resolving a parameter/local variable to a module function. Initial mypy reported three missing annotations, then six inferred-empty-tuple/set errors; explicit annotations address them without suppression. Initial Ruff import/line-length/export findings were corrected through normal formatting/exports.
@@ -1044,7 +1044,7 @@ Append-only record of engineering decisions.
 - Regression test: tests.test_semantics.test_analysis.TestSemanticsTests.test_script_imported_call_and_nested_callback_omission; test_callback_binding_and_optional_call_boundaries.
 
 ### D-102: Close the static test semantic gate before database work
-- Date / phase / commit: 2026-10-09, Phase 2.0A, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.0A, 561382be859f04e4605ff8e7db1f2abe038ba834
 - Context: The next subphase is permitted only after complete verified test semantics and local commit finalization.
 - Decision: Record the actual targeted/full/quality/isolation/smoke/audit results, commit locally, and finalize only new commit-reference fields in a later documentation commit. Preserve all prior decisions and session tables.
 - Why: Targeted test semantics ran 11 tests OK; full suite ran 382 tests OK/skipped7. Ruff lint and105-file format check pass; strict mypy60 source files, compileall, pip check and2 architecture tests pass. Static smoke measured2 observations/2 entities/2 linked/0 unlinked/2 TESTS with deterministic rerun. Public API smoke passes. Source execution search finds only fixed native grammar loading/imports in parsing. Remotes, forbidden tracked files and attribution matches are absent. A first gate lint run found one long smoke literal; splitting it preserved fixture bytes and the rerun passed.

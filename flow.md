@@ -868,8 +868,8 @@ No transitive TESTS, endpoint test classification, target execution, source rere
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Test contracts and identity | Add immutable observations, TEST identity, callback ownership, result and snapshot validation. | src/arctrellis/test_semantics/, src/arctrellis/indexing/, src/arctrellis/calls/, src/arctrellis/resolution/imports.py, src/arctrellis/frameworks/resolution.py | uncommitted | D-098 |
-| Recognition policy | Restrict Python containers and JS/TS direct static callbacks/suites. | src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md | uncommitted | D-099 |
-| Direct proof | Derive evidence-backed direct TESTS, preserve enriched graphs and provide realistic static smoke. | src/arctrellis/test_semantics/resolution.py, tests/test_semantics/ | uncommitted | D-100 |
-| Boundary corrections | Fix callback parentage, optional calls and local binding contradictions. | src/arctrellis/test_semantics/, tests/test_semantics/test_analysis.py | uncommitted | D-101 |
-| Verification gate | Record targeted/full quality gates, static smoke and local audits. | README.md, decisions.md, flow.md, handoff.md, tests/test_semantics/smoke.py | uncommitted | D-102 |
+| Test contracts and identity | Add immutable observations, TEST identity, callback ownership, result and snapshot validation. | src/arctrellis/test_semantics/, src/arctrellis/indexing/, src/arctrellis/calls/, src/arctrellis/resolution/imports.py, src/arctrellis/frameworks/resolution.py | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-098 |
+| Recognition policy | Restrict Python containers and JS/TS direct static callbacks/suites. | src/arctrellis/test_semantics/extraction.py, tests/test_semantics/test_analysis.py, README.md | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-099 |
+| Direct proof | Derive evidence-backed direct TESTS, preserve enriched graphs and provide realistic static smoke. | src/arctrellis/test_semantics/resolution.py, tests/test_semantics/ | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-100 |
+| Boundary corrections | Fix callback parentage, optional calls and local binding contradictions. | src/arctrellis/test_semantics/, tests/test_semantics/test_analysis.py | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-101 |
+| Verification gate | Record targeted/full quality gates, static smoke and local audits. | README.md, decisions.md, flow.md, handoff.md, tests/test_semantics/smoke.py | 561382be859f04e4605ff8e7db1f2abe038ba834 | D-102 |
