@@ -84,7 +84,7 @@ Phase2.1A/B/C are authorized in this session; Phase2.2 is not authorized. Preser
 
 Phase2.1B: four Prisma tests (both languages/all supported methods/negative subcases) and seven SQLAlchemy
 tests pass. Full404 tests OK/skipped7; Ruff/115-file format, strict mypy65 files, compileall, pip check and
-architecture2 tests pass. Initial missing API, lint line lengths and catch2/cross-scope3 regressions corrected.
+architecture2 tests pass. Initial missing API, lint line lengths and catch2/cross-scope/computed/delete9 regressions corrected.
 D-113 records independent review mutations/enum fix and conservative name-level omissions.
 
 Phase2.1A: seven SQLAlchemy tests pass (multiple operation/provenance subcases); full400 tests OK/skipped7.

@@ -947,7 +947,7 @@ anonymous bodies, factories and arbitrary aliases are omitted; no target code/pa
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Prisma adapter | Recognize direct JS/TS client requests with method/accessor metadata. | src/arctrellis/database/, tests/database/test_prisma.py, README.md | uncommitted | D-111 |
-| Scope guard | Defer catch/with environments and record named function self-bindings. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, handoff.md | uncommitted | D-112 |
+| Prisma adapter | Recognize direct JS/TS client requests with method/accessor metadata. | src/arctrellis/database/, tests/database/test_prisma.py, README.md | b0ecb51aea242e78fc25b25f3eccbc348f937195 | D-111 |
+| Scope guard | Defer catch/with environments and record named function self-bindings. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, handoff.md | b0ecb51aea242e78fc25b25f3eccbc348f937195 | D-112 |
 
-| Cross-scope contradictions | Invalidate explicitly mutated root names and TS enum/namespace names conservatively. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, README.md, handoff.md | uncommitted | D-113 |
+| Cross-scope contradictions | Invalidate explicitly mutated root names and TS enum/namespace names conservatively. | src/arctrellis/database/syntax.py, tests/database/test_prisma.py, decisions.md, flow.md, README.md, handoff.md | b0ecb51aea242e78fc25b25f3eccbc348f937195 | D-113 |

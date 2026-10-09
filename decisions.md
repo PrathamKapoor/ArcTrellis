@@ -1134,7 +1134,7 @@ Append-only record of engineering decisions.
 - Regression test: SQLAlchemyTests.test_comprehension_scopes_are_deferred; test_nested_final_same_name_keeps_correct_owner.
 
 ### D-111: Recognize direct Prisma Client requests in JavaScript and TypeScript
-- Date / phase / commit: 2026-10-09, Phase 2.1B, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.1B, b0ecb51aea242e78fc25b25f3eccbc348f937195
 - Context: The common database model and SQLAlchemy adapter are verified; JS/TS needs equivalent provenance-backed source requests.
 - Decision: Add prisma.py and extract_prisma_operations; require direct named/aliased PrismaClient import from @prisma/client and a unique preceding direct new constructor assignment. Classify eight reads, five writes, two deletes and direct $transaction. Retain accessor spelling as target_name/target_basis=prisma_model_accessor, effect_stage=client_request or transaction_control and exact invocation. Omit raw queries, computed/optional access, factories, client aliases, CommonJS, custom generated paths and anonymous transaction bodies.
 - Why: JS/TS normalized inspections showed matching import/new/member/arguments fields with zero diagnostics. Every supported CRUD method is tested in both languages, with canonical FUNCTION/METHOD ownership and deterministic IDs. No Node/Prisma dependency is needed.
@@ -1143,7 +1143,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/database/prisma.py, src/arctrellis/database/__init__.py, src/arctrellis/database/syntax.py, tests/database/test_prisma.py, README.md, flow.md, handoff.md
 
 ### D-112: Defer catch/with environments and record named function self-bindings
-- Date / phase / commit: 2026-10-09, Phase 2.1B, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.1B, b0ecb51aea242e78fc25b25f3eccbc348f937195
 - Context: New negative tests reproduced catch parameters inheriting outer Prisma provenance; named function expressions also introduce local self-bindings.
 - Decision: Record named function-expression self names as local contradictions; omit calls inside catch_clause and with_statement rather than pretending these environments are fully modeled. Keep existing comprehension omissions and canonical ownership.
 - Why: Two catch negative assertions failed before the fix, then passed. Existing general write helper does not collect catch parameters. Named expression test confirms the canonical binding name differs from its internal function name.
@@ -1155,7 +1155,7 @@ Append-only record of engineering decisions.
 - Regression test: PrismaTests.test_negatives (module and function catch shadow cases).
 
 ### D-113: Invalidate visibly mutated client names across execution scopes
-- Date / phase / commit: 2026-10-09, Phase 2.1B, uncommitted
+- Date / phase / commit: 2026-10-09, Phase 2.1B, b0ecb51aea242e78fc25b25f3eccbc348f937195
 - Context: Independent Prisma review identified outer-client writes inside another callable and omitted TypeScript runtime enum bindings.
 - Decision: Conservatively invalidate root names appearing anywhere in explicit JS assignment/update/delete patterns, Python member assignments, computed mutation receivers, JS unary delete, or TS enum/internal_module declarations. Do not simulate whether a mutating function runs; name-level contradictions exclude source provenance across scopes.
 - Why: Nine new negative subcases failed before their corrections (nested member replacement, outer let reassignment, enum shadow, two computed mutations and unary delete including tab/comment/parenthesized spellings), then passed. Normalized probes verified enum_declaration/internal_module name fields.
