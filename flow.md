@@ -1085,3 +1085,40 @@ Inventory filtering never silently merges local/effective or duplicate route reg
 | Metadata/context | Endpoint inventory, application scope and lightweight completeness counts. | src/arctrellis/query/endpoints.py, models.py, tests/query/test_architecture_queries.py | fda96a0b2f340b7be4a8fc14269d1ba79d7791ad | D-123 |
 
 Gate: architecture-query8 tests and full432 tests OK/skipped7; Ruff lint/131-file format, strict mypy77, compileall, pip check and architecture3 pass. No remote.
+
+
+## 28. Golden evaluation and query hardening (Phase 2.2C)
+
+```text
+python -m tests.query.smoke / tests.query.test_golden
+ ├─ write_repository                    temporary synthetic source data, never execute/import targets
+ ├─ index_repository                    existing bounded source analysis lifecycle
+ ├─ resolve_imports -> resolve_calls     existing conservative canonical evidence
+ ├─ resolve_http_endpoints -> resolve_framework_flow  registrations/pre-handler/composed paths
+ ├─ analyze_tests                       direct static test proof only
+ ├─ materialize_database_graph          source-free eligible database relationships
+ ├─ AnalysisSummary                     preserve actual file counts without retaining source/index
+ ├─ query functions                     original graph only; no pipeline reruns from queries
+ ├─ independent expected chains/proofs  explicit names/kinds/categories/locations/confidence
+ ├─ pipeline + queries again            equal statuses/path IDs/relationship sequences/truncation
+ └─ compare original graph snapshots    prove observation without mutation
+HardeningTests
+ ├─ 42/402/4002-entity fixtures          branches/parallel edges/cycles; functional budgets, no timings
+ ├─ public import isolation             fresh ArcTrellis interpreter, no parser/ORM/framework loading
+ ├─ open/add guards                     query execution performs no filesystem reads or graph insertions
+ ├─ recursive value inspection          no bytes/ParsedSource/SyntaxNode/CodeGraph retained in results
+ └─ corrupted relevant proof            typed invariants instead of misleading caller error/omission
+```
+
+Existing public graph access eagerly materializes adjacency or sorted inventory snapshots. Expansion budgets
+bound inspected records and path enumeration/queue growth, not underlying snapshot allocation/sorting.
+No strict total CPU/memory or measured speed claim is made. No cache, source parsing, target test execution,
+Node, ORM/database/SQL execution, source reopen or persistence occurs within structural queries.
+
+## Changes in this session (Phase 2.2C)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Golden evaluation | Python/JS/TS/mixed cross-file pipeline fixtures with independent proof expectations and measured smoke. | tests/query/fixtures.py, test_golden.py, smoke.py | uncommitted | D-124 |
+| Invariant corrections | Reject missing DB snapshot references and malformed reverse EXPOSES sources explicitly. | src/arctrellis/query/database.py, impact.py, tests/query/test_hardening.py | uncommitted | D-125 |
+| Hardening/handoff | Budget/stress/security/import/serialization contracts; document snapshot limits and stop before2.3. | tests/query/test_hardening.py, README.md, handoff.md, docs/superpowers/plans/2026-10-11-structural-query.md | uncommitted | D-126 |

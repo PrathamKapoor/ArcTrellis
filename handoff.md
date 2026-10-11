@@ -2,174 +2,175 @@
 
 ## 1. Current Phase
 
-Phase 2.1A/B/C complete: bounded SQLAlchemy extraction, Prisma extraction and evidence-backed database
-operation graphs. Implementation committed locally; references finalized separately under D-004. Phase 2.2 has not started.
-Repository C:/Projects/ArcTrellis, Python3.13.14, required Git identity, no remotes.
+Phase 2.2A/B/C implementation and verification complete: deterministic structural queries and evidence paths.
+Stage C implementation reference is uncommitted until the local commit/reference finalization below.
+Stop before Phase 2.3. Repository C:/Projects/ArcTrellis, Python3.13.14, required Git identity; no remotes.
 
 ## 2. Work Completed
 
-SQLAlchemy: direct/aliased sqlalchemy.orm Session import and unique preceding direct constructor assignment;
-get READ/read_capable; execute of imported select/insert/update/delete as READ/WRITE/WRITE/DELETE and
-statement_execution. add/add_all/delete are staged intent; flush/commit/rollback transaction_control;
-other execute UNKNOWN. Targets are source identifiers, never mapped models/tables. Statement provenance
-retains exact nested canonical call ID/span plus import witness. No runtime SQLAlchemy imported.
+Read required historical records and actual graph/core/index/adapter contracts. Verified baseline417 tests
+OK/skipped7. Added immutable EvidencePath/PathQueryResult/EntityQueryResult, completeness summary/enums,
+typed query failures, explicit JSON primitive serialization and a shared bounded constrained simple-path BFS.
+Original immutable relationships/evidence survive at every hop, including parallel call/test proof sites.
 
-Prisma: named/aliased PrismaClient import @prisma/client, unique preceding new assignment; JS/TS eight read
-methods, five write methods, two delete methods and direct $transaction. Targets retain accessor spelling.
-Requests do not establish await/completion/success/commit or changed rows. Raw queries are omitted.
+Public arctrellis.query APIs: find_paths, trace_endpoint_to_database, trace_callable_to_database,
+get_direct_database_operations, list_direct_database_callers, find_direct_tests_for_symbol, find_callers,
+find_potentially_affected_endpoints and list_endpoints. No new runtime dependency or analysis/core/graph redesign.
 
-Canonical call ownership is reused. Whole-scope writes/parameters/imports/self-bindings exclude provenance;
-file-wide explicit mutation root names and enum/namespace names conservatively invalidate it. Catch/with/
-comprehension bodies are omitted. Inventory blocks conventional root/src package-name collisions.
-
-Repository indexing retains lightweight observations/counts during the existing parse lifetime. Snapshot
-validators preserve/check the new fields. Source-free materialization produces deterministic operation
-site entities and only eligible READS_DATABASE/WRITES_DATABASE relationships with LIKELY/0.85 invocation
-Evidence. Staged/transaction/UNKNOWN nodes have no database edge. Python and TS endpoint traces verified.
+Stage A committed cc52333412c69b31486ca486101297e84fec6e0a; finalized159df69.
+Stage B committed fda96a0b2f340b7be4a8fc14269d1ba79d7791ad; finalizedb585773.
+Stage C adds real Python/JS/TS/mixed cross-file golden fixtures, static smoke, budget/security/immutability/
+serialization/import-order tests and two reproduced invariant corrections. Independent read-only review
+found no critical/important functional defect; eager public graph snapshot allocation remains documented.
 
 ## 3. Files Changed
 
-- src/arctrellis/database/__init__.py: deliberate adapter/dispatcher/graph/result exports.
-- src/arctrellis/database/models.py: accurate common-model module description; existing contract retained.
-- src/arctrellis/database/syntax.py: temporary normalized binding indexes, scope/mutation exclusions.
-- src/arctrellis/database/sqlalchemy.py: provenance-backed Session intent/statement observations.
-- src/arctrellis/database/prisma.py: provenance-backed JS/TS client requests.
-- src/arctrellis/database/extraction.py: language dispatcher and inventory collision guard.
-- src/arctrellis/database/validation.py: source-free canonical owner/call/import/effect proof checks.
-- src/arctrellis/database/graph.py: independent operation graph and DatabaseGraphResult/counts.
-- src/arctrellis/indexing/models.py, repository.py: parse-lifetime observations/counts and validation.
-- src/arctrellis/calls/resolution.py, src/arctrellis/resolution/imports.py,
-  src/arctrellis/frameworks/resolution.py: preserve database fields in snapshot checks.
-- tests/database/test_sqlalchemy.py, test_prisma.py: method/provenance/scope/recovery/identity subcases.
-- tests/database/test_graph.py: mixed integration, evidence, snapshots, corruption, effects, lifecycle/negatives.
-- tests/database/smoke.py: measured temporary Python/TS database traces and deterministic rerun.
-- tests/test_architecture.py: absolute ORM import isolation audit.
-- README.md, decisions.md, flow.md, handoff.md: accurate capabilities, records and continuation.
+- src/arctrellis/query/__init__.py: deliberate public function/model/error exports.
+- src/arctrellis/query/errors.py: small caller versus invariant error hierarchy.
+- src/arctrellis/query/models.py: frozen paths/results/context, weakest support, stable IDs, primitive output.
+- src/arctrellis/query/traversal.py: constrained deterministic public-API BFS, budgets, cycles, direction.
+- src/arctrellis/query/database.py: exact endpoint/callable DB patterns and direct operation/caller queries.
+- src/arctrellis/query/dependencies.py: direct/transitive reverse CALLS between callables only.
+- src/arctrellis/query/tests.py: original one-hop incoming TESTS, no runtime/HTTP coverage claim.
+- src/arctrellis/query/impact.py: reverse CALLS*/EXPOSES candidates, original stored edge order.
+- src/arctrellis/query/endpoints.py: bounded canonical metadata inventory, local/declared/effective/application.
+- tests/query/__init__.py, test_paths.py, test_architecture_queries.py: contracts and real adapter integration.
+- tests/query/fixtures.py, test_golden.py: independently specified cross-file Python/JS/TS/mixed golden data.
+- tests/query/test_hardening.py: cycles/parallel edges/stress/security/serialization/corruption/import isolation.
+- tests/query/smoke.py: measured complete static pipeline, real forward/reverse proof and deterministic rerun.
+- docs/superpowers/plans/2026-10-11-structural-query.md: staged local implementation/verification checklist.
+- README.md, decisions.md, flow.md, handoff.md: accurate capabilities, decisions, call flow and continuation.
 
 ## 4. Current Architecture / State
 
-index_repository -> scan_repository -> _blocked_providers -> _analyze_file -> parse_discovered_file
--> extract_entities -> extract_call_sites -> framework/pre-handler/router -> extract_test_observations
--> extract_database_operations -> lexical/file assembly -> FileIndexResult -> release ParsedSource.
-RepositoryIndexResult retains immutable lightweight tuples only, with explicit COMPLETE/PARTIAL/FAILED.
-resolve_imports -> resolve_calls -> resolve_http_endpoints -> resolve_framework_flow -> analyze_tests
--> materialize_database_graph(index, base_graph=tests.graph). All prior facts are preserved in new storage.
-Omit base_graph for index-only enrichment. No second parse/read during database materialization.
+Existing analysis lifecycle remains:
+index_repository -> import resolution -> call resolution -> HTTP endpoints -> framework flow -> test semantics
+-> database materialization -> completed CodeGraph. Queries consume this graph independently and never rerun it.
 
-DATABASE_OPERATION qualified name is path::database:provider:target.method@start_byte; unknown target is
-omitted. parent_id is execution owner, with no fabricated DEFINES for an expression. READS/WRITES point
-owner -> operation. GraphResult observations/entities/relationships follow deterministic source order;
-operation/provider counts and staged/unlinked/unmaterialized counts are derived. Frozen shells own mutable
-CodeGraph instances; treat completed results as snapshots. Source/metadata authenticity is not guaranteed
-for arbitrary caller-fabricated records; source-free validation is structural, while adapters establish syntax.
+trace_endpoint_to_database -> require API_ENDPOINT -> EXPOSES -> callable CALLS* -> eligible DB edge.
+trace_callable_to_database -> require FUNCTION/METHOD -> CALLS* -> eligible DB edge.
+Direct DB/test queries retain only one-hop evidence. Global direct DB callers return paths with source=None;
+group first path entity IDs for owners. MODULE owners are allowed in direct operation lookup only.
+find_callers(reverse CALLS) defaults direct; transitive collects each simple callable prefix and continues.
+find_potentially_affected_endpoints(reverse CALLS* then EXPOSES) includes zero CALLS for changed handlers.
+Returned paths always use original forward edge direction; result.direction distinguishes reverse search.
+
+All traversal uses public graph APIs, tuple records and no mutation. Path validation reuses GraphPath,
+checks actual membership and rejects cycles. Original Evidence includes exact retained coordinates/metadata.
+Path UUID5 depends on ordered relationship/entity IDs. Results sort hop count, edge IDs, entity IDs.
+Weakest confidence class and minimum edge score are supporting-edge summaries, not probabilities;
+any absent edge score makes the numeric summary unknown. Empty proof stays empty.
+
+Defaults: depth12, paths25, examined adjacency records10000; all positive non-boolean ints. Terminal edges
+count toward depth. Every examined record consumes budget, even rejected kinds/cycles. Eligible depth cuts,
+extra terminal beyond cap and budget cuts mark explicit truncation. Inventories default1000 matches/paths
+and10000 examined records. Public adjacency/sorted snapshots allocate before budgets; total snapshot cost
+is not bounded. Query results retain immutable records only, never graphs/source/parser/tracebacks.
+Concurrent external graph mutation is unsupported; callers must treat completed graphs as snapshots.
+
+Endpoint scope filters exact metadata: local router facts, declared app routes, effective composed paths,
+application effective mounts only. Router-effective does not establish public exposure. Registrations never merge.
+AnalysisSummary copies actual complete/partial/failed counts; callers pass .completeness for the same revision.
+All-failed maps failed; mixed failed/recovery maps partial; otherwise complete, including empty index.
+Graph-only mode unknown. COMPLETE never means runtime/call-graph exhaustiveness.
 
 ## 5. Decisions Made
 
-D-109: bounded SQLAlchemy Session/statement provenance and effect stages; optional forms deferred.
-D-110: omit comprehension environments, remove supplied-site override, disambiguate nested scope names.
-D-111: direct PrismaClient construction and full bounded JS/TS method mapping.
-D-112: catch/with omissions and named function self-binding guards.
-D-113: file-wide explicit mutation/computed/delete and TS enum/namespace contradictions.
-D-114: existing parse-lifetime integration, collision guard, lightweight validation and field preservation.
-D-115: deterministic operation nodes and eligible capabilities/evidence in independent graph; supersedes D-105.
-D-116: exact contained statement invocation proof prevents borrowing unrelated insert imports/calls.
-D-117: complete local gate, reproducible mixed traces, documentation and stop before Phase2.2.
+D-118: isolated immutable path/results boundary and typed failures, public graph APIs only.
+D-119: deterministic bounded simple paths, honest truncation and weakest-edge support, never probability.
+D-120: exact endpoint/callable database patterns and category/effect validation.
+D-121: direct DB/direct TESTS proof only, graph-wide callable operation inventory.
+D-122: reverse callable callers and endpoint structural impact, no middleware mixing.
+D-123: canonical route filters and validated lightweight completeness counts.
+D-124: independent Python/JS/TS/mixed cross-file golden evaluation and real static smoke.
+D-125: corrupt DB inventory references/reverse EXPOSES are invariant failures.
+D-126: functional stress/security/import/serialization gates and honest snapshot allocation limitation.
+References finalized in a later documentation commit under D-004/D-067; no history rewriting.
 
 ## 6. Requirements and Constraints
 
-Local only: no remote/GitHub API/push/upload/package/release/publishing. Every author/committer solely
-PrathamKapoor <prathamkapoor027@gmail.com>; no coauthors/tool attribution or paper/research/tex files.
-No target source/tests/modules/packages executed/imported; no Node, dependency install, ORM/runtime
-constructor/decorator evaluation, DB connection, credentials or SQL execution. Source is untrusted data.
-No runtime dependencies, core vocabularies, parser pins, quality settings or graph algorithms changed.
-Stop after Phase2.1C; Phase2.2 query engine is future work, not implemented this session.
+Local only: no GitHub API/remote changes/push/upload/publish/packages/releases. All commits author and committer
+solely PrathamKapoor <prathamkapoor027@gmail.com>. No attribution lines, secrets or paper/research/tex files.
+No target execution/import/tests/Node/dependency install/config evaluation/database connection/SQL.
+Queries never reread source, synthesize relationships, mutate evidence/confidence or run analysis automatically.
+No servers/CLI/frontend/LLM/retrieval/persistence/cache/workers; Phase2.3 remains unauthorized this session.
+Runtime dependencies, Ruff/mypy configuration, parsing and existing semantic algorithms remain unchanged.
 
 ## 7. Testing and Verification
 
-Verified .venv/Scripts/python.exe Python3.13.14. Baseline393 tests OK/skipped7; StageA400 OK/skipped7;
-StageB404 OK/skipped7; final pre-commit417 OK/skipped7. Seven existing skips: six Windows symlink privilege
-(WinError1314) cases and one absent os.mkfifo API. No skipped database test.
+Project interpreter .venv/Scripts/python.exe, Python3.13.14. Baseline417 tests; StageA424; StageB432;
+StageC448 tests OK/skipped7. Existing platform skips are six Windows symlink privilege cases and absent FIFO API.
+No query test skips. Every gate ran targeted/full tests, Ruff lint/format, strict mypy, compileall, pip check
+and architecture tests before local implementation commits. Final gates repeat after documentation finalization.
 
-Final verified commands with .venv\Scripts\python.exe:
-- -m unittest tests.database.test_sqlalchemy -q:8 tests (many operation/negative subcases), OK.
-- -m unittest tests.database.test_prisma -q:4 tests (all CRUD methods in JS/TS and negatives), OK.
-- -m unittest tests.database.test_graph -q:11 tests, OK.
-- -m unittest tests.database.test_foundation -q:10 tests, OK.
-- -m unittest discover -s tests -q:417 tests, OK/skipped7.
+Commands (prefix .venv\Scripts\python.exe):
+- -m unittest tests.query.test_paths -q:7 tests OK.
+- -m unittest tests.query.test_architecture_queries -q:8 tests OK.
+- -m unittest tests.query.test_golden -q:6 tests OK.
+- -m unittest tests.query.test_hardening -q:10 tests OK.
+- -m unittest discover -s tests/query -t . -q:31 tests OK.
+- -m unittest discover -s tests -q:448 tests OK/skipped7.
 - -m ruff check src tests:All checks passed.
-- -m ruff format --check src tests:119 files already formatted.
-- -m mypy src/arctrellis:68 source files, no issues.
+- -m ruff format --check src tests:135 files already formatted.
+- -m mypy src/arctrellis:77 source files, no issues.
 - -m compileall -q src:exit0.
 - -m pip check:No broken requirements found.
-- -m unittest tests.test_architecture -q:3 tests, OK.
-- -m tests.database.smoke:SQLAlchemy6, Prisma3, operation9, reads2, writes3, staged1,
-  unmaterialized0, without-DB-edge4, unknown1; deterministic=True.
-  Python POST /payments path: app.py:12 fastapi_decorated_handler PROVEN/1.0,
-  app.py:14 python_lexical_call_resolution LIKELY/0.85,
-  app.py:7 sqlalchemy_execute_insert LIKELY/0.85.
-  TS POST /payments path: app.ts:10 express_local_handler_resolution LIKELY/0.85,
-  app.ts:8 ecmascript_lexical_call_resolution LIKELY/0.85,
-  app.ts:6 prisma_model_create LIKELY/0.85.
-- Fresh interpreter public package import orders pass; no retained bytes/trees, original graphs unchanged,
-  materialization read guards and source execution/ORM import guards pass.
-- Git whitespace passes; remotes/forbidden files/attribution/credential matches absent.
-  Execution search finds only existing fixed parsing grammar imports/loading; pyproject diff empty.
+- -m unittest tests.test_architecture -q:3 tests OK; additional query import boundary/fresh-import audit passes.
+- -m tests.query.smoke:9 complete files,0 partial/failed,13 endpoints,8 DB operations,3 TESTS,
+  8 endpoint-to-DB paths,6 direct DB callers,3 direct test relationships,1 impact candidate,
+  5 endpoint no-known-path results and1 deliberately truncated depth query; deterministic=True, graph unchanged=True.
 
-Initial missing APIs failed before implementations. StageA initial lint/format and seven typing errors,
-then three name-inference errors were fixed without suppressions. Comprehension2/nested scope1 regressions
-failed before correction. StageB catch2 and mutation/enum/computed/delete9 negative subcases failed before
-fixes. StageC initial lint and one union annotation were corrected. Coherent UNKNOWN-to-WRITE borrowing
-regression failed before statement-call proof fix. New architecture audit initially flagged six relative
-adapter imports; restricting absolute import analysis corrected its test assumption. All gates repeated.
-Independent read-only reviews verified corrections; no important normal-extraction defect remains confirmed.
+Real trace: POST /payments -> create_payment -> persist_payment -> sqlalchemy:Payment.execute@121.
+EXPOSES bc2ab733-2822-5a44-b04a-2de21d807f95 at app.py:4, fastapi_decorated_handler, PROVEN/1.0.
+CALLS a551f5bb-fbd1-59ec-af62-52c40c0e3502 at app.py:6, python_imported_symbol_call_resolution, LIKELY/0.75.
+WRITES_DATABASE43992433-4b63-56df-ae47-7e1d9885dde0 at payments.py:5, sqlalchemy_execute_insert, LIKELY/0.85.
+Reverse impact returns the first two original forward relationships, direction=reverse.
+
+Functional stress uses42/402/4002 entities, not brittle time limits. Cycles terminate, parallel proof survives,
+100-record/path/depth limits truncate deterministically; full bounded cases return40/400/4000 paths.
+Filesystem/graph insertion guards, recursive result inspection, JSON roundtrip, insertion-order equivalence,
+actual source-free post-analysis queries and fresh imports pass. Independent review ran30 tests before the
+final multihop case and found no critical/important functional defect.
+
+Initial missing query package and missing StageB API failures preceded implementation. Initial lint/format
+findings and one deque typing error were corrected without suppression. Golden method-name expectations were
+corrected after inspecting actual resolver metadata. Two corruption regressions failed before D-125 fixes.
+Initial execution helper setup errors prevented some read-only commands; retry succeeded; no implementation
+occurred during those failures. One PowerShell rg wildcard path was rejected; directory-based rg worked.
 
 ## 8. Known Issues / Risks
 
-No confirmed unresolved important defect in supported extraction/graph semantics. Static relationships are
-not runtime effects; get may avoid SQL and Prisma requests may never execute. Conservative global name
-exclusions can omit unrelated valid operations. Generic call resolution still has its historical limited
-runtime/shadowing model; endpoint traces inherit existing confidence, not stronger certainty.
-
-Source-free structural validation cannot authenticate arbitrary coherent fabrication of observation/call
-metadata, including replacing UNKNOWN transform(insert(...)) with metadata borrowing its nested insert;
-normal extraction correctly keeps that source UNKNOWN and emits no write edge. External package installation
-identity, arbitrary search paths, monkey patches, dynamic alias effects and other platforms are unverified.
-Existing native parser resource/filesystem race limits and revision-only/non-namespaced IDs remain.
+No confirmed unresolved functional defect in the supported query subset. Budgets constrain examined records
+and path enumeration, not eager public graph snapshot allocation/sorting; huge graph degrees can allocate
+large adjacency tuples before budget applies. Static resolution omissions/runtime binding limitations persist.
+Missing proof is not repaired; source-free checks cannot authenticate coherent fabricated input records.
+Caller-supplied completeness must match the graph revision. No cross-platform or runtime guarantee is made.
+Existing revision-only/non-repository-namespaced IDs, native parser and stable-filesystem limitations remain.
 
 ## 9. Unfinished Work
 
-Implementation commits: SQLAlchemy0f3e24585f927dc293e6ae8ae9143e9df0751ef9;
-Prisma b0ecb51aea242e78fc25b25f3eccbc348f937195; database graph b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6.
-
-No required Phase2.1 implementation remains. Implementation and local reference finalization complete.
-No ORM runtime/schema/query execution or Phase2.2 implementation was started. References use real
-implementation hashes in later docs commits without history rewrite under D-004/D-067.
+No mandatory Phase2.2 implementation remains. Local StageC implementation/reference finalization pending
+at this write; final document commit replaces the current reference fields with observed implementation hash.
+No Phase2.3 implementation started. No optional middleware impact, runtime coverage or graph iteration redesign.
 
 ## 10. Next Subphase
 
-Phase 2.2 — Deterministic structural query engine and evidence-path API, only in a later authorized session.
-Use existing graph traversal and original Evidence; never invent semantic edges. Do not begin it now.
+Phase 2.3 — Structural Retrieval and Search Foundation, in a later authorized session only.
+Do not begin it during Phase2.2 finalization.
 
 ## 11. Critical Context
 
-Common DatabaseOperationObservation identity remains UUID5/version1; owner must be MODULE/FUNCTION/METHOD.
-Provider is extensible string, not inferred from method names. Adapters use verified direct import + unique
-constructor patterns and retain effect_stage. Result sorting is path/start/end/ID; source locations inclusive,
-syntax spans half-open exact bytes/points. Statement first-argument recognition belongs to SQLAlchemy syntax
-extraction; retained canonical invocation witnesses strengthen structural validation without reparsing.
-
-No TABLE/MODEL/DATABASE entities. Staged SQLAlchemy mutations/commit/flush/rollback/UNKNOWN never emit
-WRITES_DATABASE; DELETE direct statements/client requests are write-capable. No runtime PROVEN DB claim.
-Context-manager Session, AsyncSession, sessionmaker, typed params, full aliases/dataflow, Python comprehensions,
-catch/with/anonymous bodies, CommonJS/custom clients, Prisma schema/extensions/raw queries, SQL parsing,
-physical table resolution, transaction outcomes, implicit flush and other ORM adapters are deferred.
-Existing static TESTS, framework/middleware/router behavior remains preserved, with historical limitations.
+Potential endpoint/database paths do not establish execution/order/success/SQL/commit/changed rows.
+TESTS means direct static test-call proof, never HTTP coverage. Impact candidates are not guaranteed breakage;
+NO_KNOWN_PATH never proves runtime absence or safe change, regardless of file completeness.
+Forbidden intermediary kinds cannot become invocation paths. Staged/transaction/UNKNOWN DB nodes lack capability
+edges. DELETE uses WRITES_DATABASE plus operation metadata. Effective router-prefix paths are not public mounts.
+Original domain records are frozen; input CodeGraph remains mutable by existing contract, not retained in results.
 
 ## 12. Agent Instructions
 
-Read root records completely and inspect actual code before editing. Preserve historical decisions/session
-tables, continue D-numbering, document bugs with symptoms/root cause/regression and finalize only new commit
-reference fields separately. Verify exact local Git identity before every commit and empty remotes at gates.
-Use .venv interpreter, complete quality gates and inspect explicit file outcomes before interpreting empty
-semantics. All target input remains static/local. No target execution/import/install/DB/SQL/remote/publishing.
-Treat graphs as independent mutable snapshots and preserve confidence/evidence limits. Stop after handoff.
+Read root documents completely and inspect public APIs/tests. Preserve decisions/history and continue D-numbering.
+Finalize only current commit-reference fields, never globally replace historical prose. Use project interpreter
+and complete gates; never weaken strict tooling or invent outputs. Validate file outcome counts before interpreting
+empty semantics. Check author/committer and remotes at every boundary. Keep target input as untrusted static data.
+Stop after this phase; no push, remote, publication, target execution, DB/SQL or automatic analysis on query.

@@ -4,6 +4,7 @@ from arctrellis.core import CodeEntity, EntityKind, Relationship
 from arctrellis.core import RelationshipKind as RK
 from arctrellis.graph import CodeGraph
 
+from .errors import QueryGraphInvariantError
 from .models import AnalysisCompleteness, PathQueryResult, TraversalDirection
 from .traversal import CALLABLE_KINDS, require_entity, search
 
@@ -28,7 +29,9 @@ def find_potentially_affected_endpoints(
     def transition(state: int, edge: Relationship, node: CodeEntity) -> int | None:
         if edge.kind is RK.CALLS and node.kind in CALLABLE_KINDS:
             return 0
-        if edge.kind is RK.EXPOSES and node.kind is EntityKind.API_ENDPOINT:
+        if edge.kind is RK.EXPOSES:
+            if node.kind is not EntityKind.API_ENDPOINT:
+                raise QueryGraphInvariantError("EXPOSES must originate at API_ENDPOINT")
             return 1
         return None
 

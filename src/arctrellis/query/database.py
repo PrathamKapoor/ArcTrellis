@@ -3,6 +3,7 @@
 from arctrellis.core import CodeEntity, EntityKind, Relationship
 from arctrellis.core import RelationshipKind as RK
 from arctrellis.graph import CodeGraph
+from arctrellis.graph.errors import GraphError
 
 from .errors import QueryGraphInvariantError
 from .models import AnalysisCompleteness, EvidencePath, PathQueryResult, TraversalDirection, path_order, validate_limits
@@ -171,8 +172,13 @@ def list_direct_database_callers(
         expansions += 1
         if edge.kind not in (RK.READS_DATABASE, RK.WRITES_DATABASE):
             continue
-        owner = require_entity(graph, edge.source_entity_id)
-        target = require_entity(graph, edge.target_entity_id)
+        try:
+            owner = graph.get_entity(edge.source_entity_id)
+            target = graph.get_entity(edge.target_entity_id)
+            if graph.get_relationship(edge.id) != edge:
+                raise QueryGraphInvariantError("database inventory relationship disagrees with graph")
+        except GraphError as error:
+            raise QueryGraphInvariantError("database inventory contains missing references") from error
         if not database_operation(edge, target, operation_kinds) or owner.kind not in CALLABLE_KINDS:
             continue
         if len(paths) == max_paths:

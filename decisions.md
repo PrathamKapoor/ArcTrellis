@@ -1261,3 +1261,34 @@ Append-only record of engineering decisions.
 - Alternatives considered: Treating all effective paths as publicly mounted misstates router configuration; merging equal paths loses proof; guessing completeness from graph size is false.
 - Consequences: Caller must associate completeness with the same graph revision. COMPLETE describes file outcomes only, never runtime exhaustiveness. Inventory scanning is bounded but public entities()/relationships() snapshots allocate/sort existing records before scanning. No global cache or dependency added. Initial missing AnalysisSummary API test and initial line-format findings corrected; strict mypy passes without suppressions.
 - Files: src/arctrellis/query/endpoints.py, models.py, __init__.py, tests/query/test_architecture_queries.py
+
+
+### D-124: Evaluate independently specified cross-file static golden repositories
+- Date / phase / commit: 2026-10-11, Phase 2.2C, uncommitted
+- Context: Query unit graphs alone do not verify integration with actual analysis output.
+- Decision: Add tests/query/fixtures.py with Python FastAPI/imported SQLAlchemy helpers, JS Express/middleware/router/imported Prisma helpers, typed TS duplicate registrations and mixed-language fixtures. Golden tests independently assert named chains, relationship kinds, operation categories, proof lines/methods, confidence and direct TESTS. Real canonical IDs come from analysis; none are manually fabricated. Include unresolved/ambiguous calls, fake receivers/clients, staged/commit-only operations, local/effective routes and same-name cross-language symbols. Add tests.query.smoke using the complete existing pipeline.
+- Why: Nine complete files produce13 endpoint registrations,8 operations,3 TESTS,8 endpoint-to-DB paths,6 direct DB callers and1 endpoint impact candidate for persist_payment. Five endpoint traces have no known path; one intentional depth1 query is truncated. Rerun dictionaries and graph snapshots match. Golden expectations initially used an incorrect shortened imported-call method name; inspected resolver uses imported_symbol_call_resolution, and assertions were corrected without changing production behavior.
+- Alternatives considered: Deriving expectations with the query implementation is circular; whole UUID snapshots are brittle; real target execution violates the boundary; timing benchmarks are unnecessary for correctness.
+- Consequences: Synthetic static evaluation establishes supported examples, not production/runtime completeness. Smoke metrics include a deliberate truncated query. Source strings remain test data and never execute/import/install.
+- Files: tests/query/fixtures.py, test_golden.py, smoke.py, README.md
+
+### D-125: Report relevant corrupt graph proof as invariant failures
+- Date / phase / commit: 2026-10-11, Phase 2.2C, uncommitted
+- Context: New corruption tests found DB inventory treating an internal missing target as a bad caller ID and reverse impact ignoring malformed EXPOSES sources.
+- Decision: DB inventory uses canonical public graph lookups and exact relationship equality, chaining graph lookup failures as QueryGraphInvariantError. Reverse impact raises that error when an incoming EXPOSES source is not API_ENDPOINT. Retain original semantics for absent explicit query IDs and valid disconnected entities.
+- Why: Both tests failed before correction (one unexpected UnknownQueryEntityError, one missing exception) and pass after minimal fixes. Normal CodeGraph insertion prevents dangling edges, but a corrupted/custom public snapshot must not misreport caller input or silently hide malformed relevant proof.
+- Alternatives considered: Broad exception swallowing hides corruption; changing CodeGraph internals is unnecessary; treating normal no-known-path outcomes as failures is incorrect.
+- Consequences: Relevant structural corruption fails loudly; queries do not authenticate arbitrary coherent fabricated source evidence. No source reread, dependency or original analysis change.
+- Files: src/arctrellis/query/database.py, impact.py, tests/query/test_hardening.py
+- Symptom: Missing internal DB target raised UnknownQueryEntityError; malformed reverse EXPOSES returned no candidate.
+- Root cause: Inventory reused caller-input require_entity and impact combined kind/source checks into an omission branch.
+- Regression test: HardeningTests.test_corrupt_inventory_is_invariant_failure_not_unknown_input; test_corrupt_impact_exposes_and_direct_test_source_rejected.
+
+### D-126: Harden bounded enumeration and retain honest public-API resource limits
+- Date / phase / commit: 2026-10-11, Phase 2.2C, uncommitted
+- Context: Quality evaluation must prove budgets/determinism/security without brittle timings or broader graph redesign.
+- Decision: Add functional stress graphs with20/200/2000 services (42/402/4002 entities), parallel sites/cycles/database leaves; exercise depth/path/100-examination caps and exhaustive uncapped-within-budget results. Add fresh-process public import isolation, filesystem/mutation guards, JSON primitive checks, missing-proof/score preservation, malformed results and multi-hop forward/reverse cases. Document that public adjacency/inventory APIs eagerly allocate/sort snapshots outside examination budgets. Keep no cache/worker/thread/dependency. Rewrite twelve handoff sections and stop before2.3.
+- Why:31 targeted query tests pass, including independently reviewed30 before the final multihop case. Read-only review found no critical/important functional defect and identified the eager snapshot allocation limitation, now explicit. Bound counters, truncation, exact-cap behavior, insertion-order equivalence and repeated real pipelines are checked without timing thresholds.
+- Alternatives considered: Lazy graph iteration requires a new graph contract outside this phase; claiming total CPU/memory caps exceeds public-API guarantees; persistent/global caching and timed tests are unnecessary.
+- Consequences: Path enumeration/queue growth is bounded; snapshot allocation/sorting is not capped by max_expansions. Existing static resolution/identity/platform/native limitations remain. No runtime probability, complete coverage, safe-change guarantee or public deployment claim is introduced.
+- Files: tests/query/test_hardening.py, src/arctrellis/query/, README.md, decisions.md, flow.md, handoff.md, docs/superpowers/plans/2026-10-11-structural-query.md

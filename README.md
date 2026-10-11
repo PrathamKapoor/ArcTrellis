@@ -12,7 +12,7 @@ provider.
 
 ## Current status
 
-Early implementation: Phase 2.1 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
+Early implementation: Phase 2.2 with the existing quality gate, Python/JavaScript/TypeScript semantic entities and
 evidence-backed lexical graph assembly from normalized syntax. Declarations and
 import sites become canonical CodeEntity values. Repository indexing and a conservative
 internal import-resolution and conservative static call graph subsets are implemented. Static FastAPI, Flask
@@ -20,7 +20,7 @@ and Express adapters identify HTTP endpoints with handler evidence. Inheritance 
 global middleware execution and runtime test coverage are not implemented. Static test declarations/direct TESTS
 and provenance-backed SQLAlchemy/Prisma database observations and graph interactions are available. There is no
 GitHub cloning, persistence, BM25/vector retrieval,
-LLM integration, API, frontend or change-impact product mode.
+LLM integration, HTTP service or frontend. Deterministic structural impact candidates are available.
 
 Current capabilities:
 
@@ -52,7 +52,8 @@ Current capabilities:
 - Precise Express route middleware, FastAPI decorator dependencies and Flask request hooks.
 - Static same-file router prefixes/mounts, distinct local/effective endpoints and multi-site proof.
 - Conservative Python/JS/TS TEST declarations and direct call-site TESTS evidence, without runtime coverage.
-- Immutable database-operation foundation with canonical owner validation; no enabled adapters or DB graph conversion.
+- Provenance-backed SQLAlchemy/Prisma operations and direct database-capability graph relationships.
+- Evidence-preserving endpoint/database, direct test, caller and potential endpoint-impact queries.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
 Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
@@ -832,3 +833,107 @@ Limits: static subset only; no schema/table resolution, SQL parsing, connections
 complete session/dataflow/aliases, arbitrary client alias resolution, query results or transaction outcomes.
 Catch/with/comprehension bodies and unrepresented anonymous callbacks are deliberately omitted.
 No Mongoose or other new ORM adapters are included. Phase 2.2 queries are not implemented.
+
+
+## Structural Query API
+
+ArcTrellis provides a deterministic static structural query engine over existing analysis graphs.
+Queries do not parse or reopen source, rerun analysis, execute targets or mutate the graph.
+Run analysis explicitly first; `graph` below is the completed database-enriched `CodeGraph`.
+
+```python
+from arctrellis.query import (
+    AnalysisSummary,
+    find_callers,
+    find_direct_tests_for_symbol,
+    find_potentially_affected_endpoints,
+    get_direct_database_operations,
+    list_direct_database_callers,
+    list_endpoints,
+    trace_callable_to_database,
+    trace_endpoint_to_database,
+)
+
+# Use actual counts from the RepositoryIndexResult belonging to this revision.
+context = AnalysisSummary(index.complete_file_count, index.partial_file_count, index.failed_file_count)
+endpoints = list_endpoints(graph, http_method="POST")
+for endpoint in endpoints.entities:  # registration IDs remain distinct
+    trace = trace_endpoint_to_database(
+        graph, endpoint.id, operation_kinds=frozenset(("write", "delete")),
+        max_depth=12, max_paths=25, max_expansions=10000,
+        analysis_completeness=context.completeness,
+    )
+    print(trace.status.value, trace.truncated, trace.analysis_completeness.value)
+    payload = trace.to_dict()  # directly JSON-serializable primitive values
+    for path in trace.paths:
+        print(path.entity_ids, path.relationship_ids, path.weakest_edge_score)
+
+# Symbol IDs below must refer to existing FUNCTION/METHOD records.
+direct = get_direct_database_operations(graph, callable_id)
+reachable = trace_callable_to_database(graph, callable_id)
+database_owners = list_direct_database_callers(graph)
+tests = find_direct_tests_for_symbol(graph, callable_id)
+direct_callers = find_callers(graph, callable_id)
+all_callers = find_callers(graph, callable_id, transitive=True)
+impact = find_potentially_affected_endpoints(graph, callable_id)
+```
+
+Endpoint traces enforce `EXPOSES -> CALLS* -> (READS_DATABASE | WRITES_DATABASE)`;
+callable traces enforce `CALLS* -> database edge`. Zero CALLS is valid. DELETE is selected
+from operation metadata although its relationship is WRITES_DATABASE. Staged SQLAlchemy
+mutations and transaction-only observations have no capability edge and cannot become write paths.
+These are statically supported potential paths to read/write/delete-capable operations;
+they never establish execution, successful SQL, changed rows or committed transactions.
+IMPORTS, DEFINES, TESTS and APPLIES_MIDDLEWARE cannot substitute for invocation edges.
+
+Each frozen EvidencePath contains original entities and relationships, with exact Evidence IDs,
+locations, methods and metadata (including retained byte coordinates). Continuity and graph membership
+are checked. Parallel evidence sites retain separate paths and path IDs. Results contain no graph,
+source bytes or parser objects. Concurrent external graph mutation is unsupported.
+
+Path order is hop count, ordered relationship IDs, then entity IDs. Search enumerates bounded simple
+paths, stopping cycles without discarding independent parallel proofs; results are bounded discovered
+paths, not a claim of globally shortest or exhaustive runtime paths. The confidence class is the lowest
+supporting edge class and the numeric summary is the minimum edge score. If any score is absent the
+summary stays unknown. Scores are not calibrated probabilities and are never multiplied.
+
+Traversal defaults are depth12, paths25 and10000 inspected adjacency records, all positive non-boolean
+integers. Depth counts all edges including terminal EXPOSES/database edges. Every inspected adjacency
+record consumes the budget, even a rejected kind or cycle. Depth cuts, an extra path beyond the cap,
+or exhausted examination budget report explicit truncation reasons. Truncation is conservative:
+unexplored branches may never reach a terminal. Public graph APIs eagerly allocate adjacency/sorted
+snapshot tuples; these allocations and sorting are outside the examination budget. No global cache exists.
+
+`NO_KNOWN_PATH` means no supported static path was found within these constraints. It does not prove
+runtime absence, including when analysis completeness is complete. Graph-only queries report unknown
+completeness; pass the actual lightweight summary state to preserve complete/partial/failed context.
+The caller associates this summary with the same graph revision; file completeness is not semantic exhaustiveness.
+Unknown IDs, unsupported source kinds, invalid limits and relevant graph corruption raise distinct QueryError
+subclasses. Missing evidence remains empty rather than being invented.
+
+Direct database queries do not follow CALLS. `list_direct_database_callers` returns one-hop paths for
+FUNCTION/METHOD owners (source_entity_id=None); group the first entity ID to obtain unique owners.
+Direct operation lookup also permits MODULE owners, matching materialization. Global inventories default
+to1000 matches/paths and10000 examined records. Direct TESTS lookup means direct static test evidence,
+never runtime coverage or HTTP-client testing; no match does not mean a function is untested.
+
+Caller queries use incoming CALLS only and include FUNCTION/METHOD callers, omitting MODULE/TEST owners.
+Impact uses reverse CALLS* then reverse EXPOSES. Returned paths preserve original forward edge order
+(endpoint/caller -> changed/target symbol) and explicitly mark traversal direction reverse. Candidates
+are potential structural dependencies, never guaranteed breakage. Middleware impact is deferred.
+
+Endpoint inventory filters exact `http_method`, `framework` and `route_path` metadata. `scope="local"`
+selects router-local facts, `"declared"` selects application-declared routes, `"effective"` selects all
+composed paths, and `"application"` selects effective application mounts only. Effective router prefixes
+alone do not prove application exposure. None includes all facts; duplicate paths/registrations stay separate.
+No query establishes public deployment or runtime availability.
+
+This is not yet natural-language search, a runtime trace, complete test coverage, a vulnerability analyzer,
+a full semantic program slicer, a complete call graph, a persistence/query service or an LLM explanation layer.
+
+Reproduce the static golden evaluation and measured mixed-language smoke locally:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/query -t . -q
+.venv\Scripts\python.exe -m tests.query.smoke
+```
