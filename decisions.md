@@ -1205,3 +1205,31 @@ Append-only record of engineering decisions.
 - Alternatives considered: Runtime ORM execution, future query API and broader dataflow exceed scope; source-free validation cannot authenticate arbitrary coherently fabricated metadata, so its structural boundary remains explicit. Normal transform(insert(...)) execution remains UNKNOWN and is regression tested.
 - Consequences: Seven existing Windows symlink/FIFO skips remain. Independent reviews found and verified corrections D-110/D-112/D-113/D-116. StageA API absence/lint/type narrowing, StageB API absence/lint and catch/mutation regressions, StageC API absence/lint/one union annotation and proof regression were corrected. The new ORM import audit initially mistook six relative adapter imports for runtime package imports; checking ImportFrom.level==0 corrected the test, not production behavior. No other platform/runtime execution claim.
 - Files: README.md, decisions.md, flow.md, handoff.md, tests/database/smoke.py, test_graph.py, test_sqlalchemy.py, tests/test_architecture.py, src/arctrellis/database/, src/arctrellis/indexing/, src/arctrellis/calls/resolution.py, src/arctrellis/frameworks/resolution.py, src/arctrellis/resolution/imports.py
+
+
+### D-118: Isolate immutable evidence-path queries from analysis lifecycle
+- Date / phase / commit: 2026-10-11, Phase 2.2A, uncommitted
+- Context: Existing shortest_path visits nodes once and cannot enumerate parallel constrained proof paths.
+- Decision: Add query/errors.py, models.py, traversal.py, database.py and deliberate public exports. Reuse GraphPath continuity validation and public CodeGraph access only; EvidencePath.from_graph validates exact record membership. Frozen results retain original immutable entities/relationships/evidence, never graph/source/parser objects. Concurrent external graph mutation is unsupported. No dependencies change.
+- Why: Querying must be observational and source-free while preserving every original proof and registration identity.
+- Alternatives considered: Generic shortest_path loses alternative proof sites; modifying graph internals expands stable scope; a graph library adds no required capability.
+- Consequences: Direct path construction validates continuity, not membership/source authenticity; queries always use from_graph. Empty Evidence remains empty. Typed unknown-ID, source-kind, limit and invariant errors distinguish programmer failures from NO_KNOWN_PATH.
+- Files: src/arctrellis/query/, tests/query/test_paths.py, docs/superpowers/plans/2026-10-11-structural-query.md
+
+### D-119: Bound constrained simple-path enumeration and preserve weakest support
+- Date / phase / commit: 2026-10-11, Phase 2.2A, uncommitted
+- Context: Branches, cycles and independent call sites require deterministic bounded enumeration without invented probability.
+- Decision: Breadth-first simple paths with defaults depth12, paths25 and examined-adjacency-record budget10000. All limits are positive integers excluding bool. Every inspected adjacency record consumes budget, including rejected kinds/cycles. Depth includes terminal edges. Eligible non-cycle depth continuations mark max_depth; budget exhaustion marks max_expansions conservatively; an extra terminal path marks max_paths, avoiding false exact-cap truncation. Results sort by hop count, ordered relationship IDs, entity IDs. Path UUID5 includes ordered edge and entity IDs. Minimum confidence class and minimum score summarize weakest support; any missing score makes score unknown. No multiplication.
+- Why: Independent site evidence survives, cycles terminate, queue growth is bounded by expansion budget, and partial search cannot claim exhaustiveness.
+- Alternatives considered: Global visited sets collapse proof paths; DFS biases length discovery; probability products falsely imply calibration; timing-based limits undermine determinism.
+- Consequences: Returned paths are bounded discovered paths, not globally shortest claims. Truncation may conservatively include branches that never reach a terminal. NO_KNOWN_PATH never proves no runtime behavior. Graph-only completeness is unknown; caller may supply canonical AnalysisCompleteness, without retaining indexing results. General find_paths requires explicit relationship kinds and supports forward/reverse search with stored forward path direction.
+- Files: src/arctrellis/query/models.py, traversal.py, tests/query/test_paths.py
+
+### D-120: Require exact endpoint/callable database patterns
+- Date / phase / commit: 2026-10-11, Phase 2.2A, uncommitted
+- Context: IMPORTS/DEFINES/TESTS/pre-handler associations do not establish invocation chains.
+- Decision: trace_endpoint_to_database accepts API_ENDPOINT and EXPOSES -> CALLS* -> READS_DATABASE/WRITES_DATABASE only; trace_callable_to_database starts FUNCTION/METHOD with CALLS* -> database edge. Zero CALLS is valid. Filter read/write/delete from operation metadata, with DELETE using WRITES_DATABASE. Invalid database terminal kind/category or staged/transaction/unknown effect with a DB edge raises QueryGraphInvariantError. Preserve selected local/effective endpoint ID. Explicit JSON primitive dictionaries retain every evidence field and metadata coordinate.
+- Why: Real existing adapter integration verifies Python/TS read/write and delete, including direct handler operations and omitted staged/transaction observations.
+- Alternatives considered: Arbitrary-kind traversal fabricates execution; relationship-kind-only filtering conflates WRITE/DELETE; merging routes destroys registration evidence.
+- Consequences: Results describe potential static capability paths, never execution/success/commit/changed rows. No pipeline rerun or filesystem access occurs. Missing metadata is not inferred from names. Initial missing package test failed before implementation; initial lint/format and one deque annotation error were corrected without suppressions.
+- Files: src/arctrellis/query/database.py, __init__.py, tests/query/test_paths.py

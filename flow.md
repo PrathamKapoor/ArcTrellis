@@ -996,3 +996,43 @@ parse/read, no SQL/target/runtime dependency execution and no new dependencies o
 | Database graphs | Materialize site entities and eligible evidence-backed capabilities in independent graph. | src/arctrellis/database/graph.py, __init__.py, tests/database/test_graph.py | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-115 |
 | Statement proof | Require actual nested statement invocation coordinates/ID, not unrelated import existence. | src/arctrellis/database/sqlalchemy.py, validation.py, tests/database/test_graph.py | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-116 |
 | Verification | Mixed static smoke, traces, isolation, negatives, public imports and final documentation. | tests/database/smoke.py, tests/database/test_graph.py, tests/test_architecture.py, README.md, decisions.md, flow.md, handoff.md | b2a5e1a9c8b684cd053d065a0289c83d6d19d2a6 | D-117 |
+
+
+## 26. Evidence-preserving structural paths (Phase 2.2A)
+
+Input: an existing CodeGraph plus exact source ID, operation filters, positive depth/path/expansion budgets
+and optional caller-supplied AnalysisCompleteness. No analysis lifecycle operation runs here.
+
+```text
+trace_endpoint_to_database / trace_callable_to_database
+ ├─ require_entity                       distinguish unknown ID from unsupported source kind
+ ├─ validate_operations                  read/write/delete metadata filter, never infer from names
+ └─ search                               shared query-layer bounded BFS, public graph access only
+     ├─ validate_limits                  reject bool, zero, negative and noninteger values
+     ├─ outgoing / incoming              deterministic original records; each inspected edge consumes budget
+     ├─ transition                       enforce EXPOSES -> CALLS* -> DB, or CALLS* -> DB
+     │   └─ database_operation           validate terminal kind/category/effect; zero CALLS allowed
+     ├─ simple-path check                prevent repeated entity/cycle enumeration
+     ├─ depth / extra result / budget    mark explicit truncation reasons when exploration is cut
+     ├─ EvidencePath.from_graph          GraphPath continuity + exact entity/relationship membership
+     ├─ path_order                       length, relationship IDs, entity IDs
+     └─ PathQueryResult                  preserve context, limits, inspected count and original proof
+         └─ to_dict                      explicit JSON primitives; retain original proof metadata
+find_paths                               explicit-kind general forward/reverse nonempty paths
+ └─ search                               same bounded engine, not generic shortest_path
+```
+
+Reverse search normalizes returned paths into original forward edge order and marks direction=reverse.
+Minimum confidence class/score reports weakest support, not probability; absent score stays unknown.
+No known path is an absence of available static proof, even with complete indexed files. Results contain
+immutable domain values, not a mutable graph; concurrent graph mutation is unsupported. Querying never
+reads source, invokes parsing/resolution/materialization or adds graph records. Typed query errors separate
+unknown source IDs, unsupported kinds, invalid budgets and corrupted relevant graph structure.
+
+## Changes in this session (Phase 2.2A)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Query boundary | Immutable proof paths, typed errors and explicit primitive output. | src/arctrellis/query/, tests/query/ | uncommitted | D-118 |
+| Traversal | Constrained BFS, simple paths, budgets, truncation and weakest support. | src/arctrellis/query/models.py, traversal.py | uncommitted | D-119 |
+| Database traces | Exact endpoint/callable patterns, operation filters and real adapter tests. | src/arctrellis/query/database.py, tests/query/test_paths.py | uncommitted | D-120 |
