@@ -3,7 +3,7 @@
 ## 1. Current Phase
 
 Phase 2.2A/B/C implementation and verification complete: deterministic structural queries and evidence paths.
-Stage C implementation reference is uncommitted until the local commit/reference finalization below.
+Stage C committed fdab31ba76a9713bf7b513a2761bfa31b6b555f2; implementation references finalized in a later documentation commit.
 Stop before Phase 2.3. Repository C:/Projects/ArcTrellis, Python3.13.14, required Git identity; no remotes.
 
 ## 2. Work Completed
@@ -149,8 +149,8 @@ Existing revision-only/non-repository-namespaced IDs, native parser and stable-f
 
 ## 9. Unfinished Work
 
-No mandatory Phase2.2 implementation remains. Local StageC implementation/reference finalization pending
-at this write; final document commit replaces the current reference fields with observed implementation hash.
+No mandatory Phase2.2 work remains. Local implementation and documentation reference finalization complete;
+StageC implementation fdab31ba76a9713bf7b513a2761bfa31b6b555f2. Final quality gates repeat after the documentation commit.
 No Phase2.3 implementation started. No optional middleware impact, runtime coverage or graph iteration redesign.
 
 ## 10. Next Subphase

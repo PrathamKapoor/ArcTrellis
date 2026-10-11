@@ -1264,7 +1264,7 @@ Append-only record of engineering decisions.
 
 
 ### D-124: Evaluate independently specified cross-file static golden repositories
-- Date / phase / commit: 2026-10-11, Phase 2.2C, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2C, fdab31ba76a9713bf7b513a2761bfa31b6b555f2
 - Context: Query unit graphs alone do not verify integration with actual analysis output.
 - Decision: Add tests/query/fixtures.py with Python FastAPI/imported SQLAlchemy helpers, JS Express/middleware/router/imported Prisma helpers, typed TS duplicate registrations and mixed-language fixtures. Golden tests independently assert named chains, relationship kinds, operation categories, proof lines/methods, confidence and direct TESTS. Real canonical IDs come from analysis; none are manually fabricated. Include unresolved/ambiguous calls, fake receivers/clients, staged/commit-only operations, local/effective routes and same-name cross-language symbols. Add tests.query.smoke using the complete existing pipeline.
 - Why: Nine complete files produce13 endpoint registrations,8 operations,3 TESTS,8 endpoint-to-DB paths,6 direct DB callers and1 endpoint impact candidate for persist_payment. Five endpoint traces have no known path; one intentional depth1 query is truncated. Rerun dictionaries and graph snapshots match. Golden expectations initially used an incorrect shortened imported-call method name; inspected resolver uses imported_symbol_call_resolution, and assertions were corrected without changing production behavior.
@@ -1273,7 +1273,7 @@ Append-only record of engineering decisions.
 - Files: tests/query/fixtures.py, test_golden.py, smoke.py, README.md
 
 ### D-125: Report relevant corrupt graph proof as invariant failures
-- Date / phase / commit: 2026-10-11, Phase 2.2C, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2C, fdab31ba76a9713bf7b513a2761bfa31b6b555f2
 - Context: New corruption tests found DB inventory treating an internal missing target as a bad caller ID and reverse impact ignoring malformed EXPOSES sources.
 - Decision: DB inventory uses canonical public graph lookups and exact relationship equality, chaining graph lookup failures as QueryGraphInvariantError. Reverse impact raises that error when an incoming EXPOSES source is not API_ENDPOINT. Retain original semantics for absent explicit query IDs and valid disconnected entities.
 - Why: Both tests failed before correction (one unexpected UnknownQueryEntityError, one missing exception) and pass after minimal fixes. Normal CodeGraph insertion prevents dangling edges, but a corrupted/custom public snapshot must not misreport caller input or silently hide malformed relevant proof.
@@ -1285,7 +1285,7 @@ Append-only record of engineering decisions.
 - Regression test: HardeningTests.test_corrupt_inventory_is_invariant_failure_not_unknown_input; test_corrupt_impact_exposes_and_direct_test_source_rejected.
 
 ### D-126: Harden bounded enumeration and retain honest public-API resource limits
-- Date / phase / commit: 2026-10-11, Phase 2.2C, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2C, fdab31ba76a9713bf7b513a2761bfa31b6b555f2
 - Context: Quality evaluation must prove budgets/determinism/security without brittle timings or broader graph redesign.
 - Decision: Add functional stress graphs with20/200/2000 services (42/402/4002 entities), parallel sites/cycles/database leaves; exercise depth/path/100-examination caps and exhaustive uncapped-within-budget results. Add fresh-process public import isolation, filesystem/mutation guards, JSON primitive checks, missing-proof/score preservation, malformed results and multi-hop forward/reverse cases. Document that public adjacency/inventory APIs eagerly allocate/sort snapshots outside examination budgets. Keep no cache/worker/thread/dependency. Rewrite twelve handoff sections and stop before2.3.
 - Why:31 targeted query tests pass, including independently reviewed30 before the final multihop case. Read-only review found no critical/important functional defect and identified the eager snapshot allocation limitation, now explicit. Bound counters, truncation, exact-cap behavior, insertion-order equivalence and repeated real pipelines are checked without timing thresholds.

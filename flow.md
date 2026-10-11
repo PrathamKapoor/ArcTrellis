@@ -1119,6 +1119,8 @@ Node, ORM/database/SQL execution, source reopen or persistence occurs within str
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Golden evaluation | Python/JS/TS/mixed cross-file pipeline fixtures with independent proof expectations and measured smoke. | tests/query/fixtures.py, test_golden.py, smoke.py | uncommitted | D-124 |
-| Invariant corrections | Reject missing DB snapshot references and malformed reverse EXPOSES sources explicitly. | src/arctrellis/query/database.py, impact.py, tests/query/test_hardening.py | uncommitted | D-125 |
-| Hardening/handoff | Budget/stress/security/import/serialization contracts; document snapshot limits and stop before2.3. | tests/query/test_hardening.py, README.md, handoff.md, docs/superpowers/plans/2026-10-11-structural-query.md | uncommitted | D-126 |
+| Golden evaluation | Python/JS/TS/mixed cross-file pipeline fixtures with independent proof expectations and measured smoke. | tests/query/fixtures.py, test_golden.py, smoke.py | fdab31ba76a9713bf7b513a2761bfa31b6b555f2 | D-124 |
+| Invariant corrections | Reject missing DB snapshot references and malformed reverse EXPOSES sources explicitly. | src/arctrellis/query/database.py, impact.py, tests/query/test_hardening.py | fdab31ba76a9713bf7b513a2761bfa31b6b555f2 | D-125 |
+| Hardening/handoff | Budget/stress/security/import/serialization contracts; document snapshot limits and stop before2.3. | tests/query/test_hardening.py, README.md, handoff.md, docs/superpowers/plans/2026-10-11-structural-query.md | fdab31ba76a9713bf7b513a2761bfa31b6b555f2 | D-126 |
+
+Gate: query31/full448 tests OK/skipped7; Ruff lint/135-file format, strict mypy77, compileall, pip check and architecture3 pass. Mixed smoke deterministic and graph unchanged. No remote.
