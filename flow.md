@@ -1038,3 +1038,48 @@ unknown source IDs, unsupported kinds, invalid budgets and corrupted relevant gr
 | Database traces | Exact endpoint/callable patterns, operation filters and real adapter tests. | src/arctrellis/query/database.py, tests/query/test_paths.py | cc52333412c69b31486ca486101297e84fec6e0a | D-120 |
 
 Gate: paths7 tests and full424 tests OK/skipped7; Ruff lint/126-file format, strict mypy73, compileall, pip check and architecture3 pass. No remote.
+
+
+## 27. Practical architecture queries (Phase 2.2B)
+
+```text
+get_direct_database_operations(graph, owner)
+ ├─ require_entity / validate_operations  explicit supported owners and category filters
+ └─ search                               one-hop DB edges only; retain provider/effect/operation proof
+list_direct_database_callers(graph)
+ ├─ relationships                       existing sorted snapshot, scan under budget
+ ├─ database_operation                  eligible direct capability and FUNCTION/METHOD owner
+ └─ EvidencePath.from_graph              one-hop proof paths; source=None marks graph-wide inventory
+find_direct_tests_for_symbol(graph, symbol)
+ ├─ require_entity                      FUNCTION/METHOD only, no handler-to-endpoint inference
+ └─ search(reverse)                     direct TESTS from TEST only; no transitive coverage
+find_callers(graph, target, transitive=False)
+ ├─ require_entity                      callable target
+ └─ search(reverse CALLS)                direct edges, or every simple callable prefix in transitive mode
+find_potentially_affected_endpoints(graph, changed)
+ ├─ require_entity                      changed callable
+ └─ search(reverse)
+     ├─ reverse CALLS*                  callable dependency candidates, cycle/depth/path/budget bounds
+     ├─ reverse EXPOSES                 endpoint registration evidence, zero CALLS valid
+     └─ EvidencePath.from_graph         normalize forward endpoint -> changed order; mark reverse search
+list_endpoints(graph, filters)
+ ├─ entities                            sorted existing snapshot
+ ├─ exact metadata filters             method/framework/path/local/declared/effective/application
+ └─ EntityQueryResult                   original registrations; limits/truncation/context retained
+AnalysisSummary(complete, partial, failed).completeness
+ └─ caller supplies query context       no source/index retained; graph-only default unknown
+```
+
+Every query is source-free/read-only; direct facts are never synthesized from transitive paths.
+Caller queries omit TEST/MODULE callers; test lookup is direct static evidence, never HTTP coverage.
+Middleware impact is deferred. Unknown paths do not prove absence of runtime impact or test execution.
+Original relationship direction and weakest support remain intact even when discovery is reverse.
+Inventory filtering never silently merges local/effective or duplicate route registrations.
+
+## Changes in this session (Phase 2.2B)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Direct queries | DB owner/operation inventory and direct TESTS lookup with original proof. | src/arctrellis/query/database.py, tests.py | uncommitted | D-121 |
+| Reverse queries | Direct/transitive callable callers and endpoint impact candidates. | src/arctrellis/query/dependencies.py, impact.py, traversal.py | uncommitted | D-122 |
+| Metadata/context | Endpoint inventory, application scope and lightweight completeness counts. | src/arctrellis/query/endpoints.py, models.py, tests/query/test_architecture_queries.py | uncommitted | D-123 |

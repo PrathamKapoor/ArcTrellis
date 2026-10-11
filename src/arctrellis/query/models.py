@@ -163,7 +163,7 @@ class PathQueryResult:
     """
 
     query_kind: str
-    source_entity_id: str
+    source_entity_id: str | None
     paths: tuple[EvidencePath, ...]
     direction: TraversalDirection
     max_depth: int
@@ -189,7 +189,9 @@ class PathQueryResult:
             raise ValueError("paths must be deterministically ordered")
         for path in self.paths:
             source = path.entity_ids[0] if self.direction is TraversalDirection.FORWARD else path.entity_ids[-1]
-            if source != self.source_entity_id or path.hop_count > self.max_depth:
+            if (
+                self.source_entity_id is not None and source != self.source_entity_id
+            ) or path.hop_count > self.max_depth:
                 raise ValueError("path source or depth disagrees with result")
         if not isinstance(self.truncation_reasons, tuple) or self.truncation_reasons != tuple(
             sorted(set(self.truncation_reasons))
@@ -225,3 +227,76 @@ class PathQueryResult:
 
 def path_order(path: EvidencePath) -> tuple[int, tuple[str, ...], tuple[str, ...]]:
     return path.hop_count, path.relationship_ids, path.entity_ids
+
+
+@dataclass(frozen=True, slots=True)
+class AnalysisSummary:
+    """Lightweight file outcome counts; caller associates it with the same revision.
+
+    Copy complete_file_count/partial_file_count/failed_file_count from the actual
+    RepositoryIndexResult. A mix containing failures is partial; all failed is failed.
+    Empty analysis is complete as in RepositoryIndexResult.is_complete.
+    """
+
+    complete_files: int
+    partial_files: int
+    failed_files: int
+
+    def __post_init__(self) -> None:
+        if any(type(n) is not int or n < 0 for n in (self.complete_files, self.partial_files, self.failed_files)):
+            raise ValueError("analysis counts must be nonnegative non-boolean integers")
+
+    @property
+    def completeness(self) -> AnalysisCompleteness:
+        if self.failed_files and not self.complete_files and not self.partial_files:
+            return AnalysisCompleteness.FAILED
+        if self.partial_files or self.failed_files:
+            return AnalysisCompleteness.PARTIAL
+        return AnalysisCompleteness.COMPLETE
+
+
+@dataclass(frozen=True, slots=True)
+class EntityQueryResult:
+    """Bounded existing entity inventory; no match is not a runtime absence claim."""
+
+    query_kind: str
+    entities: tuple[CodeEntity, ...]
+    max_results: int
+    max_expansions: int
+    expansions: int
+    truncation_reasons: tuple[str, ...] = ()
+    analysis_completeness: AnalysisCompleteness = AnalysisCompleteness.UNKNOWN
+
+    def __post_init__(self) -> None:
+        validate_limits(1, self.max_results, self.max_expansions)
+        if not isinstance(self.analysis_completeness, AnalysisCompleteness):
+            raise TypeError("analysis_completeness must be AnalysisCompleteness")
+        if not isinstance(self.entities, tuple) or any(not isinstance(e, CodeEntity) for e in self.entities):
+            raise TypeError("entities must be a CodeEntity tuple")
+        ids = tuple(e.id for e in self.entities)
+        if ids != tuple(sorted(set(ids))) or len(ids) > self.max_results:
+            raise ValueError("invalid entity order or count")
+        if type(self.expansions) is not int or not 0 <= self.expansions <= self.max_expansions:
+            raise ValueError("invalid expansion count")
+        if not isinstance(self.truncation_reasons, tuple) or self.truncation_reasons != tuple(
+            sorted(set(self.truncation_reasons))
+        ):
+            raise ValueError("invalid truncation reasons")
+        if any(r not in ("max_results", "max_expansions") for r in self.truncation_reasons):
+            raise ValueError("unknown truncation reason")
+
+    @property
+    def truncated(self) -> bool:
+        return bool(self.truncation_reasons)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "query_kind": self.query_kind,
+            "entities": [entity_dict(e) for e in self.entities],
+            "max_results": self.max_results,
+            "max_expansions": self.max_expansions,
+            "expansions": self.expansions,
+            "truncated": self.truncated,
+            "truncation_reasons": list(self.truncation_reasons),
+            "analysis_completeness": self.analysis_completeness.value,
+        }

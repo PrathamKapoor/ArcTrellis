@@ -37,6 +37,7 @@ def search(
     max_paths: int = 25,
     max_expansions: int = 10000,
     analysis_completeness: AnalysisCompleteness = AnalysisCompleteness.UNKNOWN,
+    stop_at_terminal: bool = True,
 ) -> PathQueryResult:
     validate_limits(max_depth, max_paths, max_expansions)
     if not isinstance(analysis_completeness, AnalysisCompleteness) or not isinstance(direction, TraversalDirection):
@@ -60,7 +61,8 @@ def search(
                     graph, entities[::-1] if reverse else entities, edges[::-1] if reverse else edges
                 )
             )
-            continue
+            if stop_at_terminal:
+                continue
         try:
             adjacent = graph.incoming(current.id) if reverse else graph.outgoing(current.id)
             for edge in adjacent:
