@@ -1130,4 +1130,4 @@ Gate: query31/full448 tests OK/skipped7; Ruff lint/135-file format, strict mypy7
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Audit scope | Derive session baseline from actual first-feature parent333f856; record corrected auxiliary assertion. | decisions.md, flow.md, handoff.md | uncommitted | D-127 |
+| Audit scope | Derive session baseline from actual first-feature parent333f856; record corrected auxiliary assertion. | decisions.md, flow.md, handoff.md | 5ffe450391a8bbbe37ef356e12f8bae6a4e90b86 | D-127 |

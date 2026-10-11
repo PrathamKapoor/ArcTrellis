@@ -1295,7 +1295,7 @@ Append-only record of engineering decisions.
 
 
 ### D-127: Scope final session audits to the verified starting commit
-- Date / phase / commit: 2026-10-11, Phase 2.2C verification, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2C verification, 5ffe450391a8bbbe37ef356e12f8bae6a4e90b86
 - Context: An auxiliary final audit expected six session commits but used older0f781de as its comparison base.
 - Decision: Use333f8561ef1b4daff0c03141af093ab3f6681578, verified as cc52333's parent, for changed-file and session identity audits. Preserve the failed invocation in handoff and rerun the actual gates after documentation finalization.
 - Why: The first six-commit assertion failed because0f781de predates previous database integration commits. Corrected333f856..HEAD audit passed with six solely required-identity session commits, clean tree, no remotes/forbidden/attribution/key patterns, preserved historical decisions and finalized references. No production code changed for this correction.
