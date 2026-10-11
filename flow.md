@@ -1080,6 +1080,8 @@ Inventory filtering never silently merges local/effective or duplicate route reg
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Direct queries | DB owner/operation inventory and direct TESTS lookup with original proof. | src/arctrellis/query/database.py, tests.py | uncommitted | D-121 |
-| Reverse queries | Direct/transitive callable callers and endpoint impact candidates. | src/arctrellis/query/dependencies.py, impact.py, traversal.py | uncommitted | D-122 |
-| Metadata/context | Endpoint inventory, application scope and lightweight completeness counts. | src/arctrellis/query/endpoints.py, models.py, tests/query/test_architecture_queries.py | uncommitted | D-123 |
+| Direct queries | DB owner/operation inventory and direct TESTS lookup with original proof. | src/arctrellis/query/database.py, tests.py | fda96a0b2f340b7be4a8fc14269d1ba79d7791ad | D-121 |
+| Reverse queries | Direct/transitive callable callers and endpoint impact candidates. | src/arctrellis/query/dependencies.py, impact.py, traversal.py | fda96a0b2f340b7be4a8fc14269d1ba79d7791ad | D-122 |
+| Metadata/context | Endpoint inventory, application scope and lightweight completeness counts. | src/arctrellis/query/endpoints.py, models.py, tests/query/test_architecture_queries.py | fda96a0b2f340b7be4a8fc14269d1ba79d7791ad | D-123 |
+
+Gate: architecture-query8 tests and full432 tests OK/skipped7; Ruff lint/131-file format, strict mypy77, compileall, pip check and architecture3 pass. No remote.

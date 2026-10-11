@@ -1236,7 +1236,7 @@ Append-only record of engineering decisions.
 
 
 ### D-121: Expose direct database and direct static test proof without transitive claims
-- Date / phase / commit: 2026-10-11, Phase 2.2B, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2B, fda96a0b2f340b7be4a8fc14269d1ba79d7791ad
 - Context: Direct ownership and transitive reachability answer different questions.
 - Decision: get_direct_database_operations returns only one-hop DB paths for supported MODULE/FUNCTION/METHOD owners. list_direct_database_callers returns one-hop paths for FUNCTION/METHOD owners, with source_entity_id=None for the global inventory; group first path entity IDs for owners. find_direct_tests_for_symbol accepts FUNCTION/METHOD and returns original incoming TESTS only, one path per proof site. All retain operation/provider metadata and evidence; direct queries have path/expansion limits. Inventories default to1000 paths and10000 examined records.
 - Why: Real Python and JS pipeline tests verify direct associations, absent transitive tests, direct handler test evidence and database owner details. Parallel TESTS sites remain distinct.
@@ -1245,7 +1245,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/query/database.py, tests.py, models.py, __init__.py, tests/query/test_architecture_queries.py
 
 ### D-122: Separate reverse callable callers and endpoint impact candidates
-- Date / phase / commit: 2026-10-11, Phase 2.2B, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2B, fda96a0b2f340b7be4a8fc14269d1ba79d7791ad
 - Context: Existing CALLS evidence supports reverse structural dependencies but not guaranteed breakage.
 - Decision: find_callers defaults to direct incoming CALLS; transitive=True collects each nonempty simple reverse CALLS prefix and continues through FUNCTION/METHOD only. TEST/MODULE execution owners are omitted deliberately. find_potentially_affected_endpoints follows reverse CALLS* then reverse EXPOSES, including directly exposed handlers. Shared search gains stop_at_terminal=False for caller prefixes. Return original forward ordered paths and direction=reverse; confidence/evidence unchanged. Middleware impact is deferred.
 - Why: Cyclic/parallel caller fixtures and real pipeline impact preserve original direction and prevent IMPORTS/DEFINES/TESTS/APPLIES_MIDDLEWARE false dependencies.
@@ -1254,7 +1254,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/query/dependencies.py, impact.py, traversal.py, tests/query/test_architecture_queries.py
 
 ### D-123: Filter canonical endpoint metadata and preserve lightweight analysis context
-- Date / phase / commit: 2026-10-11, Phase 2.2B, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2B, fda96a0b2f340b7be4a8fc14269d1ba79d7791ad
 - Context: Existing metadata uses local router paths, declared application routes and effective composed paths; router-effective does not establish application mounting.
 - Decision: list_endpoints uses exact http_method/framework/route_path metadata and scope local/declared/effective/application; application selects effective composition_scope=application only. None retains all registration sites; no parsing names or filename inference. Frozen EntityQueryResult records bounds/truncation/context; defaults1000 matches/10000 examined entities. AnalysisSummary validates file counts, maps all-failed to failed, mixed failures/recovery to partial and no failures/recovery to complete; caller passes summary.completeness to any query. Graph-only mode stays unknown.
 - Why: Inspected framework models allow local/declared and composition adds effective/router/application. Existing is_complete accepts empty complete analysis. A lightweight count summary retains no repository graph/source and avoids analysis imports.
