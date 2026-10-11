@@ -85,6 +85,7 @@ D-123: canonical route filters and validated lightweight completeness counts.
 D-124: independent Python/JS/TS/mixed cross-file golden evaluation and real static smoke.
 D-125: corrupt DB inventory references/reverse EXPOSES are invariant failures.
 D-126: functional stress/security/import/serialization gates and honest snapshot allocation limitation.
+D-127: correct auxiliary final audit baseline to actual session start333f856.
 References finalized in a later documentation commit under D-004/D-067; no history rewriting.
 
 ## 6. Requirements and Constraints
@@ -135,6 +136,8 @@ final multihop case and found no critical/important functional defect.
 Initial missing query package and missing StageB API failures preceded implementation. Initial lint/format
 findings and one deque typing error were corrected without suppression. Golden method-name expectations were
 corrected after inspecting actual resolver metadata. Two corruption regressions failed before D-125 fixes.
+An auxiliary six-session-commit audit initially used older0f781de and failed its count assertion;
+verified first-feature parent333f856 is the actual baseline and the corrected audit passed.
 Initial execution helper setup errors prevented some read-only commands; retry succeeded; no implementation
 occurred during those failures. One PowerShell rg wildcard path was rejected; directory-based rg worked.
 

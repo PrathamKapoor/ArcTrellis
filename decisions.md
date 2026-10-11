@@ -1292,3 +1292,13 @@ Append-only record of engineering decisions.
 - Alternatives considered: Lazy graph iteration requires a new graph contract outside this phase; claiming total CPU/memory caps exceeds public-API guarantees; persistent/global caching and timed tests are unnecessary.
 - Consequences: Path enumeration/queue growth is bounded; snapshot allocation/sorting is not capped by max_expansions. Existing static resolution/identity/platform/native limitations remain. No runtime probability, complete coverage, safe-change guarantee or public deployment claim is introduced.
 - Files: tests/query/test_hardening.py, src/arctrellis/query/, README.md, decisions.md, flow.md, handoff.md, docs/superpowers/plans/2026-10-11-structural-query.md
+
+
+### D-127: Scope final session audits to the verified starting commit
+- Date / phase / commit: 2026-10-11, Phase 2.2C verification, uncommitted
+- Context: An auxiliary final audit expected six session commits but used older0f781de as its comparison base.
+- Decision: Use333f8561ef1b4daff0c03141af093ab3f6681578, verified as cc52333's parent, for changed-file and session identity audits. Preserve the failed invocation in handoff and rerun the actual gates after documentation finalization.
+- Why: The first six-commit assertion failed because0f781de predates previous database integration commits. Corrected333f856..HEAD audit passed with six solely required-identity session commits, clean tree, no remotes/forbidden/attribution/key patterns, preserved historical decisions and finalized references. No production code changed for this correction.
+- Alternatives considered: Changing expected counts to absorb earlier unrelated commits obscures session scope; rewriting history is unnecessary.
+- Consequences: Future session audits must derive their baseline from the actual starting HEAD rather than a prompt's older recent-commit list. Additional documentation correction/finalization commits also require the same identity and post-commit gates.
+- Files: decisions.md, flow.md, handoff.md
