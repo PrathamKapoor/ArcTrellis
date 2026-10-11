@@ -1208,7 +1208,7 @@ Append-only record of engineering decisions.
 
 
 ### D-118: Isolate immutable evidence-path queries from analysis lifecycle
-- Date / phase / commit: 2026-10-11, Phase 2.2A, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2A, cc52333412c69b31486ca486101297e84fec6e0a
 - Context: Existing shortest_path visits nodes once and cannot enumerate parallel constrained proof paths.
 - Decision: Add query/errors.py, models.py, traversal.py, database.py and deliberate public exports. Reuse GraphPath continuity validation and public CodeGraph access only; EvidencePath.from_graph validates exact record membership. Frozen results retain original immutable entities/relationships/evidence, never graph/source/parser objects. Concurrent external graph mutation is unsupported. No dependencies change.
 - Why: Querying must be observational and source-free while preserving every original proof and registration identity.
@@ -1217,7 +1217,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/query/, tests/query/test_paths.py, docs/superpowers/plans/2026-10-11-structural-query.md
 
 ### D-119: Bound constrained simple-path enumeration and preserve weakest support
-- Date / phase / commit: 2026-10-11, Phase 2.2A, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2A, cc52333412c69b31486ca486101297e84fec6e0a
 - Context: Branches, cycles and independent call sites require deterministic bounded enumeration without invented probability.
 - Decision: Breadth-first simple paths with defaults depth12, paths25 and examined-adjacency-record budget10000. All limits are positive integers excluding bool. Every inspected adjacency record consumes budget, including rejected kinds/cycles. Depth includes terminal edges. Eligible non-cycle depth continuations mark max_depth; budget exhaustion marks max_expansions conservatively; an extra terminal path marks max_paths, avoiding false exact-cap truncation. Results sort by hop count, ordered relationship IDs, entity IDs. Path UUID5 includes ordered edge and entity IDs. Minimum confidence class and minimum score summarize weakest support; any missing score makes score unknown. No multiplication.
 - Why: Independent site evidence survives, cycles terminate, queue growth is bounded by expansion budget, and partial search cannot claim exhaustiveness.
@@ -1226,7 +1226,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/query/models.py, traversal.py, tests/query/test_paths.py
 
 ### D-120: Require exact endpoint/callable database patterns
-- Date / phase / commit: 2026-10-11, Phase 2.2A, uncommitted
+- Date / phase / commit: 2026-10-11, Phase 2.2A, cc52333412c69b31486ca486101297e84fec6e0a
 - Context: IMPORTS/DEFINES/TESTS/pre-handler associations do not establish invocation chains.
 - Decision: trace_endpoint_to_database accepts API_ENDPOINT and EXPOSES -> CALLS* -> READS_DATABASE/WRITES_DATABASE only; trace_callable_to_database starts FUNCTION/METHOD with CALLS* -> database edge. Zero CALLS is valid. Filter read/write/delete from operation metadata, with DELETE using WRITES_DATABASE. Invalid database terminal kind/category or staged/transaction/unknown effect with a DB edge raises QueryGraphInvariantError. Preserve selected local/effective endpoint ID. Explicit JSON primitive dictionaries retain every evidence field and metadata coordinate.
 - Why: Real existing adapter integration verifies Python/TS read/write and delete, including direct handler operations and omitted staged/transaction observations.

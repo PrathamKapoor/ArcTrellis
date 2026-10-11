@@ -1033,6 +1033,8 @@ unknown source IDs, unsupported kinds, invalid budgets and corrupted relevant gr
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Query boundary | Immutable proof paths, typed errors and explicit primitive output. | src/arctrellis/query/, tests/query/ | uncommitted | D-118 |
-| Traversal | Constrained BFS, simple paths, budgets, truncation and weakest support. | src/arctrellis/query/models.py, traversal.py | uncommitted | D-119 |
-| Database traces | Exact endpoint/callable patterns, operation filters and real adapter tests. | src/arctrellis/query/database.py, tests/query/test_paths.py | uncommitted | D-120 |
+| Query boundary | Immutable proof paths, typed errors and explicit primitive output. | src/arctrellis/query/, tests/query/ | cc52333412c69b31486ca486101297e84fec6e0a | D-118 |
+| Traversal | Constrained BFS, simple paths, budgets, truncation and weakest support. | src/arctrellis/query/models.py, traversal.py | cc52333412c69b31486ca486101297e84fec6e0a | D-119 |
+| Database traces | Exact endpoint/callable patterns, operation filters and real adapter tests. | src/arctrellis/query/database.py, tests/query/test_paths.py | cc52333412c69b31486ca486101297e84fec6e0a | D-120 |
+
+Gate: paths7 tests and full424 tests OK/skipped7; Ruff lint/126-file format, strict mypy73, compileall, pip check and architecture3 pass. No remote.
