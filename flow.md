@@ -1131,3 +1131,50 @@ Gate: query31/full448 tests OK/skipped7; Ruff lint/135-file format, strict mypy7
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
 | Audit scope | Derive session baseline from actual first-feature parent333f856; record corrected auxiliary assertion. | decisions.md, flow.md, handoff.md | 5ffe450391a8bbbe37ef356e12f8bae6a4e90b86 | D-127 |
+
+## 26. Structural retrieval foundation (Phase 2.3A)
+
+```text
+build_search_index(graph, analysis_completeness=UNKNOWN)
+ ├─ _validated_entities          read graph.entities() exactly once; reject corrupt containers
+ ├─ build_document (per entity)  allowlisted metadata only; never signatures or arbitrary keys
+ │   ├─ canonical_text           NFKC, preserving case and every original character
+ │   ├─ SearchField              bounded value + bounded canonical tokens (512 chars / 32 tokens)
+ │   └─ SearchDocument           frozen; fields sorted by name; read-only name lookup
+ ├─ sort by CodeEntity.id        canonical order, independent of graph insertion order
+ ├─ _build_postings              token -> ((entity_id, term_frequency), ...) sorted by entity ID
+ ├─ document_lengths             BM25 document length per entity
+ ├─ document_frequency           posting-list length per token
+ ├─ average_document_length      mean length, 0.0 for an empty corpus
+ ├─ content_snapshot_id          UUID5 digest of the documents; never a revision claim
+ └─ LexicalSearchIndex           frozen snapshot with verified statistics
+```
+
+Why each step exists: a single entity read avoids repeating the eager graph snapshot
+allocation; allowlisting keeps source literals, byte offsets and credentials out of the
+corpus; canonical identity makes the snapshot reproducible; verifying statistics in
+`__post_init__` keeps the inverted index a checked contract rather than an unchecked cache.
+
+```text
+tokenize(value)
+ ├─ canonical_text               NFKC first, so case boundaries still exist
+ ├─ bounded prefix               first MAX_FIELD_VALUE_LENGTH (512) characters
+ ├─ _TOKEN_RUN.finditer          acronyms keep capitals; Capitalized/lower/digit runs split;
+ │                               every non-alphanumeric character separates
+ └─ case fold per token          PaymentService and payment_service share (payment, service)
+```
+
+Why: folding before splitting would destroy camel/Pascal boundaries. Splitting per capital
+would make HTTPServer unusable. Treat every character as data, never as an instruction.
+
+## Changes in this session (Phase 2.3A)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Search documents | Add frozen canonical SearchDocument/SearchField projections over allowlisted structural metadata. | src/arctrellis/retrieval/documents.py, errors.py | uncommitted | D-128 |
+| Tokenization | Fix NFKC-preserving-case tokenizer, acronym/digit boundaries and per-field bounds. | src/arctrellis/retrieval/normalization.py, tests/retrieval/test_tokenization.py | uncommitted | D-129 |
+| Index snapshot | Add deterministic inverted index with verified statistics, content identity and snapshot isolation. | src/arctrellis/retrieval/index.py, tests/retrieval/test_index.py | uncommitted | D-130 |
+| Completeness | Reuse the canonical AnalysisCompleteness vocabulary instead of a second enum. | src/arctrellis/retrieval/index.py | uncommitted | D-131 |
+
+Gate: retrieval55/full503 tests OK/skipped7; Ruff lint/145-file format, strict mypy82,
+compileall, pip check and architecture3 pass. Public retrieval imports resolve.
