@@ -1229,3 +1229,55 @@ so an index can never mix graph revision A documents with revision B relationshi
 
 Gate: retrieval141/full589 tests OK/skipped7; Ruff lint/152-file format, strict mypy85,
 compileall, pip check and architecture3 pass.
+
+## 28. Retrieval evaluation and hardening (Phase 2.3C)
+
+```text
+evaluate_retrieval(index, judgments, k=5)
+ ├─ RelevanceJudgment.resolve         (kind, name, path) selectors -> canonical IDs + unresolved labels
+ ├─ exact_substring_baseline          independent tier ranking: exact value, substring, token containment, shared token
+ ├─ BM25 lexical mode                 search_symbols(include_graph_context=False)
+ ├─ BM25 + graph mode                 search_symbols(include_graph_context=True)
+ ├─ QueryOutcome per evaluated query  recall, precision, reciprocal rank, hit flag, duplicates removed
+ ├─ _metrics                          macro-average; skipped queries reported, never averaged as zero
+ └─ _compare                          which queries each mode improved and regressed against the baseline
+```
+
+Why each step exists: judgments are resolved independently of ranking so the
+comparison is not circular; the baseline shares no code with BM25 so improvement
+is measurable; skipped and unresolved queries stay visible so no number is
+manufactured from an empty target.
+
+```text
+tests/retrieval/smoke.py
+ ├─ repository.pipeline               existing analysis pipeline over temporary mixed sources
+ ├─ build_search_index                one snapshot for lexical and graph context
+ ├─ QUERIES                           nine measured queries in lexical and contextual mode
+ ├─ describe                          per-hit score components, reasons and original Evidence
+ ├─ search_endpoints + trace_endpoint_to_database
+ │                                     retrieved endpoint IDs are passed through unchanged
+ └─ format_evaluation                 measured baseline/BM25/graph metrics only
+```
+
+The smoke prints only computed values and asserts determinism, graph immutability,
+stable snapshot identity and that at least one retrieved endpoint still has its
+existing evidence path. It never creates a graph path to make the run succeed.
+
+## Changes in this session (Phase 2.3C)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Evaluation harness | Add selectors, judgments, standard metrics and honest skip reporting. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/judgments.py | uncommitted | D-137 |
+| Baselines and findings | Add an independent exact/substring baseline and pin measured metrics including regressions. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/test_golden.py, tests/retrieval/smoke.py | uncommitted | D-138 |
+| Mixed repository and negatives | Add the mixed-language retrieval repository, hard negatives and the end-to-end smoke. | tests/retrieval/repository.py, test_hardening.py, smoke.py | uncommitted | D-139 |
+| Bounded field values | Truncate stored projected field values to the documented limit. | src/arctrellis/retrieval/documents.py, tests/retrieval/test_limits.py | uncommitted | D-140 |
+
+Measured at K=5 over 19 evaluated queries of 20 judgments:
+baseline R 0.8246 / P 0.3158 / MRR 0.7298 / HR 0.8947;
+BM25 R 0.8860 / P 0.3474 / MRR 0.8070 / HR 0.9474;
+BM25+graph R 0.8860 / P 0.3211 / MRR 0.8553 / HR 0.9474.
+Graph context raises MRR and lowers precision; test payment regresses against the
+baseline in both BM25 modes; payment refund endpoint is missed by all three modes.
+
+Gate: retrieval192/full640 tests OK/skipped7; Ruff lint/158-file format, strict mypy86,
+compileall, pip check and architecture3 pass.

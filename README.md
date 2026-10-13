@@ -937,3 +937,139 @@ Reproduce the static golden evaluation and measured mixed-language smoke locally
 .venv\Scripts\python.exe -m unittest discover -s tests/query -t . -q
 .venv\Scripts\python.exe -m tests.query.smoke
 ```
+
+## Structural Retrieval (Phase 2.3)
+
+`arctrellis.retrieval` ranks canonical entities that the existing analysis pipeline already
+produced. Retrieval never scans, parses, opens or executes repository source: it consumes a
+completed `CodeGraph` and nothing else.
+
+```python
+from arctrellis.query import AnalysisSummary, trace_endpoint_to_database
+from arctrellis.retrieval import (
+    SearchFilters,
+    build_search_index,
+    search_endpoints,
+    search_tests,
+)
+
+context = AnalysisSummary(index.complete_file_count, index.partial_file_count, index.failed_file_count)
+snapshot = build_search_index(graph, analysis_completeness=context.completeness)
+
+results = search_symbols(snapshot, "payment creation", top_k=10, include_graph_context=True)
+for hit in results.hits:
+    print(hit.entity_id, hit.relevance_score, hit.match_basis.value, hit.matched_fields)
+
+# Retrieved IDs are canonical IDs and can feed the existing structural query engine.
+trace = trace_endpoint_to_database(graph, results.hits[0].entity_id, analysis_completeness=context.completeness)
+
+endpoints = search_endpoints(snapshot, "payments", filters=SearchFilters(frameworks=frozenset({"fastapi"})))
+tests = search_tests(snapshot, "payment")
+```
+
+`build_search_index(graph)` reads `graph.entities()` exactly once and `graph.relationships()`
+at most once, so the eager snapshot allocation that public graph APIs perform is paid once per
+build rather than once per candidate or hit. The index is a build-time snapshot: later graph
+mutation is not observed, and `snapshot_id` is a content digest of the documents, not a
+repository revision or commit.
+
+### What is indexed
+
+Structural metadata only, never source text. Each canonical `CodeEntity` becomes exactly one
+immutable `SearchDocument` identified by its canonical entity ID. Indexable fields are entity
+name, qualified name, repository-relative path, entity kind, language, parent ID, and an
+explicit allowlist of eighteen existing metadata keys (`framework`, `http_method`, `route_path`,
+`path_completeness`, `registration_kind`, `composition_scope`, `provider`, `operation_kind`,
+`operation_name`, `target_name`, `target_basis`, `effect_stage`, `import_form`, `module`,
+`imported_name`, `alias`, `binding`, `is_type_only`). Every other metadata key is excluded by
+omission. Signatures are never indexed, so string literals inside them cannot become retrieval
+content. Projected values are stored truncated to 512 characters and 32 tokens; the canonical
+entity keeps its full value. Entities without a `SourceLocation` report no path and no line
+numbers.
+
+### Normalization and tokenization
+
+Text is NFKC-normalized while preserving case, split on ASCII case and digit boundaries and on
+every non-alphanumeric character, then case folded per token. `PaymentService`,
+`payment_service`, `payment-service`, `payment.service`, `payment/service` and `paymentService`
+all produce `payment`, `service`. Acronyms keep their capitals: `HTTPServer` produces `http`,
+`server`. Non-ASCII letter runs stay whole. Everything is data; no query text is decoded,
+resolved, executed or treated as an instruction.
+
+### Ranking
+
+BM25 with `k1=1.2`, `b=0.75` and smoothed IDF, computed over field-weighted term frequencies
+(`name` 3.0 down to `entity_kind`/`language`/`repository_relative_path` 0.5, all exact binary
+fractions). A fixed exact-match ladder applies only the strongest satisfied rule: qualified
+name 8.0, entity name 6.0, canonical `METHOD path` 5.0, alphanumeric-equivalent name 3.0,
+name prefix 0.5. Every hit exposes `bm25_score`, `exact_match_boost`, `prefix_boost`,
+`graph_context_boost` and `relevance_score`, which is exactly their sum. Results sort by
+relevance, then exact priority, then canonical entity ID. A BM25 score is a lexical relevance
+score: it is never a probability, a confidence, a semantic-similarity measure or a statement
+about runtime behavior.
+
+### Typed filters
+
+`SearchFilters` supports entity kinds, languages, repository-relative path prefixes, HTTP
+method, framework, database provider, database operation kind and endpoint path completeness.
+Filters match canonical attributes and allowlisted field values only; an absent value never
+satisfies a filter. Filters constrain output, so `top_k` always applies to eligible results.
+`search_endpoints`, `search_tests` and `search_database_operations` delegate to the single
+ranking engine with a merged kind restriction.
+
+### Graph-aware one-hop context
+
+`include_graph_context=True` is an explicit opt-in. Only relationships that the indexed snapshot
+actually stores are used: `EXPOSES`, `CALLS`, `TESTS`, `READS_DATABASE`, `WRITES_DATABASE` and
+`APPLIES_MIDDLEWARE`. `DEFINES`, `IMPORTS`, `CONTAINS`, `INHERITS` and `USES` are never context
+and never stand in for a call. At most one hop is examined; a neighbor of a neighbor is never
+visited. A context hit carries the stored relationship ID, kind, direction, confidence,
+confidence score and original Evidence, and is reported as `match_basis=graph_neighbor` without
+claiming it contains the query terms. The boost is `min(1.0, seed_coverage * edge_weight)` using
+the maximum over supporting relationships, never a sum, so degree cannot inflate it; middleware
+is a pre-handler association weighted below invocation. Relationship confidence is reported
+separately and is never multiplied into relevance.
+
+### Limits, truncation and empty input
+
+Maximum query length 512 characters, maximum 24 query tokens, `top_k` default 25 and maximum
+100, default posting budget 50000 examined records, default graph seed budget 25, default
+neighbor budget 16 per seed, build-time neighbor cap 16 per entity and direction. Blank,
+whitespace-only, token-free, over-long and over-tokenized queries are rejected with
+`InvalidSearchQueryError`. Every inspected posting record consumes the budget, including
+records later rejected by a filter. `truncated` reports budget-driven incompleteness with a
+stable reason from `posting_budget`, `graph_seed_budget`, `graph_neighbor_budget`; `top_k`
+limiting is reported separately through `eligible_candidate_count`. Candidate counts are exact
+only when `truncated` is False. Index construction is bounded only by the canonical entity count;
+no memory cap is claimed.
+
+### Evaluation
+
+`evaluate_retrieval(index, judgments, k=5)` measures three modes against independently written
+relevance judgments: an exact/substring baseline, BM25, and BM25 with graph context. Metrics are
+Recall@K, Precision@K, MRR@K and HitRate@K, macro-averaged over evaluated queries. Queries whose
+judgments resolve to nothing are skipped and reported, never averaged as zero. Measured at K=5
+over 19 evaluated queries: baseline 0.8246/0.3158/0.7298, BM25 0.8860/0.3474/0.8070,
+BM25+graph 0.8860/0.3211/0.8553. Graph context improves MRR and lowers precision; `test payment`
+regresses against the baseline in both BM25 modes; `payment refund endpoint` is missed by all
+three modes because no document contains all of its tokens. These are lexical measurements on a
+small synthetic corpus, not semantic retrieval quality.
+
+### What Phase 2.3 does not provide
+
+- Full source-code text search. Only structural metadata is indexed.
+- Semantic embeddings, vector search or any similarity model.
+- Natural-language question understanding or query planning.
+- LLM-generated explanations. `match_reasons` and `explain_hit` are structured and deterministic.
+- Runtime execution traces, runtime coverage or behavioral claims.
+- Complete graph coverage; a result never proves repository completeness.
+- Exhaustive search under a truncated budget.
+- Persistent or incremental indexes; a snapshot never refreshes itself.
+- Any web API, CLI, storage engine, worker or background process.
+
+Verified local commands:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/retrieval -t . -q
+.venv\Scripts\python.exe -m tests.retrieval.smoke
+```

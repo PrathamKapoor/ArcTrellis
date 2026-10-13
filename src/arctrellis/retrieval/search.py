@@ -748,11 +748,12 @@ def search_symbols(
         reasons.add("graph_seed_budget")
     if neighbor_truncated:
         reasons.add("graph_neighbor_budget")
+    returned = hits[:top_k]
     return SearchResult(
         query=query,
         normalized_query=normalized,
         query_tokens=tokens,
-        hits=hits[:top_k],
+        hits=returned,
         matched_candidate_count=matched,
         eligible_candidate_count=len(eligible),
         graph_candidate_count=graph_candidates,
@@ -763,7 +764,7 @@ def search_symbols(
         graph_seed_budget=max_graph_seeds,
         graph_neighbor_budget=max_graph_neighbors,
         truncation_reasons=tuple(sorted(reasons)),
-        graph_context_used=use_context and any(hit.has_graph_context for hit in hits),
+        graph_context_used=use_context and any(hit.has_graph_context for hit in returned),
         index_snapshot_id=index.snapshot_id,
         index_document_count=index.document_count,
         analysis_completeness=index.analysis_completeness if analysis_completeness is None else analysis_completeness,
