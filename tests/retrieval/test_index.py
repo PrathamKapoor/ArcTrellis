@@ -308,6 +308,8 @@ class IndexContractTests(unittest.TestCase):
                 "-c",
                 "import sys; import arctrellis.retrieval as r; "
                 "assert all(hasattr(r, name) for name in r.__all__); "
+                "from arctrellis.retrieval import (build_search_index, search_symbols, search_endpoints, "
+                "search_tests, search_database_operations, evaluate_retrieval); "
                 'assert not any(name.startswith(("arctrellis.parsing", "arctrellis.indexing", "tree_sitter", '
                 '"sqlalchemy", "prisma", "fastapi")) for name in sys.modules)',
             ],

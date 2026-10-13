@@ -1436,3 +1436,15 @@ Append-only record of engineering decisions.
 - Consequences: A hit can display a truncated metadata value; the canonical entity remains the authority and its full value is available through the analysis result.
 - Files: src/arctrellis/retrieval/documents.py, tests/retrieval/test_limits.py
 - Supersedes: D-128 (projected field values are now stored truncated, not only tokenized truncated)
+
+### D-141: Export the evaluation surface from the retrieval package
+- Date / phase / commit: 2026-10-13, Phase 2.3C correction, uncommitted
+- Context: A final public-API import check found evaluate_retrieval and its models were importable only from arctrellis.retrieval.evaluation, not from the documented package entry point.
+- Decision: Re-export BASELINE, BM25, GRAPH, EVALUATION_MODES, ExpectedEntity, ModeEvaluation, QueryOutcome, RelevanceJudgment, RetrievalEvaluationError, RetrievalEvaluationResult, RetrievalMetrics, evaluate_retrieval, exact_substring_baseline and format_evaluation from arctrellis.retrieval, and assert the documented entry-point imports in a fresh interpreter. The package exports 67 deliberate names; private helpers stay private.
+- Why: The documented public API promises evaluation types alongside search types; a half-exported surface forces callers to know internal module paths and weakens the boundary the export list exists to create.
+- Alternatives considered: Leaving evaluation submodule-only would work technically but contradicts the documented API and the isolation test that checks it.
+- Consequences: Importing arctrellis.retrieval pulls in the evaluation module, which depends only on the retrieval modules already loaded and adds no analysis, parser or network dependency. The fresh-process import test now fails if any analysis or runtime module is pulled in.
+- Files: src/arctrellis/retrieval/__init__.py, tests/retrieval/test_index.py, tests/retrieval/test_hardening.py
+- Symptom: from arctrellis.retrieval import evaluate_retrieval raised ImportError.
+- Root cause: The package __init__ was written before evaluation.py existed and was never extended.
+- Regression test: tests.retrieval.test_index.IndexContractTests.test_retrieval_import_boundary_and_fresh_public_import and tests.retrieval.test_hardening.BoundaryAndIsolationTests.test_fresh_public_import_does_not_load_analysis_or_runtime_dependencies
