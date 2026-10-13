@@ -1281,4 +1281,4 @@ baseline in both BM25 modes; payment refund endpoint is missed by all three mode
 
 Gate: retrieval192/full640 tests OK/skipped7; Ruff lint/158-file format, strict mypy86,
 compileall, pip check and architecture3 pass.
-| Public evaluation exports | Export the evaluation surface and assert the documented entry-point imports. | src/arctrellis/retrieval/__init__.py, tests/retrieval/test_index.py, test_hardening.py | uncommitted | D-141 |
+| Public evaluation exports | Export the evaluation surface and assert the documented entry-point imports. | src/arctrellis/retrieval/__init__.py, tests/retrieval/test_index.py, test_hardening.py | d65d083 | D-141 |

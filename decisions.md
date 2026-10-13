@@ -1438,7 +1438,7 @@ Append-only record of engineering decisions.
 - Supersedes: D-128 (projected field values are now stored truncated, not only tokenized truncated)
 
 ### D-141: Export the evaluation surface from the retrieval package
-- Date / phase / commit: 2026-10-13, Phase 2.3C correction, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3C correction, d65d083
 - Context: A final public-API import check found evaluate_retrieval and its models were importable only from arctrellis.retrieval.evaluation, not from the documented package entry point.
 - Decision: Re-export BASELINE, BM25, GRAPH, EVALUATION_MODES, ExpectedEntity, ModeEvaluation, QueryOutcome, RelevanceJudgment, RetrievalEvaluationError, RetrievalEvaluationResult, RetrievalMetrics, evaluate_retrieval, exact_substring_baseline and format_evaluation from arctrellis.retrieval, and assert the documented entry-point imports in a fresh interpreter. The package exports 67 deliberate names; private helpers stay private.
 - Why: The documented public API promises evaluation types alongside search types; a half-exported surface forces callers to know internal module paths and weakens the boundary the export list exists to create.

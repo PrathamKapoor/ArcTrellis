@@ -23,11 +23,12 @@ Public `arctrellis.retrieval` API: `build_search_index`, `search_symbols`, `sear
 `MatchBasis`, `ContextDirection`, `ContextEdge`, `GraphContextIndex`, `ExactMatchTier`,
 `RelevanceJudgment`, `ExpectedEntity`, `RetrievalEvaluationResult`, `evaluate_retrieval`,
 `exact_substring_baseline`, `format_evaluation`, `explain_hit`, `tokenize`, `normalize_exact`
-and the retrieval error hierarchy. No new runtime dependency, no analysis/core/graph redesign
-and no source reread anywhere in retrieval.
+and the retrieval error hierarchy. The package exports 67 deliberate names. No new runtime
+dependency, no analysis/core/graph redesign and no source reread anywhere in retrieval.
 
 Stage A committed 5a329c1, finalized d599b4a. Stage B committed 0f55d1c, finalized 2af8bf1.
-Stage C committed d8f5c95 and its documentation is finalized separately afterwards.
+Stage C committed d8f5c95, a public-API export correction committed d65d083, and documentation is
+finalized separately afterwards.
 
 ## 3. Files Changed
 
@@ -118,6 +119,7 @@ D-137: deterministic evaluation harness with independent judgments and standard 
 D-138: independent exact/substring baseline with regressions reported rather than hidden.
 D-139: mixed-language retrieval repository, hard negatives and the end-to-end smoke.
 D-140: stored projected field values truncated to the documented limit; supersedes part of D-128.
+D-141: export the evaluation surface from the package entry point alongside search types.
 References finalized in a later documentation commit; no history rewriting.
 
 ## 6. Requirements and Constraints
@@ -179,9 +181,11 @@ on legitimately asymmetric capping; context supports named the returned hit as i
 and described the seed's direction; graph candidates that share no query token were dropped,
 which deleted the documented discovery case; `graph_context_used` was computed from the full
 ranking instead of the returned top_k; stored field values were unbounded even though tokenization
-was bounded. Fixture-name and metadata expectations in the new tests were corrected against
-actual canonical output rather than by changing production behavior. No existing test was
-disabled and no timing threshold was introduced.
+was bounded; `evaluate_retrieval` was not re-exported from the package entry point. Fixture-name
+and metadata expectations in the new tests were corrected against actual canonical output rather
+than by changing production behavior. No existing test was disabled and no timing threshold was
+introduced. One repository grep for network or execution primitives matched only the identifier
+`evaluate_retrieval` because of the `eval(` substring; no such primitive exists in retrieval.
 
 ## 8. Known Issues / Risks
 
