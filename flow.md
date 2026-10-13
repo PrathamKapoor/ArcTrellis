@@ -1171,10 +1171,10 @@ would make HTTPServer unusable. Treat every character as data, never as an instr
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Search documents | Add frozen canonical SearchDocument/SearchField projections over allowlisted structural metadata. | src/arctrellis/retrieval/documents.py, errors.py | uncommitted | D-128 |
-| Tokenization | Fix NFKC-preserving-case tokenizer, acronym/digit boundaries and per-field bounds. | src/arctrellis/retrieval/normalization.py, tests/retrieval/test_tokenization.py | uncommitted | D-129 |
-| Index snapshot | Add deterministic inverted index with verified statistics, content identity and snapshot isolation. | src/arctrellis/retrieval/index.py, tests/retrieval/test_index.py | uncommitted | D-130 |
-| Completeness | Reuse the canonical AnalysisCompleteness vocabulary instead of a second enum. | src/arctrellis/retrieval/index.py | uncommitted | D-131 |
+| Search documents | Add frozen canonical SearchDocument/SearchField projections over allowlisted structural metadata. | src/arctrellis/retrieval/documents.py, errors.py | 5a329c1 | D-128 |
+| Tokenization | Fix NFKC-preserving-case tokenizer, acronym/digit boundaries and per-field bounds. | src/arctrellis/retrieval/normalization.py, tests/retrieval/test_tokenization.py | 5a329c1 | D-129 |
+| Index snapshot | Add deterministic inverted index with verified statistics, content identity and snapshot isolation. | src/arctrellis/retrieval/index.py, tests/retrieval/test_index.py | 5a329c1 | D-12 |
+| Completeness | Reuse the canonical AnalysisCompleteness vocabulary instead of a second enum. | src/arctrellis/retrieval/index.py | 5a329c1 | D-12 |
 
 Gate: retrieval55/full503 tests OK/skipped7; Ruff lint/145-file format, strict mypy82,
 compileall, pip check and architecture3 pass. Public retrieval imports resolve.

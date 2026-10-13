@@ -1304,7 +1304,7 @@ Append-only record of engineering decisions.
 - Files: decisions.md, flow.md, handoff.md
 
 ### D-128: Project canonical entities into bounded immutable search documents
-- Date / phase / commit: 2026-10-13, Phase 2.3A, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3A, 5a329c1
 - Context: Phase 2.3 needs deterministic retrieval before any explanation layer, over existing canonical CodeEntity records and nothing else.
 - Decision: Add src/arctrellis/retrieval with errors.py, normalization.py, documents.py and index.py. SearchDocument is a frozen projection of exactly one CodeEntity keyed by its canonical CodeEntity.id, carrying entity_kind, language, repository_relative_path (from the entity location only), source_location, name, qualified_name and allowlisted searchable fields. SEARCHABLE_METADATA_KEYS holds eighteen verified existing keys (framework, http_method, route_path, path_completeness, registration_kind, composition_scope, provider, operation_kind, operation_name, target_name, target_basis, effect_stage, import_form, module, imported_name, alias, binding, is_type_only); every other metadata key is excluded by omission. Signatures are never indexed, so signature literals cannot become retrieval content. No entity kind is filtered and no synthetic entity is created. Missing location stays None; line numbers are never invented.
 - Why: Names, qualified names, paths, kinds, languages, routes, frameworks, import and database identifiers are the grounded structural facts a developer searches, and they already exist canonically. Reusing the canonical identity avoids inventing search IDs or duplicating one entity per relationship. Excluding signatures keeps arbitrary source expressions out of the corpus and makes the Phase 2.3 "structural metadata, not source text" boundary enforceable rather than aspirational.
@@ -1313,7 +1313,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/retrieval/errors.py, normalization.py, documents.py, index.py, __init__.py, tests/retrieval/
 
 ### D-129: Fix the identifier tokenizer and Unicode normalization policy
-- Date / phase / commit: 2026-10-13, Phase 2.3A, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3A, 5a329c1
 - Context: PaymentService, payment_service, payment-service, payment.service, payment/service and paymentService must share tokens, and HTTPServer must not split per capital.
 - Decision: canonical_text applies NFKC while preserving case; tokenize splits that cased text on ASCII case/digit boundaries and on every non-alphanumeric character, then case folds each token. Acronym runs keep capitals (HTTPServer -> http, server); Capitalized words, lowercase runs and digit runs are separate tokens; non-ASCII letter runs stay whole. normalize_exact collapses whitespace for exact field comparison. MAX_FIELD_VALUE_LENGTH is 512 characters and MAX_FIELD_TOKENS is 32 tokens per approved field value. Long values are truncated at the prefix rather than rejected. Original identifiers are never mutated.
 - Why: Folding before splitting would erase exactly the camel/Pascal boundaries that carry retrieval signal. A bounded prefix prevents an adversarially long identifier or metadata value from causing unbounded per-field work while keeping normal identifiers whole. Queries are pure data: punctuation, control characters, traversal-like text and instruction-like text are only separators and tokens.
@@ -1325,7 +1325,7 @@ Append-only record of engineering decisions.
 - Regression test: tests.retrieval.test_tokenization.TokenizationTests.test_explicit_token_limit_is_honored
 
 ### D-130: Build one deterministic build-time lexical snapshot
-- Date / phase / commit: 2026-10-13, Phase 2.3A, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3A, 5a329c1
 - Context: Retrieval must not repeat the eager adjacency/sorted snapshot allocation that the public graph APIs perform before any examination budget applies (D-126).
 - Decision: build_search_index(graph, *, analysis_completeness) calls graph.entities() exactly once and graph.relationships() never; documents are sorted by canonical entity ID so insertion order is irrelevant. The index holds MappingProxyType-backed postings, document_lengths, document_frequency and documents_by_id plus document_count, term_count, posting_record_count and average_document_length (0.0 for an empty corpus). __post_init__ verifies lengths, posting ordering, uniqueness and term frequencies against the documents, so a corrupt or overridden container fails with RetrievalInvariantError rather than silently mis-ranking. Non-CodeGraph input raises InvalidSearchIndexError. snapshot_id is a UUID5 content digest of the documents and is explicitly not a repository revision, commit or provenance claim. The snapshot never observes later graph mutation; index construction is bounded only by the canonical entity count and no memory cap is claimed. build_search_index consumes already-produced analysis data and never calls scan_repository, parse_discovered_file or index_repository.
 - Why: Equal graphs built in different insertion orders must produce equal indexes, so ordering cannot come from the mutable graph. Verifying statistics against the documents makes the posting lists trustworthy as a retrieval contract instead of an unchecked cache. A content digest gives callers a stable identity for result provenance without inventing repository revision data.
@@ -1334,7 +1334,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/retrieval/index.py, tests/retrieval/test_index.py
 
 ### D-131: Reuse the canonical analysis completeness vocabulary in retrieval
-- Date / phase / commit: 2026-10-13, Phase 2.3A, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3A, 5a329c1
 - Context: Search results need caller-supplied analysis context so a complete file scan is never mistaken for exhaustive repository semantics.
 - Decision: retrieval imports AnalysisCompleteness from arctrellis.query instead of defining a parallel enum, and build_search_index accepts it with the existing UNKNOWN default. Retrieval never runs analysis, retains no RepositoryIndexResult and cannot infer completeness from graph size.
 - Why: Phase 2.2 already established the canonical complete/partial/failed vocabulary and the rule that callers associate the summary with the same graph revision. A second vocabulary would let two subsystems disagree about the same fact.
