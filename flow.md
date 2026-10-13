@@ -1267,10 +1267,10 @@ existing evidence path. It never creates a graph path to make the run succeed.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Evaluation harness | Add selectors, judgments, standard metrics and honest skip reporting. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/judgments.py | uncommitted | D-137 |
-| Baselines and findings | Add an independent exact/substring baseline and pin measured metrics including regressions. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/test_golden.py, tests/retrieval/smoke.py | uncommitted | D-138 |
-| Mixed repository and negatives | Add the mixed-language retrieval repository, hard negatives and the end-to-end smoke. | tests/retrieval/repository.py, test_hardening.py, smoke.py | uncommitted | D-139 |
-| Bounded field values | Truncate stored projected field values to the documented limit. | src/arctrellis/retrieval/documents.py, tests/retrieval/test_limits.py | uncommitted | D-140 |
+| Evaluation harness | Add selectors, judgments, standard metrics and honest skip reporting. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/judgments.py | d8f5c95 | D-137 |
+| Baselines and findings | Add an independent exact/substring baseline and pin measured metrics including regressions. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/test_golden.py, tests/retrieval/smoke.py | d8f5c95 | D-138 |
+| Mixed repository and negatives | Add the mixed-language retrieval repository, hard negatives and the end-to-end smoke. | tests/retrieval/repository.py, test_hardening.py, smoke.py | d8f5c95 | D-139 |
+| Bounded field values | Truncate stored projected field values to the documented limit. | src/arctrellis/retrieval/documents.py, tests/retrieval/test_limits.py | d8f5c95 | D-140 |
 
 Measured at K=5 over 19 evaluated queries of 20 judgments:
 baseline R 0.8246 / P 0.3158 / MRR 0.7298 / HR 0.8947;

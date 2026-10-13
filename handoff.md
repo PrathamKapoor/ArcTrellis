@@ -2,178 +2,232 @@
 
 ## 1. Current Phase
 
-Phase 2.2A/B/C implementation and verification complete: deterministic structural queries and evidence paths.
-Stage C committed fdab31ba76a9713bf7b513a2761bfa31b6b555f2; implementation references finalized in a later documentation commit.
-Stop before Phase 2.3. Repository C:/Projects/ArcTrellis, Python3.13.14, required Git identity; no remotes.
+Phase 2.3A/B/C implementation and verification complete: deterministic structural retrieval over
+canonical analysis snapshots. Repository C:/Projects/ArcTrellis, Python 3.13.14, required Git
+identity; no remotes. Stop before Phase 2.4.
 
 ## 2. Work Completed
 
-Read required historical records and actual graph/core/index/adapter contracts. Verified baseline417 tests
-OK/skipped7. Added immutable EvidencePath/PathQueryResult/EntityQueryResult, completeness summary/enums,
-typed query failures, explicit JSON primitive serialization and a shared bounded constrained simple-path BFS.
-Original immutable relationships/evidence survive at every hop, including parallel call/test proof sites.
+Read root documentation and the actual graph/core/index/query contracts, then verified the
+reported baseline of 448 tests OK/skipped 7 before changing anything.
 
-Public arctrellis.query APIs: find_paths, trace_endpoint_to_database, trace_callable_to_database,
-get_direct_database_operations, list_direct_database_callers, find_direct_tests_for_symbol, find_callers,
-find_potentially_affected_endpoints and list_endpoints. No new runtime dependency or analysis/core/graph redesign.
+Stage A added an immutable build-time lexical snapshot. Stage B added field-weighted BM25, the
+exact-match ladder, typed filters, candidate budgets and bounded one-hop graph context. Stage C
+added the deterministic evaluation harness, an independent exact/substring baseline, a real
+mixed-language retrieval repository, hard-negative and adversarial suites, and an end-to-end
+static smoke that passes retrieved endpoint IDs into the existing structural query engine.
 
-Stage A committed cc52333412c69b31486ca486101297e84fec6e0a; finalized159df69.
-Stage B committed fda96a0b2f340b7be4a8fc14269d1ba79d7791ad; finalizedb585773.
-Stage C adds real Python/JS/TS/mixed cross-file golden fixtures, static smoke, budget/security/immutability/
-serialization/import-order tests and two reproduced invariant corrections. Independent read-only review
-found no critical/important functional defect; eager public graph snapshot allocation remains documented.
+Public `arctrellis.retrieval` API: `build_search_index`, `search_symbols`, `search_endpoints`,
+`search_tests`, `search_database_operations`, `SearchDocument`, `SearchField`,
+`LexicalSearchIndex`, `SearchFilters`, `SearchHit`, `SearchResult`, `ContextSupport`,
+`MatchBasis`, `ContextDirection`, `ContextEdge`, `GraphContextIndex`, `ExactMatchTier`,
+`RelevanceJudgment`, `ExpectedEntity`, `RetrievalEvaluationResult`, `evaluate_retrieval`,
+`exact_substring_baseline`, `format_evaluation`, `explain_hit`, `tokenize`, `normalize_exact`
+and the retrieval error hierarchy. No new runtime dependency, no analysis/core/graph redesign
+and no source reread anywhere in retrieval.
+
+Stage A committed 5a329c1, finalized d599b4a. Stage B committed 0f55d1c, finalized 2af8bf1.
+Stage C committed d8f5c95 and its documentation is finalized separately afterwards.
 
 ## 3. Files Changed
 
-- src/arctrellis/query/__init__.py: deliberate public function/model/error exports.
-- src/arctrellis/query/errors.py: small caller versus invariant error hierarchy.
-- src/arctrellis/query/models.py: frozen paths/results/context, weakest support, stable IDs, primitive output.
-- src/arctrellis/query/traversal.py: constrained deterministic public-API BFS, budgets, cycles, direction.
-- src/arctrellis/query/database.py: exact endpoint/callable DB patterns and direct operation/caller queries.
-- src/arctrellis/query/dependencies.py: direct/transitive reverse CALLS between callables only.
-- src/arctrellis/query/tests.py: original one-hop incoming TESTS, no runtime/HTTP coverage claim.
-- src/arctrellis/query/impact.py: reverse CALLS*/EXPOSES candidates, original stored edge order.
-- src/arctrellis/query/endpoints.py: bounded canonical metadata inventory, local/declared/effective/application.
-- tests/query/__init__.py, test_paths.py, test_architecture_queries.py: contracts and real adapter integration.
-- tests/query/fixtures.py, test_golden.py: independently specified cross-file Python/JS/TS/mixed golden data.
-- tests/query/test_hardening.py: cycles/parallel edges/stress/security/serialization/corruption/import isolation.
-- tests/query/smoke.py: measured complete static pipeline, real forward/reverse proof and deterministic rerun.
-- docs/superpowers/plans/2026-10-11-structural-query.md: staged local implementation/verification checklist.
-- README.md, decisions.md, flow.md, handoff.md: accurate capabilities, decisions, call flow and continuation.
+- src/arctrellis/retrieval/__init__.py: deliberate public exports only.
+- src/arctrellis/retrieval/errors.py: caller input versus invalid snapshot failures.
+- src/arctrellis/retrieval/normalization.py: NFKC-preserving-case tokenizer and bounded fields.
+- src/arctrellis/retrieval/documents.py: frozen SearchDocument/SearchField and the metadata allowlist.
+- src/arctrellis/retrieval/index.py: deterministic inverted index, verified statistics, snapshot id.
+- src/arctrellis/retrieval/scoring.py: BM25, field weights, exact-match tiers.
+- src/arctrellis/retrieval/context.py: bounded one-hop projection over real stored relationships.
+- src/arctrellis/retrieval/search.py: filters, budgets, hits, results, wrappers, explanations.
+- src/arctrellis/retrieval/evaluation.py: judgments, metrics, baseline, mode comparison, report.
+- tests/retrieval/__init__.py, fixtures.py: small canonical unit graphs.
+- tests/retrieval/repository.py, judgments.py: mixed-language repository and independent judgments.
+- tests/retrieval/test_documents.py, test_tokenization.py, test_index.py: Stage A contracts.
+- tests/retrieval/test_scoring.py, test_search.py, test_context.py, test_limits.py: Stage B.
+- tests/retrieval/test_golden.py, test_hardening.py, smoke.py: Stage C evaluation and hardening.
+- README.md, decisions.md, flow.md, handoff.md: capabilities, decisions, real call flow, state.
 
 ## 4. Current Architecture / State
 
-Existing analysis lifecycle remains:
-index_repository -> import resolution -> call resolution -> HTTP endpoints -> framework flow -> test semantics
--> database materialization -> completed CodeGraph. Queries consume this graph independently and never rerun it.
+The analysis lifecycle is unchanged: `index_repository -> resolve_imports -> resolve_calls ->
+resolve_http_endpoints -> resolve_framework_flow -> analyze_tests -> materialize_database_graph`.
+Retrieval runs afterwards over the completed graph and never reruns it.
 
-trace_endpoint_to_database -> require API_ENDPOINT -> EXPOSES -> callable CALLS* -> eligible DB edge.
-trace_callable_to_database -> require FUNCTION/METHOD -> CALLS* -> eligible DB edge.
-Direct DB/test queries retain only one-hop evidence. Global direct DB callers return paths with source=None;
-group first path entity IDs for owners. MODULE owners are allowed in direct operation lookup only.
-find_callers(reverse CALLS) defaults direct; transitive collects each simple callable prefix and continues.
-find_potentially_affected_endpoints(reverse CALLS* then EXPOSES) includes zero CALLS for changed handlers.
-Returned paths always use original forward edge direction; result.direction distinguishes reverse search.
+```text
+build_search_index(graph, analysis_completeness, include_graph_context, max_context_neighbors)
+ ├─ _validated_entities          one graph.entities() read; corrupt containers rejected
+ ├─ build_document               allowlisted bounded fields; never signatures or arbitrary keys
+ ├─ _build_postings              weighted term frequency -> entity-ID-ordered posting lists
+ ├─ build_graph_context_index    one graph.relationships() read; allowed kinds only; capped lists
+ └─ LexicalSearchIndex           verified statistics, content snapshot id, bounded context
+```
 
-All traversal uses public graph APIs, tuple records and no mutation. Path validation reuses GraphPath,
-checks actual membership and rejects cycles. Original Evidence includes exact retained coordinates/metadata.
-Path UUID5 depends on ordered relationship/entity IDs. Results sort hop count, edge IDs, entity IDs.
-Weakest confidence class and minimum edge score are supporting-edge summaries, not probabilities;
-any absent edge score makes the numeric summary unknown. Empty proof stays empty.
+Indexed: entity name, qualified name, repository-relative path, kind, language, parent id and
+eighteen allowlisted existing metadata keys. Signatures are never indexed. Projected values are
+stored truncated to 512 characters and 32 tokens; the canonical entity keeps its full value.
+Entities without a SourceLocation report no path and no invented lines. Documents are sorted by
+canonical entity ID, so equal graphs built in different insertion orders produce equal indexes.
+`snapshot_id` is a UUID5 content digest of the documents and is never a repository revision.
 
-Defaults: depth12, paths25, examined adjacency records10000; all positive non-boolean ints. Terminal edges
-count toward depth. Every examined record consumes budget, even rejected kinds/cycles. Eligible depth cuts,
-extra terminal beyond cap and budget cuts mark explicit truncation. Inventories default1000 matches/paths
-and10000 examined records. Public adjacency/sorted snapshots allocate before budgets; total snapshot cost
-is not bounded. Query results retain immutable records only, never graphs/source/parser/tracebacks.
-Concurrent external graph mutation is unsupported; callers must treat completed graphs as snapshots.
+Tokenization NFKC-normalizes while preserving case, splits on ASCII case/digit boundaries and on
+every non-alphanumeric character, then case folds each token. `HTTPServer` becomes http+server;
+`PaymentService` and `payment_service` share payment+service. Long values are truncated, not
+rejected. Queries are pure data.
 
-Endpoint scope filters exact metadata: local router facts, declared app routes, effective composed paths,
-application effective mounts only. Router-effective does not establish public exposure. Registrations never merge.
-AnalysisSummary copies actual complete/partial/failed counts; callers pass .completeness for the same revision.
-All-failed maps failed; mixed failed/recovery maps partial; otherwise complete, including empty index.
-Graph-only mode unknown. COMPLETE never means runtime/call-graph exhaustiveness.
+Ranking is field-weighted BM25 with k1=1.2, b=0.75 and smoothed IDF, summed over distinct query
+terms, plus the strongest satisfied exact tier (qualified name 8.0, name 6.0, METHOD+path 5.0,
+alphanumeric name 3.0, prefix 0.5 at four or more characters). Field weights run from name 3.0 to
+kind/language/path 0.5 and are all exact binary fractions. `relevance_score` is exactly
+`bm25_score + exact_match_boost + prefix_boost + graph_context_boost`; every component is
+verified finite and exposed separately. Hits sort by relevance, then exact priority, then entity
+ID. A BM25 value is a relevance score only, never a probability or confidence.
+
+Graph context is an explicit opt-in. Only EXPOSES, CALLS, TESTS, READS_DATABASE,
+WRITES_DATABASE and APPLIES_MIDDLEWARE are projected; DEFINES, IMPORTS, CONTAINS, INHERITS and
+USES never act as invocation. At most one hop is examined. A context hit keeps the stored
+relationship ID, kind, direction, confidence, confidence_score and original Evidence, and reports
+`match_basis=graph_neighbor` without claiming it contains the query terms. The boost is
+`min(1.0, seed_coverage * edge_weight)` taking the maximum over supporting relationships, never a
+sum, so degree cannot inflate it; middleware is weighted 0.4 below invocation. Relationship
+confidence is reported separately and never multiplied into relevance.
+
+Filters mark candidates eligible or ineligible instead of discarding them, so a kind-restricted
+wrapper can still discover endpoints that only context connects to the query, while top_k always
+applies to eligible results. Limits: query length 512, query tokens 24, top_k default 25 and
+maximum 100, posting budget 50000 examined records, graph seed budget 25, neighbor budget 16,
+build-time neighbor cap 16 per entity and direction. Blank, token-free and oversized queries are
+rejected. Every inspected posting record consumes the budget, including filtered-out records.
+`truncated` reports budget-driven incompleteness with a closed reason vocabulary;
+`eligible_candidate_count` reports top_k limiting. Counts are exact only when not truncated.
+
+Defaults are unchanged for every prior subsystem. Graph-only mode stays unknown completeness;
+callers pass the canonical AnalysisSummary completeness from the same revision.
 
 ## 5. Decisions Made
 
-D-118: isolated immutable path/results boundary and typed failures, public graph APIs only.
-D-119: deterministic bounded simple paths, honest truncation and weakest-edge support, never probability.
-D-120: exact endpoint/callable database patterns and category/effect validation.
-D-121: direct DB/direct TESTS proof only, graph-wide callable operation inventory.
-D-122: reverse callable callers and endpoint structural impact, no middleware mixing.
-D-123: canonical route filters and validated lightweight completeness counts.
-D-124: independent Python/JS/TS/mixed cross-file golden evaluation and real static smoke.
-D-125: corrupt DB inventory references/reverse EXPOSES are invariant failures.
-D-126: functional stress/security/import/serialization gates and honest snapshot allocation limitation.
-D-127: correct auxiliary final audit baseline to actual session start333f856.
-References finalized in a later documentation commit under D-004/D-067; no history rewriting.
+D-128: immutable canonical SearchDocument projections over allowlisted structural metadata.
+D-129: NFKC-preserving-case tokenizer, acronym and digit boundaries, per-field bounds.
+D-130: one deterministic build-time lexical snapshot with verified statistics and content id.
+D-131: reuse the canonical AnalysisCompleteness vocabulary instead of a second enum.
+D-132: standard BM25 plus a fixed exact-match ladder with exposed score components.
+D-133: bounded one-hop graph context from real stored relationships only.
+D-134: explicit field weighting for field-aware BM25; supersedes the D-130 raw-count lengths.
+D-135: filter eligibility separated from candidate budgets, with honest truncation reporting.
+D-136: one ranking entry point with kind-restricted delegating wrappers.
+D-137: deterministic evaluation harness with independent judgments and standard metrics.
+D-138: independent exact/substring baseline with regressions reported rather than hidden.
+D-139: mixed-language retrieval repository, hard negatives and the end-to-end smoke.
+D-140: stored projected field values truncated to the documented limit; supersedes part of D-128.
+References finalized in a later documentation commit; no history rewriting.
 
 ## 6. Requirements and Constraints
 
-Local only: no GitHub API/remote changes/push/upload/publish/packages/releases. All commits author and committer
-solely PrathamKapoor <prathamkapoor027@gmail.com>. No attribution lines, secrets or paper/research/tex files.
-No target execution/import/tests/Node/dependency install/config evaluation/database connection/SQL.
-Queries never reread source, synthesize relationships, mutate evidence/confidence or run analysis automatically.
-No servers/CLI/frontend/LLM/retrieval/persistence/cache/workers; Phase2.3 remains unauthorized this session.
-Runtime dependencies, Ruff/mypy configuration, parsing and existing semantic algorithms remain unchanged.
+Local only: no GitHub API, remote changes, push, upload, publication, packages or releases. All
+commits are authored and committed solely by PrathamKapoor <prathamkapoor027@gmail.com>. No
+attribution lines, no secrets, no paper/research/tex files. No target execution, imports, test
+runs, Node, dependency installation, database connections or SQL. Retrieval never rereads source,
+synthesizes entities or relationships, invents Evidence, mutates evidence or confidence, or runs
+analysis automatically. No servers, CLI, frontend, LLM, embeddings, vector store, persistence,
+cache, workers or incremental updates. Runtime dependencies, Ruff and mypy configuration and all
+existing parsing and semantic algorithms are unchanged.
 
 ## 7. Testing and Verification
 
-Project interpreter .venv/Scripts/python.exe, Python3.13.14. Baseline417 tests; StageA424; StageB432;
-StageC448 tests OK/skipped7. Existing platform skips are six Windows symlink privilege cases and absent FIFO API.
-No query test skips. Every gate ran targeted/full tests, Ruff lint/format, strict mypy, compileall, pip check
-and architecture tests before local implementation commits. Final gates repeat after documentation finalization.
+Project interpreter .venv/Scripts/python.exe, Python 3.13.14. Baseline 448; Stage A 503;
+Stage B 589; Stage C 640 tests OK/skipped 7. Existing platform skips are the six Windows symlink
+privilege cases and the absent FIFO API. No retrieval test is skipped. Every gate ran targeted and
+full tests, Ruff lint and format, strict mypy, compileall, pip check and architecture tests.
 
-Commands (prefix .venv\Scripts\python.exe):
-- -m unittest tests.query.test_paths -q:7 tests OK.
-- -m unittest tests.query.test_architecture_queries -q:8 tests OK.
-- -m unittest tests.query.test_golden -q:6 tests OK.
-- -m unittest tests.query.test_hardening -q:10 tests OK.
-- -m unittest discover -s tests/query -t . -q:31 tests OK.
-- -m unittest discover -s tests -q:448 tests OK/skipped7.
-- -m ruff check src tests:All checks passed.
-- -m ruff format --check src tests:135 files already formatted.
-- -m mypy src/arctrellis:77 source files, no issues.
-- -m compileall -q src:exit0.
-- -m pip check:No broken requirements found.
-- -m unittest tests.test_architecture -q:3 tests OK; additional query import boundary/fresh-import audit passes.
-- -m tests.query.smoke:9 complete files,0 partial/failed,13 endpoints,8 DB operations,3 TESTS,
-  8 endpoint-to-DB paths,6 direct DB callers,3 direct test relationships,1 impact candidate,
-  5 endpoint no-known-path results and1 deliberately truncated depth query; deterministic=True, graph unchanged=True.
+Commands (prefix `.venv\Scripts\python.exe`):
+- `-m unittest tests.retrieval.test_documents -q`: 20 tests OK.
+- `-m unittest tests.retrieval.test_tokenization -q`: 17 tests OK.
+- `-m unittest tests.retrieval.test_index -q`: 18 tests OK.
+- `-m unittest tests.retrieval.test_scoring -q`: 24 tests OK.
+- `-m unittest tests.retrieval.test_search -q`: 29 tests OK.
+- `-m unittest tests.retrieval.test_context -q`: 19 tests OK.
+- `-m unittest tests.retrieval.test_limits -q`: 14 tests OK.
+- `-m unittest tests.retrieval.test_golden -q`: 19 tests OK.
+- `-m unittest tests.retrieval.test_hardening -q`: 31 tests OK.
+- `-m unittest discover -s tests/retrieval -t . -q`: 192 tests OK.
+- `-m unittest discover -s tests -q`: 640 tests OK/skipped 7.
+- `-m ruff check src tests`: All checks passed.
+- `-m ruff format --check src tests`: 158 files already formatted.
+- `-m mypy src/arctrellis`: 86 source files, no issues.
+- `-m compileall -q src`: exit 0.
+- `-m pip check`: No broken requirements found.
+- `-m unittest tests.test_architecture -q`: 3 tests OK.
+- `-m tests.retrieval.smoke`: 83 entities, 83 documents, 116 terms, 675 posting records,
+  34 context edges, 9 queries, 45 lexical hits, 45 graph-context hits, 8 queries using context,
+  9 truncated searches, 5 of 7 retrieved endpoints with an existing evidence path, deterministic,
+  graph unchanged, snapshot identity stable.
 
-Real trace: POST /payments -> create_payment -> persist_payment -> sqlalchemy:Payment.execute@121.
-EXPOSES bc2ab733-2822-5a44-b04a-2de21d807f95 at app.py:4, fastapi_decorated_handler, PROVEN/1.0.
-CALLS a551f5bb-fbd1-59ec-af62-52c40c0e3502 at app.py:6, python_imported_symbol_call_resolution, LIKELY/0.75.
-WRITES_DATABASE43992433-4b63-56df-ae47-7e1d9885dde0 at payments.py:5, sqlalchemy_execute_insert, LIKELY/0.85.
-Reverse impact returns the first two original forward relationships, direction=reverse.
+Measured evaluation at K=5 over 19 evaluated queries of 20 judgments: baseline Recall 0.8246,
+Precision 0.3158, MRR 0.7298, HitRate 0.8947; BM25 0.8860/0.3474/0.8070/0.9474; BM25 with graph
+0.8860/0.3211/0.8553/0.9474. Graph context improves listPayments, createPayment, persistPayment,
+payment creation and payment database write and regresses test payment. BM25 regresses test
+payment against the baseline. payment refund endpoint is missed by all three modes.
 
-Functional stress uses42/402/4002 entities, not brittle time limits. Cycles terminate, parallel proof survives,
-100-record/path/depth limits truncate deterministically; full bounded cases return40/400/4000 paths.
-Filesystem/graph insertion guards, recursive result inspection, JSON roundtrip, insertion-order equivalence,
-actual source-free post-analysis queries and fresh imports pass. Independent review ran30 tests before the
-final multihop case and found no critical/important functional defect.
+Smoke trace: `GET /payments -> listPayments -> listAllPayments -> listPayments ->
+sqlalchemy:Payment.execute@221` with the original four relationships, unchanged. POST /payments
+[app.py] and DELETE /payments/{paymentId] return NO_KNOWN_PATH because their handlers call
+service methods that call resolution does not resolve.
 
-Initial missing query package and missing StageB API failures preceded implementation. Initial lint/format
-findings and one deque typing error were corrected without suppression. Golden method-name expectations were
-corrected after inspecting actual resolver metadata. Two corruption regressions failed before D-125 fixes.
-An auxiliary six-session-commit audit initially used older0f781de and failed its count assertion;
-verified first-feature parent333f856 is the actual baseline and the corrected audit passed.
-Initial execution helper setup errors prevented some read-only commands; retry succeeded; no implementation
-occurred during those failures. One PowerShell rg wildcard path was rejected; directory-based rg worked.
+Corrected failures during this phase: `tokenize(max_tokens=0)` returned one token because the
+limit was checked after appending; `bm25_score` returned zero for a zero average length instead
+of dropping the length-normalization term; `GraphContextIndex` cross-direction validation failed
+on legitimately asymmetric capping; context supports named the returned hit as its own neighbor
+and described the seed's direction; graph candidates that share no query token were dropped,
+which deleted the documented discovery case; `graph_context_used` was computed from the full
+ranking instead of the returned top_k; stored field values were unbounded even though tokenization
+was bounded. Fixture-name and metadata expectations in the new tests were corrected against
+actual canonical output rather than by changing production behavior. No existing test was
+disabled and no timing threshold was introduced.
 
 ## 8. Known Issues / Risks
 
-No confirmed unresolved functional defect in the supported query subset. Budgets constrain examined records
-and path enumeration, not eager public graph snapshot allocation/sorting; huge graph degrees can allocate
-large adjacency tuples before budget applies. Static resolution omissions/runtime binding limitations persist.
-Missing proof is not repaired; source-free checks cannot authenticate coherent fabricated input records.
-Caller-supplied completeness must match the graph revision. No cross-platform or runtime guarantee is made.
-Existing revision-only/non-repository-namespaced IDs, native parser and stable-filesystem limitations remain.
+No confirmed unresolved functional defect in the supported retrieval subset. Public graph
+snapshots still allocate and sort eagerly before any examination budget, so index construction and
+entity/relationship enumeration remain bounded only by corpus size; retrieval pays that cost once
+per build instead of once per candidate. Index memory grows with tokens, the deliberate
+memory-for-latency trade, and no memory cap is claimed. The default 25-seed budget truncates
+graph-context expansion on the measured mixed repository, which every smoke query reports.
+Conceptual multiword queries are matched by tokens only: `payment refund endpoint` is missed
+entirely, and `PaymentService` ranks the identically named IMPORT above the CLASS. Adding a
+judgement or changing a weight legitimately changes measured metrics. Static resolution
+omissions, runtime binding limitations, revision-only non-repository-namespaced IDs and native
+parser platform limits are unchanged.
 
 ## 9. Unfinished Work
 
-No mandatory Phase2.2 work remains. Local implementation and documentation reference finalization complete;
-StageC implementation fdab31ba76a9713bf7b513a2761bfa31b6b555f2. Final quality gates repeat after the documentation commit.
-No Phase2.3 implementation started. No optional middleware impact, runtime coverage or graph iteration redesign.
+No mandatory Phase 2.3 work remains. Local implementation and documentation reference finalization
+are complete; Stage C implementation is d8f5c95. No Phase 2.4 work has started. There is no
+optional full-source search, embedding, reranking, natural-language planner or incremental index.
 
 ## 10. Next Subphase
 
-Phase 2.3 — Structural Retrieval and Search Foundation, in a later authorized session only.
-Do not begin it during Phase2.2 finalization.
+Phase 2.4 — Evidence Retrieval Orchestration and Deterministic Query Planning, in a later
+authorized session only. Do not begin it during Phase 2.3 finalization.
 
 ## 11. Critical Context
 
-Potential endpoint/database paths do not establish execution/order/success/SQL/commit/changed rows.
-TESTS means direct static test-call proof, never HTTP coverage. Impact candidates are not guaranteed breakage;
-NO_KNOWN_PATH never proves runtime absence or safe change, regardless of file completeness.
-Forbidden intermediary kinds cannot become invocation paths. Staged/transaction/UNKNOWN DB nodes lack capability
-edges. DELETE uses WRITES_DATABASE plus operation metadata. Effective router-prefix paths are not public mounts.
-Original domain records are frozen; input CodeGraph remains mutable by existing contract, not retained in results.
+The analysis engine establishes what repository evidence supports; the explanation layer explains
+that evidence. Retrieval relevance is not a probability, a confidence or a runtime claim. A
+graph-context hit is a structural association over one stored relationship, never proof of
+execution, order, success or deployment. TESTS context means direct static test-call proof, never
+runtime coverage. A staged SQLAlchemy mutation and a transaction control are retrievable as
+canonical DATABASE_OPERATION facts but carry no read/write capability edge, and retrieval never
+describes them as proven writes. IMPORTS and DEFINES are never context. A truncated result is a
+bounded discovered ranking, never an exhaustive one, and a result never proves repository
+completeness. Retrieval IDs are canonical entity IDs; retrieving an entity does not trace it.
 
 ## 12. Agent Instructions
 
-Read root documents completely and inspect public APIs/tests. Preserve decisions/history and continue D-numbering.
-Finalize only current commit-reference fields, never globally replace historical prose. Use project interpreter
-and complete gates; never weaken strict tooling or invent outputs. Validate file outcome counts before interpreting
-empty semantics. Check author/committer and remotes at every boundary. Keep target input as untrusted static data.
-Stop after this phase; no push, remote, publication, target execution, DB/SQL or automatic analysis on query.
+Read root documents completely and inspect the actual public APIs and tests before changing
+anything. Preserve decisions and history and continue D-numbering from D-140. Finalize only new
+commit-reference fields in a later documentation commit; never globally replace historical prose.
+Use the project interpreter and run the complete gates; never weaken strict tooling and never
+invent measured output. Judge the retrieval implementation against the independent judgments in
+tests/retrieval/judgments.py and report regressions as findings. Validate file outcome counts
+before interpreting empty semantics. Check author, committer and remotes at every boundary and
+keep target input strictly as untrusted static data. Stop after this phase: no push, no remote,
+no publication, no target execution, no database or SQL, and no automatic analysis from retrieval.

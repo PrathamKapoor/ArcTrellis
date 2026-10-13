@@ -1395,7 +1395,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/retrieval/search.py, src/arctrellis/retrieval/__init__.py, tests/retrieval/test_search.py
 
 ### D-137: Add a deterministic evaluation harness with independent relevance judgments
-- Date / phase / commit: 2026-10-13, Phase 2.3C, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3C, d8f5c95
 - Context: Retrieval quality must be measured rather than asserted, and the judgments must not be derived from the ranking they judge.
 - Decision: Add src/arctrellis/retrieval/evaluation.py with ExpectedEntity (kind/name/optional path selectors, never canonical UUIDs), RelevanceJudgment (query, expected selectors, category exact/multi_entity/conceptual, note), QueryOutcome, RetrievalMetrics, ModeEvaluation, RetrievalEvaluationResult, evaluate_retrieval and format_evaluation. Metrics at a documented cut-off k: recall@k = |top-k retrieved and relevant| / |relevant|; precision@k = |top-k retrieved and relevant| / k; mrr@k = 1/rank of the first relevant result inside the top k else 0; hit_rate@k = 1 when any relevant result is inside the top k. All are macro-averaged over evaluated queries. A judgment whose selectors resolve to nothing in the corpus is skipped and reported in skipped_queries, never averaged as zero. Unresolved selectors are reported in unresolved_judgment_labels. Duplicate retrieved identifiers are de-duplicated by first occurrence and counted. Invalid k, non-sequence judgments, non-judgment items, duplicate queries and unknown modes raise RetrievalEvaluationError. Judgments live in tests/retrieval/judgments.py, outside the ranking package.
 - Why: Explicit judgments written from repository reasoning are the only way to check ranking without circularity. Reporting skipped and unresolved queries honestly avoids manufacturing numbers from empty targets.
@@ -1404,7 +1404,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/retrieval/evaluation.py, tests/retrieval/judgments.py, tests/retrieval/test_golden.py
 
 ### D-138: Compare an independent exact/substring baseline and report regressions honestly
-- Date / phase / commit: 2026-10-13, Phase 2.3C, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3C, d8f5c95
 - Context: A single self-evaluation proves nothing; the improvement claim must be measured against a weaker system and against its own failures.
 - Decision: Provide exact_substring_baseline, a non-statistical ranking by exactness tier (exact normalized value, normalized substring, all query tokens contained, any shared token), then by matching-field count and canonical entity ID. It shares no code with BM25, field weights, boosts or graph context. evaluate_retrieval always runs all three modes and records which queries each mode improved and regressed against the baseline. Measured at K=5 over 19 evaluated queries of 20 judgments: baseline Recall 0.8246, Precision 0.3158, MRR 0.7298, HitRate 0.8947; BM25 Recall 0.8860, Precision 0.3474, MRR 0.8070, HitRate 0.9474; BM25+graph Recall 0.8860, Precision 0.3211, MRR 0.8553, HitRate 0.9474. Graph context improves MRR but lowers precision, improves listPayments, createPayment, persistPayment, payment creation and payment database write, and regresses test payment. BM25 regresses test payment against the baseline (rank 1 to rank 2). payment refund endpoint is missed by every mode because no document contains all of payment, refund and endpoint. The repository change that added listAllPayments moved graph Recall from 0.9035 to 0.8860, so the pinned values were re-measured rather than preserved.
 - Why: Reporting only wins would misrepresent the feature. The numbers are pinned in tests as a regression guard, and the failure modes are named so a future change is evaluated against real evidence.
@@ -1413,7 +1413,7 @@ Append-only record of engineering decisions.
 - Files: src/arctrellis/retrieval/evaluation.py, tests/retrieval/test_golden.py, tests/retrieval/smoke.py
 
 ### D-139: Add a mixed-language retrieval repository and hard-negative contracts
-- Date / phase / commit: 2026-10-13, Phase 2.3C, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3C, d8f5c95
 - Context: Retrieval must be verified against real analysis output and must refuse to invent repository facts under adversarial input.
 - Decision: Add tests/retrieval/repository.py with a Python FastAPI/SQLAlchemy service, a JavaScript Express/Prisma service and a TypeScript Prisma service, containing a PaymentService class, reused symbol names across files and languages, duplicated TypeScript and cross-language POST /payments registrations, an unresolved call, a fake client function and a staged mutation. Run it through the complete existing pipeline; never seed graph facts manually. Add tests/retrieval/test_hardening.py covering wrong-kind filters, distinguishable similar names, duplicate names and routes, unknown metadata, unresolved calls, staged operations, direct-test semantics, fake framework shapes, instruction-like and path-like query text, missing locations, incomplete analysis, snapshot isolation, adversarial Unicode, control characters, oversized values, fresh-process import isolation, package import boundaries and the absence of fixture names as ranking literals. Also verify that a retrieved endpoint ID is accepted unchanged by trace_endpoint_to_database and that its existing evidence path is preserved.
 - Why: Hard negatives are where a retrieval layer invents facts. Testing them against real analysis output proves the projection, not a hand-built graph.
@@ -1428,7 +1428,7 @@ Append-only record of engineering decisions.
 - Regression test: tests.retrieval.test_limits.ResourceLimitTests.test_oversized_metadata_value_is_bounded_at_index_build
 
 ### D-140: Bound stored field values to the documented projection limit
-- Date / phase / commit: 2026-10-13, Phase 2.3C correction, uncommitted
+- Date / phase / commit: 2026-10-13, Phase 2.3C correction, d8f5c95
 - Context: D-128 promised bounded searchable values, but only tokenization was bounded.
 - Decision: build_document truncates every projected field value to MAX_FIELD_VALUE_LENGTH (512 characters) before storing and tokenizing it. The canonical CodeEntity keeps its full metadata, so no repository fact is lost; only the search projection is bounded. Supersedes the D-128 statement that only the tokenization input is truncated.
 - Why: A document that can retain an unbounded string is a memory risk that the documented limit does not cover, and the projection exists only to make names searchable.
