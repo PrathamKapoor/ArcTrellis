@@ -1178,3 +1178,54 @@ would make HTTPServer unusable. Treat every character as data, never as an instr
 
 Gate: retrieval55/full503 tests OK/skipped7; Ruff lint/145-file format, strict mypy82,
 compileall, pip check and architecture3 pass. Public retrieval imports resolve.
+
+## 27. Ranked retrieval over the snapshot (Phase 2.3B)
+
+```text
+search_symbols(index, query, top_k=25, filters=None, include_graph_context=False, budgets...)
+ ├─ normalize_query              reject blank/over-long/token-free query text as data
+ ├─ distinct_terms               preserve order, remove repeats; classic BM25 sums distinct terms
+ ├─ _lexical_candidates          scan posting lists once in term order; budget each inspected record
+ │   ├─ bm25_score               weighted tf, smoothed IDF, k1=1.2, b=0.75
+ │   ├─ SearchField.tokens       record which approved fields contained the term
+ │   └─ candidate.eligible       mark filter eligibility without discarding the candidate
+ ├─ _apply_exact_boosts          strongest satisfied tier only; all tiers stay in match_reasons
+ ├─ _expand_context (opt-in)     strongest seeds, bounded one hop, real stored relationships only
+ │   ├─ _context_edges            incoming before outgoing, relationship-ID ordered, length bounded
+ │   ├─ ContextSupport            neighbor/relationship/kind/direction/confidence/original Evidence
+ │   └─ graph_boost = max(...)    capped best contribution, never a sum over degree
+ ├─ filter to eligible           top_k therefore applies to eligible filtered results
+ ├─ _build_hit                   basis lexical / graph_neighbor / lexical_and_graph plus reasons
+ ├─ hit_order                    relevance desc, exact priority desc, entity ID asc
+ └─ SearchResult                 counts, budgets, truncation reasons, snapshot id, completeness
+```
+
+Why each step exists: eligibility is separated from discovery so a kind filter never
+hides connected endpoints; the budget counts only records it actually inspects; every
+supporting relationship is a stored record with its original Evidence; ranking never
+falls back on dictionary order.
+
+```text
+build_search_index(graph, include_graph_context=True, max_context_neighbors=16)
+ ├─ _validated_entities          one graph.entities() read, corrupt containers rejected
+ ├─ build_document               allowlisted bounded fields only, never signatures
+ ├─ _build_postings              weighted tf per (token, entity), entity-ID-ordered posting lists
+ ├─ build_graph_context_index    one graph.relationships() read; allowed kinds only; capped lists
+ └─ LexicalSearchIndex           verified statistics, content snapshot id, bounded context
+```
+
+Both corpus and relationship context come from the same single pass over one snapshot,
+so an index can never mix graph revision A documents with revision B relationships.
+
+## Changes in this session (Phase 2.3B)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| BM25 and boosts | Implement standard BM25, exact-match ladder and transparent score components. | src/arctrellis/retrieval/scoring.py, tests/retrieval/test_scoring.py | uncommitted | D-132 |
+| Graph context | Project bounded one-hop context from real relationships with degree-safe boosts. | src/arctrellis/retrieval/context.py, search.py, tests/retrieval/test_context.py | uncommitted | D-133 |
+| Field weighting | Weight BM25 term frequency and length by projected field importance. | src/arctrellis/retrieval/scoring.py, index.py, tests/retrieval/test_scoring.py | uncommitted | D-134 |
+| Budgets and filters | Separate filter eligibility, enforce budgets and report truncation honestly. | src/arctrellis/retrieval/search.py, documents.py, tests/retrieval/test_limits.py | uncommitted | D-135 |
+| Public API | One scoring entry point with kind-restricted delegating wrappers. | src/arctrellis/retrieval/__init__.py, search.py, tests/retrieval/test_search.py | uncommitted | D-136 |
+
+Gate: retrieval141/full589 tests OK/skipped7; Ruff lint/152-file format, strict mypy85,
+compileall, pip check and architecture3 pass.

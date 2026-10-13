@@ -13,7 +13,7 @@ from types import MappingProxyType
 from arctrellis.core import CodeEntity, EntityKind, SourceLocation
 
 from .errors import RetrievalInvariantError
-from .normalization import MAX_FIELD_TOKENS, canonical_text, tokenize_value
+from .normalization import MAX_FIELD_TOKENS, MAX_FIELD_VALUE_LENGTH, canonical_text, tokenize_value
 
 FIELD_ENTITY_KIND = "entity_kind"
 FIELD_LANGUAGE = "language"
@@ -92,6 +92,7 @@ class SearchDocument:
     name: str
     qualified_name: str
     language: str | None
+    parent_id: str | None
     repository_relative_path: str | None
     source_location: SourceLocation | None
     fields: tuple[SearchField, ...]
@@ -105,6 +106,8 @@ class SearchDocument:
         _require_text(self.qualified_name, "qualified_name")
         if self.language is not None:
             _require_text(self.language, "language")
+        if self.parent_id is not None:
+            _require_text(self.parent_id, "parent_id")
         if self.repository_relative_path is not None:
             _require_text(self.repository_relative_path, "repository_relative_path")
         if self.source_location is not None and not isinstance(self.source_location, SourceLocation):
@@ -153,6 +156,7 @@ class SearchDocument:
             "name": self.name,
             "qualified_name": self.qualified_name,
             "language": self.language,
+            "parent_id": self.parent_id,
             "repository_relative_path": self.repository_relative_path,
             "source_location": (
                 None
@@ -170,10 +174,12 @@ class SearchDocument:
 def build_document(entity: CodeEntity) -> SearchDocument:
     """Project one canonical entity into an immutable, allowlist-bounded document.
 
+    Take only the allowlisted metadata keys and truncate each projected value to
+    ``MAX_FIELD_VALUE_LENGTH``; the canonical CodeEntity keeps the full value.
     Signatures are deliberately excluded: they can embed arbitrary source-level
-    literals, and Phase 2.3 does not index source content. Metadata values are
-    taken only from ``SEARCHABLE_METADATA_KEYS``; empty values are dropped
-    because a database operation with no known target is genuinely unknown.
+    literals, and Phase 2.3 does not index source content. Empty values are
+    dropped because a database operation with no known target is genuinely
+    unknown.
     """
     if not isinstance(entity, CodeEntity):
         raise TypeError("entity must be CodeEntity")
@@ -192,14 +198,17 @@ def build_document(entity: CodeEntity) -> SearchDocument:
         value = metadata.get(key)
         if value:
             raw[key] = canonical_text(value)
-    projected = tuple((name, tokenize_value(value)) for name, value in sorted(raw.items()))
-    fields = tuple(SearchField(name, raw[name], tokens) for name, tokens in projected if tokens)
+    projected = tuple(
+        (name, value[:MAX_FIELD_VALUE_LENGTH], tokenize_value(value)) for name, value in sorted(raw.items())
+    )
+    fields = tuple(SearchField(name, value, tokens) for name, value, tokens in projected if tokens)
     return SearchDocument(
         entity_id=entity.id,
         entity_kind=entity.kind,
         name=entity.name,
         qualified_name=entity.qualified_name,
         language=entity.language,
+        parent_id=entity.parent_id,
         repository_relative_path=None if location is None else location.file_path,
         source_location=location,
         fields=fields,

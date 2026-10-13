@@ -1,10 +1,19 @@
 """Deterministic structural retrieval over existing canonical analysis snapshots.
 
-Phase 2.3A exposes the build-time lexical snapshot only. It indexes structural
-metadata, not source text, and it never executes, imports, installs or networks
-with target repository code.
+Retrieval ranks canonical entities from structural metadata only. It does not
+execute, import, install or network with target repository code, and it never
+reopens source files or mutates the graph it was built from.
 """
 
+from .context import (
+    CONTEXT_EDGE_WEIGHTS,
+    CONTEXT_RELATIONSHIP_KINDS,
+    DEFAULT_MAX_CONTEXT_NEIGHBORS,
+    GRAPH_CONTEXT_BOOST_CAP,
+    ContextDirection,
+    ContextEdge,
+    GraphContextIndex,
+)
 from .documents import (
     FIELD_ENTITY_KIND,
     FIELD_LANGUAGE,
@@ -16,22 +25,98 @@ from .documents import (
     SearchField,
     build_document,
 )
-from .errors import InvalidSearchIndexError, RetrievalError, RetrievalInvariantError
+from .errors import (
+    InvalidSearchIndexError,
+    InvalidSearchLimitError,
+    InvalidSearchQueryError,
+    RetrievalError,
+    RetrievalInvariantError,
+)
 from .index import LexicalSearchIndex, build_search_index
+from .normalization import MAX_FIELD_TOKENS, MAX_FIELD_VALUE_LENGTH, normalize_exact, tokenize
+from .scoring import (
+    BM25_B,
+    BM25_K1,
+    EXACT_NAME_BOOST,
+    EXACT_NORMALIZED_NAME_BOOST,
+    EXACT_QUALIFIED_NAME_BOOST,
+    EXACT_ROUTE_BOOST,
+    NAME_PREFIX_BOOST,
+    ExactMatchTier,
+)
+from .search import (
+    DEFAULT_MAX_EXAMINED_POSTINGS,
+    DEFAULT_MAX_GRAPH_NEIGHBORS,
+    DEFAULT_MAX_GRAPH_SEEDS,
+    DEFAULT_TOP_K,
+    MAX_ACCEPTED_TOP_K,
+    MAX_QUERY_LENGTH,
+    MAX_QUERY_TOKENS,
+    TRUNCATION_REASONS,
+    ContextSupport,
+    MatchBasis,
+    SearchFilters,
+    SearchHit,
+    SearchResult,
+    explain_hit,
+    search_database_operations,
+    search_endpoints,
+    search_symbols,
+    search_tests,
+)
 
 __all__ = [
+    "BM25_B",
+    "BM25_K1",
+    "CONTEXT_EDGE_WEIGHTS",
+    "CONTEXT_RELATIONSHIP_KINDS",
+    "DEFAULT_MAX_CONTEXT_NEIGHBORS",
+    "DEFAULT_MAX_EXAMINED_POSTINGS",
+    "DEFAULT_MAX_GRAPH_NEIGHBORS",
+    "DEFAULT_MAX_GRAPH_SEEDS",
+    "DEFAULT_TOP_K",
+    "EXACT_NAME_BOOST",
+    "EXACT_NORMALIZED_NAME_BOOST",
+    "EXACT_QUALIFIED_NAME_BOOST",
+    "EXACT_ROUTE_BOOST",
     "FIELD_ENTITY_KIND",
     "FIELD_LANGUAGE",
     "FIELD_NAME",
     "FIELD_PATH",
     "FIELD_QUALIFIED_NAME",
+    "GRAPH_CONTEXT_BOOST_CAP",
     "InvalidSearchIndexError",
+    "InvalidSearchLimitError",
+    "InvalidSearchQueryError",
     "LexicalSearchIndex",
+    "MAX_ACCEPTED_TOP_K",
+    "MAX_FIELD_TOKENS",
+    "MAX_FIELD_VALUE_LENGTH",
+    "MAX_QUERY_LENGTH",
+    "MAX_QUERY_TOKENS",
+    "NAME_PREFIX_BOOST",
     "RetrievalError",
     "RetrievalInvariantError",
     "SEARCHABLE_METADATA_KEYS",
+    "TRUNCATION_REASONS",
+    "ContextDirection",
+    "ContextEdge",
+    "ContextSupport",
+    "ExactMatchTier",
+    "GraphContextIndex",
+    "MatchBasis",
     "SearchDocument",
     "SearchField",
+    "SearchFilters",
+    "SearchHit",
+    "SearchResult",
     "build_document",
     "build_search_index",
+    "explain_hit",
+    "normalize_exact",
+    "search_database_operations",
+    "search_endpoints",
+    "search_symbols",
+    "search_tests",
+    "tokenize",
 ]

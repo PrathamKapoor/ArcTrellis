@@ -12,7 +12,6 @@ allocation per search hit. Index construction itself is bounded only by the
 canonical entity/relationship count, and no memory cap is claimed.
 """
 
-from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from json import dumps
@@ -23,12 +22,14 @@ from arctrellis.core import CodeEntity
 from arctrellis.graph import CodeGraph
 from arctrellis.query import AnalysisCompleteness
 
+from .context import DEFAULT_MAX_CONTEXT_NEIGHBORS, GraphContextIndex, build_graph_context_index
 from .documents import SearchDocument, build_document
 from .errors import InvalidSearchIndexError, RetrievalInvariantError
+from .scoring import weighted_document_length, weighted_term_frequency
 
 SNAPSHOT_NAMESPACE = "arctrellis-retrieval-snapshot-v1"
 
-type PostingList = tuple[tuple[str, int], ...]
+type PostingList = tuple[tuple[str, float], ...]
 type PostingLists = Mapping[str, PostingList]
 
 
@@ -48,11 +49,12 @@ class LexicalSearchIndex:
 
     documents: tuple[SearchDocument, ...]
     postings: PostingLists
-    document_lengths: Mapping[str, int]
+    document_lengths: Mapping[str, float]
     document_frequency: Mapping[str, int]
     source_entity_count: int
     source_relationship_count: int
     analysis_completeness: AnalysisCompleteness = AnalysisCompleteness.UNKNOWN
+    context: GraphContextIndex | None = None
     snapshot_id: str = ""
     _documents_by_id: Mapping[str, SearchDocument] = field(init=False, repr=False, compare=False)
     _average_document_length: float = field(init=False, repr=False, compare=False)
@@ -69,26 +71,31 @@ class LexicalSearchIndex:
             raise TypeError("posting maps are required")
         if not isinstance(self.analysis_completeness, AnalysisCompleteness):
             raise TypeError("analysis_completeness must be AnalysisCompleteness")
+        if self.context is not None:
+            if not isinstance(self.context, GraphContextIndex):
+                raise TypeError("context must be GraphContextIndex or None")
+            if self.context.entity_count != len(self.documents):
+                raise RetrievalInvariantError("context must project exactly the indexed corpus")
         lengths = dict(self.document_lengths)
         frequencies = {token: len(postings) for token, postings in self.postings.items()}
-        if set(lengths) != set(ids) or any(
-            lengths[identifier] != document.token_count
-            for identifier, document in zip(ids, self.documents, strict=True)
-        ):
-            raise RetrievalInvariantError("document lengths must match the projected documents")
-        expected: Counter[tuple[str, str]] = Counter()
-        for document in self.documents:
-            expected.update((token, document.entity_id) for token in document.tokens)
+        if set(lengths) != set(ids):
+            raise RetrievalInvariantError("document lengths must describe exactly the projected documents")
+        for identifier, document in zip(ids, self.documents, strict=True):
+            if abs(lengths[identifier] - weighted_document_length(document)) > 1e-9:
+                raise RetrievalInvariantError("document lengths must equal the weighted projection lengths")
+        by_id = {document.entity_id: document for document in self.documents}
         for token, postings in self.postings.items():
             if not isinstance(postings, tuple) or not postings:
                 raise RetrievalInvariantError("posting lists must be nonempty tuples")
             entries = tuple(sorted(postings))
             if entries != postings or len({entry[0] for entry in postings}) != len(postings):
                 raise RetrievalInvariantError("posting lists must be unique and sorted by entity ID")
-            if any(identifier not in lengths or frequency < 1 for identifier, frequency in postings):
+            if any(identifier not in lengths or frequency <= 0 for identifier, frequency in postings):
                 raise RetrievalInvariantError("posting lists must reference projected documents")
-            if any(expected[(token, identifier)] != frequency for identifier, frequency in postings):
-                raise RetrievalInvariantError("posting frequencies must equal the projected term counts")
+            if any(
+                weighted_term_frequency(by_id[identifier], token) != frequency for identifier, frequency in postings
+            ):
+                raise RetrievalInvariantError("posting frequencies must equal the weighted projection term counts")
         if dict(self.document_frequency) != frequencies:
             raise RetrievalInvariantError("document frequency must equal the posting list lengths")
         if type(self.source_entity_count) is not int or type(self.source_relationship_count) is not int:
@@ -137,6 +144,20 @@ class LexicalSearchIndex:
     def empty(self) -> bool:
         return not self.documents
 
+    @property
+    def has_graph_context(self) -> bool:
+        """Whether this snapshot carries a usable bounded one-hop context projection."""
+        return self.context is not None and self.context.edge_count > 0
+
+    @property
+    def context_capped_list_count(self) -> int:
+        """Adjacency lists that reached the per-entity neighbor cap at build time."""
+        return 0 if self.context is None else self.context.capped_list_count
+
+    @property
+    def context_edge_count(self) -> int:
+        return 0 if self.context is None else self.context.edge_count
+
     def to_dict(self) -> dict[str, object]:
         return {
             "snapshot_id": self.snapshot_id,
@@ -147,6 +168,9 @@ class LexicalSearchIndex:
             "source_entity_count": self.source_entity_count,
             "source_relationship_count": self.source_relationship_count,
             "analysis_completeness": self.analysis_completeness.value,
+            "context_edge_count": self.context_edge_count,
+            "context_max_neighbors_per_entity": 0 if self.context is None else self.context.max_neighbors_per_entity,
+            "context_capped_list_count": self.context_capped_list_count,
         }
 
 
@@ -171,15 +195,14 @@ def _validated_entities(graph: CodeGraph) -> tuple[CodeEntity, ...]:
     return entities
 
 
-def _build_postings(documents: tuple[SearchDocument, ...]) -> tuple[PostingLists, Mapping[str, int]]:
-    """Invert token counts into entity-ID-ordered posting lists and lengths."""
-    frequencies: dict[str, dict[str, int]] = {}
-    lengths: dict[str, int] = {}
+def _build_postings(documents: tuple[SearchDocument, ...]) -> tuple[PostingLists, Mapping[str, float]]:
+    """Invert weighted term counts into entity-ID-ordered posting lists and lengths."""
+    frequencies: dict[str, dict[str, float]] = {}
+    lengths: dict[str, float] = {}
     for document in documents:
-        counts = Counter(document.tokens)
-        lengths[document.entity_id] = document.token_count
-        for token, count in counts.items():
-            frequencies.setdefault(token, {})[document.entity_id] = count
+        lengths[document.entity_id] = weighted_document_length(document)
+        for token in sorted(set(document.tokens)):
+            frequencies.setdefault(token, {})[document.entity_id] = weighted_term_frequency(document, token)
     postings = {token: tuple(sorted(per_document.items())) for token, per_document in sorted(frequencies.items())}
     return MappingProxyType(postings), MappingProxyType(lengths)
 
@@ -188,6 +211,8 @@ def build_search_index(
     graph: CodeGraph,
     *,
     analysis_completeness: AnalysisCompleteness = AnalysisCompleteness.UNKNOWN,
+    include_graph_context: bool = True,
+    max_context_neighbors: int = DEFAULT_MAX_CONTEXT_NEIGHBORS,
 ) -> LexicalSearchIndex:
     """Project a completed graph into an immutable deterministic retrieval snapshot.
 
@@ -197,13 +222,29 @@ def build_search_index(
     synthesized; every canonical entity becomes exactly one document, sorted by
     canonical entity ID, so equal graphs built in different insertion orders yield
     equal indexes.
+
+    ``graph.entities()`` is read exactly once and ``graph.relationships()`` at most
+    once, so the eager snapshot allocation that public graph APIs perform is paid
+    once per build instead of once per candidate or hit. The optional one-hop
+    context projection is built from that same single relationship read, so the
+    lexical corpus and the relationship context can never come from two different
+    graph revisions.
     """
     if not isinstance(analysis_completeness, AnalysisCompleteness):
         raise TypeError("analysis_completeness must be AnalysisCompleteness")
+    if type(include_graph_context) is not bool:
+        raise TypeError("include_graph_context must be a boolean")
     entities = _validated_entities(graph)
     documents = tuple(sorted((build_document(entity) for entity in entities), key=lambda item: item.entity_id))
     postings, lengths = _build_postings(documents)
     frequencies = MappingProxyType({token: len(entries) for token, entries in postings.items()})
+    context = None
+    if include_graph_context:
+        context = build_graph_context_index(
+            graph.relationships(),
+            frozenset(document.entity_id for document in documents),
+            max_neighbors_per_entity=max_context_neighbors,
+        )
     return LexicalSearchIndex(
         documents=documents,
         postings=postings,
@@ -212,4 +253,5 @@ def build_search_index(
         source_entity_count=graph.entity_count,
         source_relationship_count=graph.relationship_count,
         analysis_completeness=analysis_completeness,
+        context=context,
     )

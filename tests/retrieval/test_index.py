@@ -44,13 +44,15 @@ class IndexContractTests(unittest.TestCase):
         expected_average = sum(index.document_lengths.values()) / index.document_count
         self.assertAlmostEqual(index.average_document_length, expected_average)
 
-    def test_postings_record_actual_term_frequencies(self):
+    def test_postings_record_weighted_term_frequencies(self):
+        from arctrellis.retrieval.scoring import weighted_term_frequency
+
         index = build_search_index(payment_graph())
         document = index.document("class:PaymentService")
         for token in document.distinct_tokens:
             with self.subTest(token=token):
                 stored = dict(index.postings[token]).get("class:PaymentService")
-                self.assertEqual(stored, document.tokens.count(token))
+                self.assertEqual(stored, weighted_term_frequency(document, token))
 
     def test_documents_are_sorted_by_entity_id_not_insertion_order(self):
         forward = build_search_index(payment_graph())
@@ -78,6 +80,9 @@ class IndexContractTests(unittest.TestCase):
             [
                 "analysis_completeness",
                 "average_document_length",
+                "context_capped_list_count",
+                "context_edge_count",
+                "context_max_neighbors_per_entity",
                 "document_count",
                 "posting_record_count",
                 "snapshot_id",
