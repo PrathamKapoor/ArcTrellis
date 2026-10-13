@@ -1221,11 +1221,11 @@ so an index can never mix graph revision A documents with revision B relationshi
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| BM25 and boosts | Implement standard BM25, exact-match ladder and transparent score components. | src/arctrellis/retrieval/scoring.py, tests/retrieval/test_scoring.py | uncommitted | D-132 |
-| Graph context | Project bounded one-hop context from real relationships with degree-safe boosts. | src/arctrellis/retrieval/context.py, search.py, tests/retrieval/test_context.py | uncommitted | D-133 |
-| Field weighting | Weight BM25 term frequency and length by projected field importance. | src/arctrellis/retrieval/scoring.py, index.py, tests/retrieval/test_scoring.py | uncommitted | D-134 |
-| Budgets and filters | Separate filter eligibility, enforce budgets and report truncation honestly. | src/arctrellis/retrieval/search.py, documents.py, tests/retrieval/test_limits.py | uncommitted | D-135 |
-| Public API | One scoring entry point with kind-restricted delegating wrappers. | src/arctrellis/retrieval/__init__.py, search.py, tests/retrieval/test_search.py | uncommitted | D-136 |
+| BM25 and boosts | Implement standard BM25, exact-match ladder and transparent score components. | src/arctrellis/retrieval/scoring.py, tests/retrieval/test_scoring.py | 0f55d1c | D-132 |
+| Graph context | Project bounded one-hop context from real relationships with degree-safe boosts. | src/arctrellis/retrieval/context.py, search.py, tests/retrieval/test_context.py | 0f55d1c | D-133 |
+| Field weighting | Weight BM25 term frequency and length by projected field importance. | src/arctrellis/retrieval/scoring.py, index.py, tests/retrieval/test_scoring.py | 0f55d1c | D-134 |
+| Budgets and filters | Separate filter eligibility, enforce budgets and report truncation honestly. | src/arctrellis/retrieval/search.py, documents.py, tests/retrieval/test_limits.py | 0f55d1c | D-135 |
+| Public API | One scoring entry point with kind-restricted delegating wrappers. | src/arctrellis/retrieval/__init__.py, search.py, tests/retrieval/test_search.py | 0f55d1c | D-136 |
 
 Gate: retrieval141/full589 tests OK/skipped7; Ruff lint/152-file format, strict mypy85,
 compileall, pip check and architecture3 pass.
