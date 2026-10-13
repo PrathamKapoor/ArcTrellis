@@ -54,11 +54,14 @@ Current capabilities:
 - Conservative Python/JS/TS TEST declarations and direct call-site TESTS evidence, without runtime coverage.
 - Provenance-backed SQLAlchemy/Prisma operations and direct database-capability graph relationships.
 - Evidence-preserving endpoint/database, direct test, caller and potential endpoint-impact queries.
+- Deterministic structural retrieval with BM25 ranking, exact-symbol ladders and bounded one-hop graph context.
+- Typed structured query intents, deterministic plans and conservative canonical entity selection.
+- JSON-compatible evidence bundles that preserve stored relationships, confidence and truncation reasons.
+- One programmatic `analyze_repository` entry point producing a snapshot aligned with the final graph.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
-Planned capabilities: repository acquisition and persistent indexing; lexical, semantic and structural symbol
-search; architecture questions; execution and dependency tracing; source evidence
-inspection; reverse dependency impact; retrieval and evidence quality evaluation.
+Planned capabilities: an offline command-line interface; a loopback-only read-only HTTP API; architecture
+questions; source evidence inspection; retrieval and evidence quality evaluation.
 
 ## Development
 
@@ -1072,4 +1075,119 @@ Verified local commands:
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests/retrieval -t . -q
 .venv\Scripts\python.exe -m tests.retrieval.smoke
+```
+
+## Structured Query Orchestration (Phase 2.4)
+
+`arctrellis.orchestration` connects the retrieval engine to the structural query engine through
+an explicit, validated intent contract. The governing rule is that **a lexical score is not entity
+identity**: retrieval finds candidate entities, selection decides which canonical entity the caller
+meant, the existing query engine executes, and the bundle reports exactly what repository evidence
+supports.
+
+```python
+from arctrellis.orchestration import QueryIntent, QueryRequest, analyze_repository, run_query
+
+snapshot = analyze_repository(r"C:\Projects\SampleRepo")
+
+# 1. Search. Ranked candidates only; nothing is selected for you.
+found = run_query(snapshot, QueryRequest(intent=QueryIntent.SEARCH_ENTITIES, search_text="list payments"))
+for candidate in found.candidate_entities:
+    print(candidate.entity_id, candidate.entity_kind.value, candidate.name, candidate.relevance_score)
+
+# 2. Choose one canonical ID explicitly, then trace that exact entity.
+bundle = run_query(
+    snapshot,
+    QueryRequest(intent=QueryIntent.TRACE_ENDPOINT_TO_DATABASE, entity_id=found.candidate_entities[0].entity_id),
+)
+for path in bundle.paths:
+    for relationship in path.relationships:
+        print(relationship.relationship_kind, relationship.source_entity_id, "->", relationship.target_entity_id)
+```
+
+`analyze_repository(root)` runs the real analysis stages in their verified dependency order
+(`index_repository`, `resolve_imports`, `resolve_calls`, `resolve_http_endpoints`,
+`resolve_framework_flow`, `analyze_tests`, `materialize_database_graph`) and then builds the
+retrieval index from that final graph, so lexical search and structural queries can never be
+served from two different repository states. Snapshot construction asserts that the retrieval
+documents correspond one-to-one with the final graph entities. No `ParsedSource`, syntax tree or
+source byte is retained, and no stage executes, imports or installs target code.
+
+### Structured intents
+
+Nine intents exist, each backed by an existing query function. No intent has a placeholder
+backend.
+
+| Intent | Source entity | Backend |
+|---|---|---|
+| `SEARCH_ENTITIES` | none | `search_symbols` |
+| `LIST_ENDPOINTS` | none | `list_endpoints` |
+| `LIST_DATABASE_CALLERS` | none | `list_direct_database_callers` |
+| `TRACE_ENDPOINT_TO_DATABASE` | `API_ENDPOINT` | `trace_endpoint_to_database` |
+| `TRACE_CALLABLE_TO_DATABASE` | `FUNCTION`/`METHOD` | `trace_callable_to_database` |
+| `DIRECT_DATABASE_OPERATIONS` | `FUNCTION`/`METHOD`/`MODULE` | `get_direct_database_operations` |
+| `FIND_DIRECT_TESTS` | `FUNCTION`/`METHOD` | `find_direct_tests_for_symbol` |
+| `FIND_CALLERS` | `FUNCTION`/`METHOD` | `find_callers` |
+| `FIND_AFFECTED_ENDPOINTS` | `FUNCTION`/`METHOD` | `find_potentially_affected_endpoints` |
+
+There is no natural-language inference. `search_text` is retrieval input only: it can never imply
+an architectural intent. Selector forms are mutually exclusive: exactly one of `entity_id`,
+`qualified_name`, `http_method` + `route_path`, or `search_text` may be present. An option the
+chosen intent cannot consume is rejected with `UnsupportedIntentError` rather than silently
+ignored, so `top_k` on a trace or `include_graph_context` on a query fails loudly. `top_k` and
+`max_examined_postings` are retrieval budgets; `max_paths`, `max_depth` and `max_expansions` are
+traversal budgets. All limits must be positive non-boolean integers.
+
+### Plans
+
+`build_plan(request)` returns an immutable `QueryPlan` holding only data: the step vocabulary
+(`SEARCH_CANDIDATES`, `SELECT_CANONICAL_ENTITY`, `EXECUTE_STRUCTURAL_QUERY`, `ASSEMBLE_EVIDENCE`),
+the required source entity kinds, the name of the structural query to run, the limits and the
+planned output type. A plan holds no callable, no graph, no timestamp and no random value, so
+equal requests always produce equal plans.
+
+### Conservative entity selection
+
+| Selector | Outcome |
+|---|---|
+| Exact canonical entity ID | `RESOLVED` if the entity exists and its kind satisfies the intent, `NOT_FOUND` if absent, `INVALID` if the kind is wrong |
+| Exact qualified name | `RESOLVED` when exactly one eligible entity matches, `AMBIGUOUS` with the full candidate set otherwise |
+| Exact HTTP method and route | `RESOLVED` when exactly one registration matches, `AMBIGUOUS` otherwise |
+| `search_text` | `CANDIDATES`: ranked candidates and **no** selected entity, so no structural query can run |
+
+`entity_kind`, `language`, `path_prefix`, `framework` and `endpoint_scope` are constraints that
+narrow your own selector; they never choose for you. Duplicate endpoint registrations and a
+`PaymentService` CLASS versus `PaymentService` IMPORT are first-class expected outcomes reported
+as ambiguity, never resolved by rank. An exact-ID selection scans the snapshot's exact-name and
+route lookups, which is exhaustive, so a resolved selection never claims truncation.
+
+### Evidence bundles
+
+`run_query(snapshot, request)` returns an `EvidenceBundle` with `schema_version=1` and a status of
+`SEARCH_RESULTS`, `EVIDENCE_PATHS`, `INVENTORY`, `NO_KNOWN_PATH`, `AMBIGUOUS_SOURCE`,
+`NOT_FOUND_SOURCE` or `INVALID_SOURCE`. Every relationship in a bundle is the original stored
+record with its original ID, kind, confidence classification, numeric score and original
+`Evidence` IDs, source locations and analysis methods. Confidence is summarized with the existing
+weakest-edge contract and is never multiplied into a probability. Truncation reasons and analysis
+completeness propagate unchanged, and `limitations` states the boundaries explicitly, including
+that `no_known_path_is_not_proof_of_absence`.
+
+`bundle.to_dict()` produces JSON primitives only, with no timestamp, absolute path, source byte,
+declaration signature or traceback, so equal requests over equal snapshots serialize identically.
+Entity projection deliberately omits declaration signatures and all metadata outside a nine-key
+allowlist, because a signature is source text.
+
+### What Phase 2.4 does not provide
+
+- Natural-language intent inference from a sentence.
+- Automatic selection of the top-ranked lexical hit for a structural query.
+- Reranking of stored graph confidence by retrieval relevance.
+- Conversion of `IMPORTS`, `DEFINES`, `TESTS` or `APPLIES_MIDDLEWARE` into execution.
+- Probabilities of runtime behavior.
+- Caching or persistence of an analysis snapshot across processes.
+
+Verified local commands:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/orchestration -t . -q
 ```

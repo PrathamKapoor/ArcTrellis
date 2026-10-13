@@ -1271,6 +1271,7 @@ existing evidence path. It never creates a graph path to make the run succeed.
 | Baselines and findings | Add an independent exact/substring baseline and pin measured metrics including regressions. | src/arctrellis/retrieval/evaluation.py, tests/retrieval/test_golden.py, tests/retrieval/smoke.py | d8f5c95 | D-138 |
 | Mixed repository and negatives | Add the mixed-language retrieval repository, hard negatives and the end-to-end smoke. | tests/retrieval/repository.py, test_hardening.py, smoke.py | d8f5c95 | D-139 |
 | Bounded field values | Truncate stored projected field values to the documented limit. | src/arctrellis/retrieval/documents.py, tests/retrieval/test_limits.py | d8f5c95 | D-140 |
+| Public evaluation exports | Export the evaluation surface and assert the documented entry-point imports. | src/arctrellis/retrieval/__init__.py, tests/retrieval/test_index.py, test_hardening.py | d65d083 | D-141 |
 
 Measured at K=5 over 19 evaluated queries of 20 judgments:
 baseline R 0.8246 / P 0.3158 / MRR 0.7298 / HR 0.8947;
@@ -1281,4 +1282,125 @@ baseline in both BM25 modes; payment refund endpoint is missed by all three mode
 
 Gate: retrieval192/full640 tests OK/skipped7; Ruff lint/158-file format, strict mypy86,
 compileall, pip check and architecture3 pass.
-| Public evaluation exports | Export the evaluation surface and assert the documented entry-point imports. | src/arctrellis/retrieval/__init__.py, tests/retrieval/test_index.py, test_hardening.py | d65d083 | D-141 |
+
+
+## 29. Repository analysis orchestration (Phase 2.4D)
+
+Input: one ordinary local directory path and an optional per-file byte bound.
+
+```text
+analyze_repository(root)              src/arctrellis/orchestration/pipeline.py
+ |- index_repository(root)            existing ingestion + indexing; FAILED/PARTIAL file outcomes
+ |- resolve_imports(index)            existing resolution; IMPORT resolution
+ |- resolve_calls(index, imports)     existing resolution; CALLS only for unique targets
+ |- resolve_http_endpoints(index, imports, calls)   existing EXPOSES detection
+ |- resolve_framework_flow(index, imports, calls, endpoints)   existing router composition
+ |- analyze_tests(index, imports, calls, base_graph=flow.graph)   existing TESTS edges
+ |- materialize_database_graph(index, base_graph=tests.graph)     existing READS/WRITES_DATABASE
+ |- AnalysisSummary(...)              existing complete/partial/failed to AnalysisCompleteness
+ |- build_search_index(database.graph, analysis_completeness=..., include_graph_context=...)
+ |- document_count check              retrieval must project exactly the final graph entities
+ `- AnalysisSnapshot(...)             counts + completeness + final CodeGraph + retrieval index
+     |- __post_init__                  assert retrieval documents == graph entities, one to one
+     |- entities_with_qualified_name   exact match -> sorted entity IDs
+     |- entities_with_route            exact METHOD + route -> sorted entity IDs
+     `- snapshot_id                    retrieval content digest, never a revision claim
+```
+
+Why each step exists: imports precede calls because call resolution reuses the
+resolved module; endpoint detection needs call targets so handler chains are
+available; framework composition needs endpoints to synthesize effective
+registrations; TESTS needs calls to attribute a test to a production symbol;
+database materialization needs the test-enriched graph so a database trace is not
+built from an intermediate revision; the retrieval index is built last so lexical
+and structural answers describe the same repository state. Intermediate stage
+results are dropped when the call returns, so no ParsedSource, syntax tree or
+source byte survives.
+
+Failures: discovery and collision invariants keep propagating as their existing
+typed ingestion/indexing errors. A per-file failure is a bounded FAILED or
+PARTIAL outcome inside indexing; it is visible through the counts and forces
+AnalysisCompleteness away from COMPLETE rather than being swallowed. A retrieval
+projection that does not match the final graph raises OrchestrationInvariantError
+instead of serving mismatched results.
+
+Output: one AnalysisSnapshot. No mutation path is exposed in the public API.
+
+## 30. Structured query orchestration (Phase 2.4A-C)
+
+Input: one AnalysisSnapshot and one validated QueryRequest.
+
+```text
+run_query(snapshot, request)          src/arctrellis/orchestration/runner.py
+ |- build_plan(request)               src/arctrellis/orchestration/planning.py; pure data steps
+ |   `- PlanStep                      SEARCH_CANDIDATES | SELECT_CANONICAL_ENTITY |
+ |                                    EXECUTE_STRUCTURAL_QUERY | ASSEMBLE_EVIDENCE
+ |- SELECTION                         src/arctrellis/orchestration/selection.py
+ |   |- SEARCH_ENTITIES -> search_candidates()
+ |   |   |- SearchFilters             request filters translated to retrieval filters
+ |   |   |- search_symbols()          existing BM25 + bounded graph context
+ |   |   `- SelectionStatus.CANDIDATES ranked candidates; never names an entity
+ |   |- ENTITY_ID      -> _select_by_entity_id()      kind verified, else INVALID
+ |   |- QUALIFIED_NAME -> _select_by_qualified_name()  one match RESOLVED, many AMBIGUOUS
+ |   |- ENDPOINT_METHOD_PATH -> _select_by_route()     one match RESOLVED, many AMBIGUOUS
+ |   `- NONE           -> NOT_REQUIRED                graph-wide inventory intent
+ |- EXECUTION                         src/arctrellis/orchestration/execution.py; read only
+ |   |- list_endpoints()
+ |   |- list_direct_database_callers()
+ |   |- trace_endpoint_to_database()
+ |   |- trace_callable_to_database()
+ |   |- get_direct_database_operations()
+ |   |- find_direct_tests_for_symbol()
+ |   |- find_callers()
+ |   `- find_potentially_affected_endpoints()   all existing arctrellis.query functions
+ `- build_bundle(...)                 src/arctrellis/orchestration/evidence.py
+     |- entity_summary()              identity + allowlisted canonical facts, no signature
+     |- path_evidence()               stored relationship + original Evidence per hop
+     `- EvidenceBundle.to_dict()      JSON primitives only; deterministic; schema_version 1
+```
+
+Nested calls: build_plan is pure and calls nothing outside the orchestration
+package; selection reads only the retrieval projection already in the snapshot and
+never re-reads source; execution calls exactly one existing query function per
+intent and forwards the request's own validated budgets and completeness; bundle
+assembly re-reads only the analyzed graph, never the repository.
+
+Why each step exists: the plan makes the intended operation inspectable before
+anything runs; conservative selection keeps entity identity a caller decision;
+execution reuses the established query engine instead of a second traversal; the
+bundle is the single stable contract a later CLI or HTTP layer can render without
+re-deriving evidence.
+
+Output: one EvidenceBundle with status SEARCH_RESULTS, EVIDENCE_PATHS, INVENTORY,
+NO_KNOWN_PATH, AMBIGUOUS_SOURCE, NOT_FOUND_SOURCE or INVALID_SOURCE.
+
+Failures: invalid requests raise InvalidQueryRequestError, InvalidQueryLimitError
+or UnsupportedIntentError at construction, never at execution. A bundle never
+reports a path it did not execute, never converts IMPORTS/DEFINES/TESTS/
+APPLIES_MIDDLEWARE into execution, and never multiplies confidence scores into a
+probability.
+
+## Changes in this session (Phase 2.4)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Typed intents | Add nine structured intents, a validated request and a per-intent option contract. | src/arctrellis/orchestration/models.py, errors.py | uncommitted | D-142 |
+| Plans | Add deterministic pure-data plans with inspectable steps, limits and output type. | src/arctrellis/orchestration/planning.py | uncommitted | D-142 |
+| Selection | Resolve exact IDs, qualified names and routes; report ambiguity; never select from BM25. | src/arctrellis/orchestration/selection.py | uncommitted | D-143 |
+| Execution | Dispatch to the existing query engine and preserve its paths, confidence and truncation. | src/arctrellis/orchestration/execution.py | uncommitted | D-144 |
+| Evidence | Assemble deterministic JSON bundles with preserved Evidence and explicit limitations. | src/arctrellis/orchestration/evidence.py, models.py | uncommitted | D-144 |
+| Orchestration | Add one analyze_repository entry point and a snapshot aligned with the final graph. | src/arctrellis/orchestration/pipeline.py | uncommitted | D-145 |
+| Runner and API | Add one request execution order and the package export surface. | src/arctrellis/orchestration/runner.py, __init__.py | uncommitted | D-142 |
+| Fixtures | Add mixed Python/JS/TS orchestration repositories including every negative case. | tests/orchestration/repository.py | uncommitted | D-139 |
+| Tests | Add orchestration tests across requests, plans, selection, execution, pipeline and end-to-end flow. | tests/orchestration/*.py | uncommitted | D-142, D-143, D-144, D-145 |
+
+Gate: orchestration134/full774 tests OK/skipped7; Ruff lint/175-file format, strict
+mypy95, compileall, pip check and architecture3 pass.
+
+Honest limitations measured in this session: a Python handler that calls a method
+through a bound instance variable (`service.createRefund()`) produces no CALLS
+edge, because instance-attribute resolution is outside the current call-resolution
+subset; the fixture therefore routes its traced endpoint through an imported
+module function. Selection scans the snapshot exact-name and route lookups, which
+is exhaustive for exact selectors and therefore never truncated; only the lexical
+path is bounded by a posting budget.
