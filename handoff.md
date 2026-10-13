@@ -2,107 +2,111 @@
 
 ## 1. Current Phase
 
-Phase 2.3A/B/C implementation and verification complete: deterministic structural retrieval over
-canonical analysis snapshots. Repository C:/Projects/ArcTrellis, Python 3.13.14, required Git
-identity; no remotes. Stop before Phase 2.4.
+Phase 2.4 (A/B/C/D) implementation and verification complete: typed structural query intents,
+deterministic plans, conservative canonical entity selection, evidence bundles and full
+repository analysis orchestration. Repository C:/Projects/ArcTrellis, Python 3.13.14, required Git
+identity, no remotes. Next authorized work is Phase 2.5, the offline CLI.
 
 ## 2. Work Completed
 
-Read root documentation and the actual graph/core/index/query contracts, then verified the
-reported baseline of 448 tests OK/skipped 7 before changing anything.
+Read the three root documents and the actual graph/core/indexing/query/retrieval contracts, then
+verified the reported baseline of 640 tests OK/skipped 7 before changing anything.
 
-Stage A added an immutable build-time lexical snapshot. Stage B added field-weighted BM25, the
-exact-match ladder, typed filters, candidate budgets and bounded one-hop graph context. Stage C
-added the deterministic evaluation harness, an independent exact/substring baseline, a real
-mixed-language retrieval repository, hard-negative and adversarial suites, and an end-to-end
-static smoke that passes retrieved endpoint IDs into the existing structural query engine.
+Phase 2.4A added `arctrellis.orchestration` with a nine-member `QueryIntent` vocabulary, an
+immutable `QueryRequest` validated in `__post_init__`, a per-intent `IntentSpec` table and pure
+data `QueryPlan` values. Phase 2.4B added conservative canonical selection with explicit
+`RESOLVED`/`AMBIGUOUS`/`NOT_FOUND`/`INVALID`/`CANDIDATES`/`NOT_REQUIRED` outcomes. Phase 2.4C
+added structural execution that dispatches to the existing `arctrellis.query` functions and an
+`EvidenceBundle` with `schema_version=1`. Phase 2.4D added `analyze_repository(root)` and the
+`AnalysisSnapshot` that keeps the final graph and the retrieval index built from that same graph.
 
-Public `arctrellis.retrieval` API: `build_search_index`, `search_symbols`, `search_endpoints`,
-`search_tests`, `search_database_operations`, `SearchDocument`, `SearchField`,
-`LexicalSearchIndex`, `SearchFilters`, `SearchHit`, `SearchResult`, `ContextSupport`,
-`MatchBasis`, `ContextDirection`, `ContextEdge`, `GraphContextIndex`, `ExactMatchTier`,
-`RelevanceJudgment`, `ExpectedEntity`, `RetrievalEvaluationResult`, `evaluate_retrieval`,
-`exact_substring_baseline`, `format_evaluation`, `explain_hit`, `tokenize`, `normalize_exact`
-and the retrieval error hierarchy. The package exports 67 deliberate names. No new runtime
-dependency, no analysis/core/graph redesign and no source reread anywhere in retrieval.
+Public `arctrellis.orchestration` API: `analyze_repository`, `AnalysisSnapshot`, `AnalysisCounts`,
+`QueryIntent`, `QueryRequest`, `IntentSpec`, `intent_spec`, `SelectorForm`, `PlanStep`,
+`QueryPlan`, `build_plan`, `plan_query`, `SelectionStatus`, `SelectionBasis`, `SelectionResult`,
+`EntityCandidate`, `select_canonical_entity`, `SearchCandidates`, `search_candidates`,
+`ExecutionOutcome`, `execute_plan`, `EvidenceBundle`, `BundleStatus`, `EntitySummary`,
+`EvidenceDetail`, `RelationshipEvidence`, `PathEvidence`, `build_bundle`, `entity_candidate`,
+`entity_summary`, `path_evidence`, `run_query`, `SCHEMA_VERSION`, `CALLABLE_KINDS`,
+`DATABASE_OPERATION_KINDS`, `ENDPOINT_SCOPES` and the orchestration error hierarchy.
 
-Stage A committed 5a329c1, finalized d599b4a. Stage B committed 0f55d1c, finalized 2af8bf1.
-Stage C committed d8f5c95, a public-API export correction committed d65d083, and documentation is
-finalized separately afterwards.
+Implementation committed `83f50a6`; documentation committed `f33fd43`. Commit-reference fields are
+finalized in a later documentation commit; no history is rewritten.
 
 ## 3. Files Changed
 
-- src/arctrellis/retrieval/__init__.py: deliberate public exports only.
-- src/arctrellis/retrieval/errors.py: caller input versus invalid snapshot failures.
-- src/arctrellis/retrieval/normalization.py: NFKC-preserving-case tokenizer and bounded fields.
-- src/arctrellis/retrieval/documents.py: frozen SearchDocument/SearchField and the metadata allowlist.
-- src/arctrellis/retrieval/index.py: deterministic inverted index, verified statistics, snapshot id.
-- src/arctrellis/retrieval/scoring.py: BM25, field weights, exact-match tiers.
-- src/arctrellis/retrieval/context.py: bounded one-hop projection over real stored relationships.
-- src/arctrellis/retrieval/search.py: filters, budgets, hits, results, wrappers, explanations.
-- src/arctrellis/retrieval/evaluation.py: judgments, metrics, baseline, mode comparison, report.
-- tests/retrieval/__init__.py, fixtures.py: small canonical unit graphs.
-- tests/retrieval/repository.py, judgments.py: mixed-language repository and independent judgments.
-- tests/retrieval/test_documents.py, test_tokenization.py, test_index.py: Stage A contracts.
-- tests/retrieval/test_scoring.py, test_search.py, test_context.py, test_limits.py: Stage B.
-- tests/retrieval/test_golden.py, test_hardening.py, smoke.py: Stage C evaluation and hardening.
+- src/arctrellis/orchestration/__init__.py: deliberate public exports only.
+- src/arctrellis/orchestration/errors.py: caller input, unavailable analysis, broken invariant.
+- src/arctrellis/orchestration/models.py: intents, request validation, plans, selection and bundle models.
+- src/arctrellis/orchestration/planning.py: deterministic request-to-plan translation.
+- src/arctrellis/orchestration/selection.py: exact-ID, qualified-name, route and lexical selection.
+- src/arctrellis/orchestration/execution.py: dispatch to the existing structural query engine.
+- src/arctrellis/orchestration/evidence.py: bundle assembly with preserved Evidence and limitations.
+- src/arctrellis/orchestration/pipeline.py: analyze_repository and the aligned AnalysisSnapshot.
+- src/arctrellis/orchestration/runner.py: the single request execution order.
+- tests/orchestration/repository.py: mixed Python/JS/TS fixtures plus every negative case.
+- tests/orchestration/test_requests.py, test_plans.py: validation and plan contracts.
+- tests/orchestration/test_selection.py: the fifteen canonical-selection cases.
+- tests/orchestration/test_execution.py: trace reuse, evidence preservation, bundles, search.
+- tests/orchestration/test_pipeline.py: analysis orchestration, partial analysis, reproducibility.
+- tests/orchestration/test_end_to_end.py: the complete analyze-to-bundle workflow.
 - README.md, decisions.md, flow.md, handoff.md: capabilities, decisions, real call flow, state.
 
 ## 4. Current Architecture / State
 
-The analysis lifecycle is unchanged: `index_repository -> resolve_imports -> resolve_calls ->
-resolve_http_endpoints -> resolve_framework_flow -> analyze_tests -> materialize_database_graph`.
-Retrieval runs afterwards over the completed graph and never reruns it.
+The analysis lifecycle is unchanged and now has one programmatic entry point.
+`analyze_repository(root)` runs the verified dependency order
 
 ```text
-build_search_index(graph, analysis_completeness, include_graph_context, max_context_neighbors)
- ├─ _validated_entities          one graph.entities() read; corrupt containers rejected
- ├─ build_document               allowlisted bounded fields; never signatures or arbitrary keys
- ├─ _build_postings              weighted term frequency -> entity-ID-ordered posting lists
- ├─ build_graph_context_index    one graph.relationships() read; allowed kinds only; capped lists
- └─ LexicalSearchIndex           verified statistics, content snapshot id, bounded context
+index_repository -> resolve_imports -> resolve_calls -> resolve_http_endpoints
+    -> resolve_framework_flow -> analyze_tests -> materialize_database_graph
+    -> build_search_index(final graph) -> AnalysisSnapshot
 ```
 
-Indexed: entity name, qualified name, repository-relative path, kind, language, parent id and
-eighteen allowlisted existing metadata keys. Signatures are never indexed. Projected values are
-stored truncated to 512 characters and 32 tokens; the canonical entity keeps its full value.
-Entities without a SourceLocation report no path and no invented lines. Documents are sorted by
-canonical entity ID, so equal graphs built in different insertion orders produce equal indexes.
-`snapshot_id` is a UUID5 content digest of the documents and is never a repository revision.
+and asserts that the retrieval documents correspond one-to-one with the final graph entities.
+Lexical search and structural queries therefore always describe the same repository state.
+Intermediate stage results are dropped when the call returns, so no `ParsedSource`, syntax tree or
+source byte survives. `AnalysisSnapshot` is a frozen record over the ordinary mutable `CodeGraph`;
+it does not freeze the graph, and no mutation path is exposed in the public API.
 
-Tokenization NFKC-normalizes while preserving case, splits on ASCII case/digit boundaries and on
-every non-alphanumeric character, then case folds each token. `HTTPServer` becomes http+server;
-`PaymentService` and `payment_service` share payment+service. Long values are truncated, not
-rejected. Queries are pure data.
+```text
+run_query(snapshot, request)
+ ├─ build_plan(request)        pure data: steps, source kinds, query name, limits, output type
+ ├─ selection                  SEARCH_ENTITIES -> ranked CANDIDATES that name no entity
+ │                             ENTITY_ID / QUALIFIED_NAME / ENDPOINT_METHOD_PATH -> exact
+ │                             NONE -> NOT_REQUIRED (graph-wide inventory)
+ ├─ execution                  exactly one existing query function, read only
+ └─ build_bundle(...)          EvidenceBundle, JSON primitives, deterministic
+```
 
-Ranking is field-weighted BM25 with k1=1.2, b=0.75 and smoothed IDF, summed over distinct query
-terms, plus the strongest satisfied exact tier (qualified name 8.0, name 6.0, METHOD+path 5.0,
-alphanumeric name 3.0, prefix 0.5 at four or more characters). Field weights run from name 3.0 to
-kind/language/path 0.5 and are all exact binary fractions. `relevance_score` is exactly
-`bm25_score + exact_match_boost + prefix_boost + graph_context_boost`; every component is
-verified finite and exposed separately. Hits sort by relevance, then exact priority, then entity
-ID. A BM25 value is a relevance score only, never a probability or confidence.
+Nine intents, each backed by a real query function: `SEARCH_ENTITIES` (`search_symbols`),
+`LIST_ENDPOINTS` (`list_endpoints`), `LIST_DATABASE_CALLERS` (`list_direct_database_callers`),
+`TRACE_ENDPOINT_TO_DATABASE`, `TRACE_CALLABLE_TO_DATABASE`, `DIRECT_DATABASE_OPERATIONS`,
+`FIND_DIRECT_TESTS`, `FIND_CALLERS`, `FIND_AFFECTED_ENDPOINTS`. There is no natural-language
+inference: `search_text` is retrieval input only and can never imply an architectural intent.
 
-Graph context is an explicit opt-in. Only EXPOSES, CALLS, TESTS, READS_DATABASE,
-WRITES_DATABASE and APPLIES_MIDDLEWARE are projected; DEFINES, IMPORTS, CONTAINS, INHERITS and
-USES never act as invocation. At most one hop is examined. A context hit keeps the stored
-relationship ID, kind, direction, confidence, confidence_score and original Evidence, and reports
-`match_basis=graph_neighbor` without claiming it contains the query terms. The boost is
-`min(1.0, seed_coverage * edge_weight)` taking the maximum over supporting relationships, never a
-sum, so degree cannot inflate it; middleware is weighted 0.4 below invocation. Relationship
-confidence is reported separately and never multiplied into relevance.
+Validation is a contract, not a suggestion. Selector forms are mutually exclusive. An option the
+chosen intent cannot consume is rejected with `UnsupportedIntentError` rather than silently
+ignored: `top_k` and `max_examined_postings` are retrieval budgets, `max_paths`, `max_depth` and
+`max_expansions` are traversal budgets, `transitive_callers` belongs to `FIND_CALLERS` alone and
+`include_graph_context` belongs to `SEARCH_ENTITIES` alone. All limits are positive non-boolean
+integers and `top_k` is capped at the retrieval cap.
 
-Filters mark candidates eligible or ineligible instead of discarding them, so a kind-restricted
-wrapper can still discover endpoints that only context connects to the query, while top_k always
-applies to eligible results. Limits: query length 512, query tokens 24, top_k default 25 and
-maximum 100, posting budget 50000 examined records, graph seed budget 25, neighbor budget 16,
-build-time neighbor cap 16 per entity and direction. Blank, token-free and oversized queries are
-rejected. Every inspected posting record consumes the budget, including filtered-out records.
-`truncated` reports budget-driven incompleteness with a closed reason vocabulary;
-`eligible_candidate_count` reports top_k limiting. Counts are exact only when not truncated.
+Selection never guesses. An exact canonical entity ID resolves directly after its kind is checked;
+an exact qualified name or `METHOD path` resolves only when exactly one eligible entity matches,
+otherwise `AMBIGUOUS` with the full candidate set. `entity_kind`, `language`, `path_prefix`,
+`framework` and `endpoint_scope` narrow a caller's own selector but never choose. A lexical query
+returns `CANDIDATES` and names no entity, so a high BM25 score can never become a structural query
+target. Snapshot construction indexes qualified names and routes exactly, so exact-match ambiguity
+claims are exhaustive and never drawn from a truncated subset.
 
-Defaults are unchanged for every prior subsystem. Graph-only mode stays unknown completeness;
-callers pass the canonical AnalysisSummary completeness from the same revision.
+Bundles preserve stored facts. Every relationship keeps its original ID, kind, direction,
+confidence classification, numeric score, original Evidence IDs, source locations and analysis
+methods; confidence is summarized with the existing weakest-edge contract and never multiplied
+into a probability. Retrieval relevance never changes a CALLS, EXPOSES, database or TESTS
+confidence. Entity projection omits declaration signatures and all metadata outside a nine-key
+allowlist, because a signature is source text. Serialization is JSON primitives only with no
+timestamp, absolute path, source byte or traceback, so equal requests over equal snapshots
+serialize identically.
 
 ## 5. Decisions Made
 
@@ -120,6 +124,10 @@ D-138: independent exact/substring baseline with regressions reported rather tha
 D-139: mixed-language retrieval repository, hard negatives and the end-to-end smoke.
 D-140: stored projected field values truncated to the documented limit; supersedes part of D-128.
 D-141: export the evaluation surface from the package entry point alongside search types.
+D-142: validate structured query requests against a per-intent option contract.
+D-143: resolve canonical entities exactly and never select from a lexical ranking.
+D-144: project stored relationships into bundles without adding content or certainty.
+D-145: build the retrieval snapshot from the final analysis graph and assert the projection.
 References finalized in a later documentation commit; no history rewriting.
 
 ## 6. Requirements and Constraints
@@ -127,111 +135,117 @@ References finalized in a later documentation commit; no history rewriting.
 Local only: no GitHub API, remote changes, push, upload, publication, packages or releases. All
 commits are authored and committed solely by PrathamKapoor <prathamkapoor027@gmail.com>. No
 attribution lines, no secrets, no paper/research/tex files. No target execution, imports, test
-runs, Node, dependency installation, database connections or SQL. Retrieval never rereads source,
-synthesizes entities or relationships, invents Evidence, mutates evidence or confidence, or runs
-analysis automatically. No servers, CLI, frontend, LLM, embeddings, vector store, persistence,
-cache, workers or incremental updates. Runtime dependencies, Ruff and mypy configuration and all
-existing parsing and semantic algorithms are unchanged.
+runs, Node, dependency installation, database connections or SQL. Orchestration never rereads
+source, synthesizes entities or relationships, invents Evidence, mutates evidence or confidence,
+or runs analysis automatically. Retrieval relevance is never a confidence. Phase 2.5 may add an
+argparse CLI and a console entry point in pyproject.toml, but no server, frontend, LLM,
+embeddings, vector store, persistence, cache, worker or incremental update. No new runtime
+dependency for the CLI; standard library only. Ruff and mypy configuration and every existing
+parsing, semantic, query and retrieval algorithm stay unchanged.
 
 ## 7. Testing and Verification
 
-Project interpreter .venv/Scripts/python.exe, Python 3.13.14. Baseline 448; Stage A 503;
-Stage B 589; Stage C 640 tests OK/skipped 7. Existing platform skips are the six Windows symlink
-privilege cases and the absent FIFO API. No retrieval test is skipped. Every gate ran targeted and
-full tests, Ruff lint and format, strict mypy, compileall, pip check and architecture tests.
+Project interpreter .venv/Scripts/python.exe, Python 3.13.14. Baseline 640; Phase 2.4 adds 134
+orchestration tests for 774 tests OK/skipped 7. Existing platform skips are the six Windows
+symlink privilege cases and the absent FIFO API; no orchestration test is skipped. Every gate ran
+targeted and full tests, Ruff lint and format, strict mypy, compileall, pip check and architecture
+tests.
 
 Commands (prefix `.venv\Scripts\python.exe`):
-- `-m unittest tests.retrieval.test_documents -q`: 20 tests OK.
-- `-m unittest tests.retrieval.test_tokenization -q`: 17 tests OK.
-- `-m unittest tests.retrieval.test_index -q`: 18 tests OK.
-- `-m unittest tests.retrieval.test_scoring -q`: 24 tests OK.
-- `-m unittest tests.retrieval.test_search -q`: 29 tests OK.
-- `-m unittest tests.retrieval.test_context -q`: 19 tests OK.
-- `-m unittest tests.retrieval.test_limits -q`: 14 tests OK.
-- `-m unittest tests.retrieval.test_golden -q`: 19 tests OK.
-- `-m unittest tests.retrieval.test_hardening -q`: 31 tests OK.
-- `-m unittest discover -s tests/retrieval -t . -q`: 192 tests OK.
-- `-m unittest discover -s tests -q`: 640 tests OK/skipped 7.
+- `-m unittest tests.orchestration.test_requests -q`: 29 tests OK.
+- `-m unittest tests.orchestration.test_plans -q`: 9 tests OK.
+- `-m unittest tests.orchestration.test_selection -q`: 29 tests OK.
+- `-m unittest tests.orchestration.test_execution -q`: 39 tests OK.
+- `-m unittest tests.orchestration.test_pipeline -q`: 20 tests OK.
+- `-m unittest tests.orchestration.test_end_to_end -q`: 8 tests OK.
+- `-m unittest discover -s tests/orchestration -t . -q`: 134 tests OK.
+- `-m unittest discover -s tests -q`: 774 tests OK/skipped 7.
 - `-m ruff check src tests`: All checks passed.
-- `-m ruff format --check src tests`: 158 files already formatted.
-- `-m mypy src/arctrellis`: 86 source files, no issues.
+- `-m ruff format --check src tests`: 175 files already formatted.
+- `-m mypy src/arctrellis`: 95 source files, no issues.
 - `-m compileall -q src`: exit 0.
 - `-m pip check`: No broken requirements found.
 - `-m unittest tests.test_architecture -q`: 3 tests OK.
-- `-m tests.retrieval.smoke`: 83 entities, 83 documents, 116 terms, 675 posting records,
-  34 context edges, 9 queries, 45 lexical hits, 45 graph-context hits, 8 queries using context,
-  9 truncated searches, 5 of 7 retrieved endpoints with an existing evidence path, deterministic,
-  graph unchanged, snapshot identity stable.
+- `-m unittest discover -s tests/retrieval -t . -q`: 192 tests OK.
+- `-m tests.retrieval.smoke`: unchanged measured retrieval smoke output.
 
-Measured evaluation at K=5 over 19 evaluated queries of 20 judgments: baseline Recall 0.8246,
-Precision 0.3158, MRR 0.7298, HitRate 0.8947; BM25 0.8860/0.3474/0.8070/0.9474; BM25 with graph
-0.8860/0.3211/0.8553/0.9474. Graph context improves listPayments, createPayment, persistPayment,
-payment creation and payment database write and regresses test payment. BM25 regresses test
-payment against the baseline. payment refund endpoint is missed by all three modes.
+Measured orchestration facts on the mixed fixture: 74 entities, 94 relationships, 10 endpoints,
+3 tests, 8 database operations, 74 retrieval documents, 114 terms, analysis completeness complete.
+`POST /payments` in app.py resolves to one candidate and traces
+`EXPOSES -> CALLS -> WRITES_DATABASE`; `GET /reports` and `POST /ghost` and `POST /fake` all return
+`NO_KNOWN_PATH`; `POST /payments` as a method-plus-route selector returns `AMBIGUOUS_SOURCE` with
+four registrations; `PaymentService` returns both the CLASS and the IMPORT as candidates and
+selects neither; duplicate `js/dup.js::handler` qualified names return `AMBIGUOUS` with two
+candidates.
 
-Smoke trace: `GET /payments -> listPayments -> listAllPayments -> listPayments ->
-sqlalchemy:Payment.execute@221` with the original four relationships, unchanged. POST /payments
-[app.py] and DELETE /payments/{paymentId] return NO_KNOWN_PATH because their handlers call
-service methods that call resolution does not resolve.
-
-Corrected failures during this phase: `tokenize(max_tokens=0)` returned one token because the
-limit was checked after appending; `bm25_score` returned zero for a zero average length instead
-of dropping the length-normalization term; `GraphContextIndex` cross-direction validation failed
-on legitimately asymmetric capping; context supports named the returned hit as its own neighbor
-and described the seed's direction; graph candidates that share no query token were dropped,
-which deleted the documented discovery case; `graph_context_used` was computed from the full
-ranking instead of the returned top_k; stored field values were unbounded even though tokenization
-was bounded; `evaluate_retrieval` was not re-exported from the package entry point. Fixture-name
-and metadata expectations in the new tests were corrected against actual canonical output rather
-than by changing production behavior. No existing test was disabled and no timing threshold was
-introduced. One repository grep for network or execution primitives matched only the identifier
-`evaluate_retrieval` because of the `eval(` substring; no such primitive exists in retrieval.
+Corrected failures during this phase: `ExecutionOutcome` asserted that a nonempty path list implies
+a path result, so any query legitimately returning zero paths raised `OrchestrationInvariantError`;
+a draft reported a lexical search as `RESOLVED` while naming no entity, which the `SelectionResult`
+contract rejects, so `CANDIDATES` and `NOT_REQUIRED` were added as honest explicit statuses;
+`QueryRequest` compared a supplied option against the wrong limit family, so `top_k` was rejected
+for `SEARCH_ENTITIES` even though the intent declares it; the endpoint option pair was forced to be
+supplied together even for an inventory filter, and the same pair was rejected as a selector on
+`LIST_ENDPOINTS` because the filter form had no representation; `graph-wide` intents never executed
+their structural query because execution required a selected entity; an inventory with entities but
+no evidence paths violated the bundle contract, so `INVENTORY` was added; `build_plan` reported
+`evidence_paths` for endpoint inventories because the output ternary was ordered wrongly. Fixture
+expectations were corrected against actual canonical output rather than by changing production
+behaviour. No existing test was disabled, no tooling was weakened and no timing threshold was
+introduced.
 
 ## 8. Known Issues / Risks
 
-No confirmed unresolved functional defect in the supported retrieval subset. Public graph
-snapshots still allocate and sort eagerly before any examination budget, so index construction and
-entity/relationship enumeration remain bounded only by corpus size; retrieval pays that cost once
-per build instead of once per candidate. Index memory grows with tokens, the deliberate
-memory-for-latency trade, and no memory cap is claimed. The default 25-seed budget truncates
-graph-context expansion on the measured mixed repository, which every smoke query reports.
-Conceptual multiword queries are matched by tokens only: `payment refund endpoint` is missed
-entirely, and `PaymentService` ranks the identically named IMPORT above the CLASS. Adding a
-judgement or changing a weight legitimately changes measured metrics. Static resolution
-omissions, runtime binding limitations, revision-only non-repository-namespaced IDs and native
-parser platform limits are unchanged.
+A Python handler that calls a method through a bound instance variable
+(`service.createRefund()`) produces no CALLS edge, because instance-attribute resolution is outside
+the current call-resolution subset; the orchestration fixture therefore routes its traced endpoint
+through an imported module function. This is an existing Phase 1 limitation, not an orchestration
+defect, and it is the reason `POST /refunds` reports `NO_KNOWN_PATH`.
+
+Selection scans the snapshot's exact qualified-name and route lookups, which is exhaustive for
+exact selectors; only the lexical path is bounded by a posting budget. Public graph snapshots still
+allocate and sort eagerly before any examination budget, so index construction remains bounded only
+by corpus size, and `analyze_repository` holds the final graph and the retrieval index in memory
+together. No memory cap is claimed and no timing benchmark was run. The default 25-seed budget
+still truncates graph-context expansion on the earlier retrieval fixture. Conceptual multiword
+queries are still matched by tokens only. Static resolution omissions, runtime binding
+limitations, revision-only non-repository-namespaced IDs and native parser platform limits are
+unchanged.
 
 ## 9. Unfinished Work
 
-No mandatory Phase 2.3 work remains. Local implementation and documentation reference finalization
-are complete; Stage C implementation is d8f5c95. No Phase 2.4 work has started. There is no
-optional full-source search, embedding, reranking, natural-language planner or incremental index.
+No mandatory Phase 2.4 work remains. Phase 2.5 (offline CLI) and Phase 2.6 (loopback-only read-only
+HTTP API) are authorized but not started. There is no caching or persistence of an analysis
+snapshot across processes, which the CLI must document as a real limitation rather than hide.
 
 ## 10. Next Subphase
 
-Phase 2.4 — Evidence Retrieval Orchestration and Deterministic Query Planning, in a later
-authorized session only. Do not begin it during Phase 2.3 finalization.
+Phase 2.5 — offline CLI. It must be a thin adapter over `analyze_repository`, `QueryRequest`,
+`build_plan` and `run_query`; it must not implement a second analysis engine, must print measured
+values only, must return distinct non-zero exit codes for ambiguity and failure, must support a
+`--json` mode whose stdout is valid JSON with diagnostics on stderr, and must validate the target
+path through the existing safe discovery logic without executing anything in it.
 
 ## 11. Critical Context
 
 The analysis engine establishes what repository evidence supports; the explanation layer explains
-that evidence. Retrieval relevance is not a probability, a confidence or a runtime claim. A
-graph-context hit is a structural association over one stored relationship, never proof of
+that evidence. A lexical relevance score is not entity identity, not a probability, not a
+confidence and not a runtime claim. A high BM25 score must never select a structural query target.
+A graph-context hit is a structural association over one stored relationship, never proof of
 execution, order, success or deployment. TESTS context means direct static test-call proof, never
-runtime coverage. A staged SQLAlchemy mutation and a transaction control are retrievable as
-canonical DATABASE_OPERATION facts but carry no read/write capability edge, and retrieval never
-describes them as proven writes. IMPORTS and DEFINES are never context. A truncated result is a
-bounded discovered ranking, never an exhaustive one, and a result never proves repository
-completeness. Retrieval IDs are canonical entity IDs; retrieving an entity does not trace it.
+runtime coverage. A staged SQLAlchemy mutation and a transaction control are canonical
+DATABASE_OPERATION facts but carry no read/write capability edge. IMPORTS and DEFINES are never
+context and never execution. `NO_KNOWN_PATH` is never proof of absence: static-analysis
+incompleteness and query limits both produce it. A truncated result is a bounded discovered
+ranking, never an exhaustive one, and no result proves repository completeness. Bundle IDs are
+canonical entity IDs; retrieving or naming an entity does not trace it.
 
 ## 12. Agent Instructions
 
 Read root documents completely and inspect the actual public APIs and tests before changing
-anything. Preserve decisions and history and continue D-numbering from D-140. Finalize only new
+anything. Preserve decisions and history and continue D-numbering from D-146. Finalize only new
 commit-reference fields in a later documentation commit; never globally replace historical prose.
 Use the project interpreter and run the complete gates; never weaken strict tooling and never
-invent measured output. Judge the retrieval implementation against the independent judgments in
-tests/retrieval/judgments.py and report regressions as findings. Validate file outcome counts
-before interpreting empty semantics. Check author, committer and remotes at every boundary and
-keep target input strictly as untrusted static data. Stop after this phase: no push, no remote,
-no publication, no target execution, no database or SQL, and no automatic analysis from retrieval.
+invent measured output. Validate file outcome counts before interpreting empty semantics. Keep
+target input strictly as untrusted static data: no execution, imports, test runs, Node, dependency
+installation, database connections, SQL or outbound network access. Check author, committer and
+remotes at every boundary. Stop after the authorized phases: no push, no remote, no publication.
