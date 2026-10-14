@@ -1401,3 +1401,128 @@ Verified local commands:
 .venv\Scripts\python.exe -m unittest discover -s tests/scale -t . -q
 .venv\Scripts\python.exe -m tests.scale.bench
 ```
+
+## End to end: from a local repository to a proven database path
+
+Every command below runs against a real local repository and every output line is the actual
+result of the documented command. Nothing is a screenshot and nothing is a placeholder.
+
+### 1. Analyze the repository
+
+```powershell
+.venv\Scripts\arctrellis.exe analyze C:\Projects\SampleRepo
+```
+
+```text
+snapshot 6f1f0e0e-...                      (the retrieval content digest, not a revision)
+analysis completeness: complete
+supported files: 8
+complete files: 8
+partial files: 0
+failed files: 0
+entities: 76
+relationships: 98
+endpoints: 11
+tests: 3
+database operations: 8
+retrieval documents: 76
+retrieval terms: 116
+```
+
+If any file is partial or failed, `analysis completeness` stops being `complete` and the output
+says so. The tool never reports a complete analysis it does not have.
+
+### 2. Find candidate entities
+
+```powershell
+.venv\Scripts\arctrellis.exe search C:\Projects\SampleRepo "list payments"
+```
+
+```text
+status: SEARCH_RESULTS (ranked lexical candidates; no entity selected)
+selection: ranked candidates; none selected (lexical search produced ranked candidates; no entity is selected automatically)
+  1. 0a12d97c-...  FUNCTION listPayments [payments.py] relevance=8.8237 basis=LEXICAL_CANDIDATES
+  2. aa6f4265-...  IMPORT listPayments [test_payments.py] relevance=8.8178 basis=LEXICAL_CANDIDATES
+  3. c66dcbf5-...  FUNCTION listPaymentsRoute [app.py] relevance=6.0774 basis=LEXICAL_CANDIDATES
+```
+
+The ranking is lexical. It is not entity identity, and nothing was selected.
+
+### 3. Select a canonical endpoint explicitly
+
+```powershell
+.venv\Scripts\arctrellis.exe query C:\Projects\SampleRepo --intent trace-endpoint-to-database --method POST --path /payments
+```
+
+```text
+status: AMBIGUOUS_SOURCE (ambiguous source selection; no entity selected)
+selection: ambiguous (2 endpoint registrations share this method and path; supply an exact entity ID)
+  1. d7315561-...  API_ENDPOINT POST /payments [js/app.js] basis=EXACT_ENDPOINT_METHOD_PATH
+  2. ed8c6277-...  API_ENDPOINT POST /payments [app.py] basis=EXACT_ENDPOINT_METHOD_PATH
+```
+
+Exit code `3`. The tool refused to guess. Choose one ID and continue.
+
+### 4. Trace the chosen endpoint to the database
+
+```powershell
+.venv\Scripts\arctrellis.exe trace C:\Projects\SampleRepo --entity-id ed8c6277-eb63-5a2f-9f19-70098e1b242e
+```
+
+```text
+status: EVIDENCE_PATHS (structural evidence paths found)
+structural query: trace_endpoint_to_database
+selection: resolved (resolved by exact canonical entity ID)
+selected entity: API_ENDPOINT POST /payments [app.py:5]
+evidence paths: 1
+path 1 of 3 hop(s), direction=forward, weakest-edge confidence=LIKELY (0.75)
+  API_ENDPOINT POST /payments [app.py:5]
+  EXPOSES #1: confidence=PROVEN score=1.0
+    evidence fastapi_decorated_handler app.py:5
+  FUNCTION createPaymentRoute [app.py:6]
+  CALLS #2: confidence=LIKELY score=0.75
+    evidence python_imported_symbol_call_resolution app.py:7
+  FUNCTION createPayment [payments.py:4]
+  WRITES_DATABASE #3: confidence=LIKELY score=0.85
+    evidence sqlalchemy_execute_insert payments.py:5
+  DATABASE_OPERATION sqlalchemy:Payment.execute@134 [payments.py:5]
+```
+
+Read it as one sentence: `POST /payments` is exposed to the handler `createPaymentRoute` (proven by
+the decorator), which calls `createPayment` (likely, resolved through an import), which performs a
+SQLAlchemy INSERT (likely, identified by the `sqlalchemy_execute_insert` method). Every line is a
+stored relationship with its own evidence location. None of them claims the request executes at
+runtime.
+
+### 5. Inspect the same evidence as JSON, or over the local API
+
+```powershell
+.venv\Scripts\arctrellis.exe trace C:\Projects\SampleRepo --entity-id ed8c6277-... --json |
+    ConvertFrom-Json | Select-Object -ExpandProperty paths
+```
+
+```powershell
+.venv\Scripts\arctrellis.exe serve C:\Projects\SampleRepo
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8756/api/v1/query `
+    -ContentType 'application/json' `
+    -Body (@{ intent = 'trace-endpoint-to-database'
+              entity_id = 'ed8c6277-eb63-5a2f-9f19-70098e1b242e' } | ConvertTo-Json)
+```
+
+Both return the same `EvidenceBundle` with `schema_version` 1. The analysis engine establishes
+what the source evidence supports; these surfaces only explain it.
+
+### 6. When the evidence runs out
+
+```powershell
+.venv\Scripts\arctrellis.exe trace C:\Projects\SampleRepo --method GET --path /reports
+```
+
+```text
+status: NO_KNOWN_PATH (no known structural path)
+limitation: no_known_path_is_not_proof_of_absence
+```
+
+Exit code `0`, because the query ran and the answer is honestly "no known path". That is a
+statement about the evidence ArcTrellis could see, never proof that the code cannot reach a
+database.
