@@ -59,10 +59,11 @@ Current capabilities:
 - JSON-compatible evidence bundles that preserve stored relationships, confidence and truncation reasons.
 - One programmatic `analyze_repository` entry point producing a snapshot aligned with the final graph.
 - An installed `arctrellis` CLI with text and JSON output, explicit ambiguity reporting and stable exit codes.
+- A loopback-only read-only HTTP API over the same evidence bundle contract, with no new dependency.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
-Planned capabilities: a loopback-only read-only HTTP API; architecture questions; source evidence
-inspection; retrieval and evidence quality evaluation.
+Planned capabilities: a future frontend or product demonstration; source evidence inspection;
+retrieval and evidence quality evaluation at repository scale.
 
 ## Development
 
@@ -1291,4 +1292,81 @@ Verified local commands:
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests/cli -t . -q
 .venv\Scripts\python.exe -m tests.cli.smoke
+```
+
+## Local Read-Only HTTP API (Phase 2.6)
+
+`arctrellis.api` exposes the existing analysis over five read-only routes. It adds no runtime
+dependency and implements no analysis or query logic: it parses a bounded JSON payload into the
+same validated `QueryRequest` the CLI builds, calls the same `run_query`, and returns the bundle's
+own serialization.
+
+```powershell
+.venv\Scripts\arctrellis.exe serve C:\Projects\SampleRepo --port 8756
+```
+
+```text
+GET  /api/v1/health      readiness, snapshot identity, analysis completeness
+GET  /api/v1/summary     measured counts and completeness
+GET  /api/v1/endpoints   endpoint registration inventory (method, path, framework, scope filters)
+POST /api/v1/search      bounded lexical search returning ranked candidates
+POST /api/v1/query       one structured intent returning the EvidenceBundle contract
+```
+
+```powershell
+$body = @{ intent = 'trace-endpoint-to-database'; method = 'POST'; path = '/payments' } |
+    ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8756/api/v1/query `
+    -ContentType 'application/json' -Body $body
+```
+
+### Ambiguity over HTTP
+
+A selector that matches more than one canonical entity returns **409** with the full bundle in the
+response, so the client receives the candidates and the preserved evidence instead of a guessed
+answer:
+
+```json
+{
+  "error": "ambiguous_selection",
+  "message": "2 endpoint registrations share this method and path; supply an exact entity ID",
+  "bundle": { "selected_entity": null, "candidate_entities": [ ... ] }
+}
+```
+
+### Status codes
+
+| Code | Meaning |
+|---|---|
+| 200 | success, including an empty search result and a `NO_KNOWN_PATH` bundle |
+| 400 | body is not a valid bounded JSON object, or a bad query-string filter |
+| 404 | unknown route, or the selected entity does not exist |
+| 405 | the path exists but not for this method |
+| 409 | ambiguous or incompatible source selection |
+| 413 | request body exceeds 65536 bytes |
+| 415 | content type is not `application/json` |
+| 422 | payload violates the request contract (unknown field, conflicting selectors, bad limit) |
+| 501 | unsupported intent |
+
+### Security controls
+
+- The bind address is validated in code: only `127.0.0.1`, `::1` and the literal `localhost` are
+  accepted. Any other address or hostname raises `UnsafeBindError` without a DNS lookup, and there
+  is no configuration path that widens it.
+- The repository root is supplied once at startup and is unreachable from any request. No route
+  accepts a filesystem path, so no request can redirect the analysis.
+- Request bodies are bounded at 64 KiB and an oversized `Content-Length` is refused before the
+  body is read. Response sizes are bounded by the retrieval and traversal budgets.
+- Unknown request fields and unknown query-string keys are rejected rather than ignored.
+- No response contains a traceback, an absolute path, an environment value, a credential or target
+  source text. `health` and `summary` never disclose the analyzed root.
+- The listener suppresses client-disconnect noise instead of printing a traceback.
+- **There is no authentication.** This service must never be exposed beyond loopback. No
+  multi-tenancy, no uploads, no outbound requests, no deployment.
+
+Verified local commands:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/api -t . -q
+.venv\Scripts\python.exe -m tests.api.smoke
 ```

@@ -1457,3 +1457,66 @@ pip check and architecture3 pass.
 Measured exit codes from the installed script on the mixed fixture: analyze 0, search 0,
 exact-ID trace 0, ambiguous POST /payments 3, unknown entity ID 2, unsupported intent 5,
 missing repository 4, invalid limit 2.
+
+## 32. Loopback-only read-only HTTP API (Phase 2.6)
+
+Input: an HTTP request on an already-bound loopback listener. Output: one JSON response.
+
+```text
+create_server(root, host, port)      src/arctrellis/api/server.py
+ |- is_loopback(host)                ipaddress literal or localhost; any other name is refused
+ |                                    without a DNS lookup, so a hostname cannot point outward
+ |- AnalysisService.from_root(root)  the repository is analyzed exactly once, here
+ `- QuietHTTPServer((host, port), make_handler(application))
+
+POST/GET request                     src/arctrellis/api/app.py
+ |- BaseHTTPRequestHandler._read_body
+ |   |- reject an oversized Content-Length before reading, so a large body is never buffered
+ |   `- read at most MAX_REQUEST_BYTES (65536)
+ |- ApiApplication.handle(method, target, body, content_type)
+ |   |- urlsplit(target)             parsed as a string; no filesystem access, ever
+ |   |- route_table()                (GET health, GET summary, GET endpoints, POST search, POST query)
+ |   |- _endpoint_filters(query)     allowlisted keys only; an unknown key is refused, not ignored
+ |   |- decode_payload(body, type)   bounded, UTF-8 JSON object or a typed failure
+ |   `- AnalysisService
+ |       |- health()                 readiness and snapshot identity; the root is never disclosed
+ |       |- summary()                measured counts and completeness
+ |       |- endpoints(filters)       the same QueryRequest contract the CLI builds
+ |       |- search(payload)          -> _build_request -> QueryRequest -> run_query
+ |       |- query(payload)           -> _build_request -> QueryRequest -> run_query
+ |       `- _refuse_ambiguous_selection
+ |                                    AMBIGUOUS -> 409, NOT_FOUND -> 404, INVALID -> 409,
+ |                                    each carrying the full bundle so the caller sees the candidates
+ `- _respond(status, payload)        json, no-store, nosniff, explicit Content-Length
+
+errors.py                            one ApiError per documented status; payload() is JSON primitives
+```
+
+Why each step exists: the root is bound once and unreachable afterwards, so no request can point
+the analysis at another repository; the allowlisted filter keys make a typo visible instead of
+silently ignored; returning the bundle with a 409 is what makes a refusal useful rather than
+merely safe; refusing an oversized Content-Length before reading keeps memory bounded.
+
+Failures: 400 invalid payload, 404 unknown route or unknown entity, 405 wrong method, 409
+ambiguous or incompatible selection, 413 oversized body, 415 wrong content type, 422 contract
+violation, 501 unsupported intent, 500 internal. No traceback, absolute path, environment value
+or target source ever appears in a response body.
+
+## Changes in this session (Phase 2.6)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| API service | Add read-only health, summary, endpoints, search and query over one snapshot. | src/arctrellis/api/service.py, errors.py | uncommitted | D-148 |
+| HTTP layer | Add routing, payload bounds, loopback enforcement and a quiet server. | src/arctrellis/api/app.py, server.py, __init__.py | uncommitted | D-148 |
+| Serve command | Add `arctrellis serve` so the API is reachable from the command line. | src/arctrellis/cli/main.py, tests/cli/test_cli.py | uncommitted | D-148 |
+| Tests | Add 75 API tests plus the in-process and loopback-socket integration suites. | tests/api/test_api.py, test_live_server.py | uncommitted | D-148 |
+| Smoke | Add the API smoke and its exact match against the orchestration API. | tests/api/smoke.py | uncommitted | D-148 |
+| Audit | Assert no network, process or dynamic-execution primitive exists in the package. | tests/test_architecture.py | uncommitted | D-148 |
+
+Gate: api75/full918 tests OK/skipped7; Ruff lint/193-file format, strict mypy104, compileall,
+pip check and architecture5 pass.
+
+Measured API statuses on the mixed fixture: health 200, summary 200, endpoints 200, search 200,
+exact-ID query 200, ambiguous selector 409 with the full bundle, unknown entity 404, unsupported
+intent 501, oversized body 413, unknown route 404. The API payload for one endpoint trace is byte
+equal to the orchestration bundle.
