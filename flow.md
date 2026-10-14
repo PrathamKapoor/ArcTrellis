@@ -1384,15 +1384,15 @@ probability.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Typed intents | Add nine structured intents, a validated request and a per-intent option contract. | src/arctrellis/orchestration/models.py, errors.py | uncommitted | D-142 |
-| Plans | Add deterministic pure-data plans with inspectable steps, limits and output type. | src/arctrellis/orchestration/planning.py | uncommitted | D-142 |
-| Selection | Resolve exact IDs, qualified names and routes; report ambiguity; never select from BM25. | src/arctrellis/orchestration/selection.py | uncommitted | D-143 |
-| Execution | Dispatch to the existing query engine and preserve its paths, confidence and truncation. | src/arctrellis/orchestration/execution.py | uncommitted | D-144 |
-| Evidence | Assemble deterministic JSON bundles with preserved Evidence and explicit limitations. | src/arctrellis/orchestration/evidence.py, models.py | uncommitted | D-144 |
-| Orchestration | Add one analyze_repository entry point and a snapshot aligned with the final graph. | src/arctrellis/orchestration/pipeline.py | uncommitted | D-145 |
-| Runner and API | Add one request execution order and the package export surface. | src/arctrellis/orchestration/runner.py, __init__.py | uncommitted | D-142 |
-| Fixtures | Add mixed Python/JS/TS orchestration repositories including every negative case. | tests/orchestration/repository.py | uncommitted | D-139 |
-| Tests | Add orchestration tests across requests, plans, selection, execution, pipeline and end-to-end flow. | tests/orchestration/*.py | uncommitted | D-142, D-143, D-144, D-145 |
+| Typed intents | Add nine structured intents, a validated request and a per-intent option contract. | src/arctrellis/orchestration/models.py, errors.py | finalized | D-142 |
+| Plans | Add deterministic pure-data plans with inspectable steps, limits and output type. | src/arctrellis/orchestration/planning.py | finalized | D-142 |
+| Selection | Resolve exact IDs, qualified names and routes; report ambiguity; never select from BM25. | src/arctrellis/orchestration/selection.py | finalized | D-143 |
+| Execution | Dispatch to the existing query engine and preserve its paths, confidence and truncation. | src/arctrellis/orchestration/execution.py | finalized | D-144 |
+| Evidence | Assemble deterministic JSON bundles with preserved Evidence and explicit limitations. | src/arctrellis/orchestration/evidence.py, models.py | finalized | D-144 |
+| Orchestration | Add one analyze_repository entry point and a snapshot aligned with the final graph. | src/arctrellis/orchestration/pipeline.py | finalized | D-145 |
+| Runner and API | Add one request execution order and the package export surface. | src/arctrellis/orchestration/runner.py, __init__.py | finalized | D-142 |
+| Fixtures | Add mixed Python/JS/TS orchestration repositories including every negative case. | tests/orchestration/repository.py | finalized | D-139 |
+| Tests | Add orchestration tests across requests, plans, selection, execution, pipeline and end-to-end flow. | tests/orchestration/*.py | finalized | D-142, D-143, D-144, D-145 |
 
 Gate: orchestration134/full774 tests OK/skipped7; Ruff lint/175-file format, strict
 mypy95, compileall, pip check and architecture3 pass.
@@ -1445,11 +1445,11 @@ receive the bundle while a human still reads why a selector was ambiguous.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| CLI adapter | Add the argparse CLI, exit-code policy and console entry point. | src/arctrellis/cli/main.py, errors.py, __init__.py, pyproject.toml | uncommitted | D-146 |
-| Rendering | Add the human-readable report and the JSON/stderr split. | src/arctrellis/cli/render.py | uncommitted | D-147 |
-| Tests | Add CLI behaviour, stream separation, determinism, safety and exit-code tests. | tests/cli/test_cli.py | uncommitted | D-146 |
-| Entry point | Assert the declaration, the installed script and subprocess exit codes. | tests/cli/test_entry_point.py | uncommitted | D-146 |
-| Smoke | Add the full-product smoke and the CLI/API canonical-evidence comparison. | tests/cli/smoke.py | uncommitted | D-147 |
+| CLI adapter | Add the argparse CLI, exit-code policy and console entry point. | src/arctrellis/cli/main.py, errors.py, __init__.py, pyproject.toml | finalized | D-146 |
+| Rendering | Add the human-readable report and the JSON/stderr split. | src/arctrellis/cli/render.py | finalized | D-147 |
+| Tests | Add CLI behaviour, stream separation, determinism, safety and exit-code tests. | tests/cli/test_cli.py | finalized | D-146 |
+| Entry point | Assert the declaration, the installed script and subprocess exit codes. | tests/cli/test_entry_point.py | finalized | D-146 |
+| Smoke | Add the full-product smoke and the CLI/API canonical-evidence comparison. | tests/cli/smoke.py | finalized | D-147 |
 
 Gate: cli62/full836 tests OK/skipped7; Ruff lint/183-file format, strict mypy99, compileall,
 pip check and architecture3 pass.
@@ -1506,12 +1506,12 @@ or target source ever appears in a response body.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| API service | Add read-only health, summary, endpoints, search and query over one snapshot. | src/arctrellis/api/service.py, errors.py | uncommitted | D-148 |
-| HTTP layer | Add routing, payload bounds, loopback enforcement and a quiet server. | src/arctrellis/api/app.py, server.py, __init__.py | uncommitted | D-148 |
-| Serve command | Add `arctrellis serve` so the API is reachable from the command line. | src/arctrellis/cli/main.py, tests/cli/test_cli.py | uncommitted | D-148 |
-| Tests | Add 75 API tests plus the in-process and loopback-socket integration suites. | tests/api/test_api.py, test_live_server.py | uncommitted | D-148 |
-| Smoke | Add the API smoke and its exact match against the orchestration API. | tests/api/smoke.py | uncommitted | D-148 |
-| Audit | Assert no network, process or dynamic-execution primitive exists in the package. | tests/test_architecture.py | uncommitted | D-148 |
+| API service | Add read-only health, summary, endpoints, search and query over one snapshot. | src/arctrellis/api/service.py, errors.py | finalized | D-148 |
+| HTTP layer | Add routing, payload bounds, loopback enforcement and a quiet server. | src/arctrellis/api/app.py, server.py, __init__.py | finalized | D-148 |
+| Serve command | Add `arctrellis serve` so the API is reachable from the command line. | src/arctrellis/cli/main.py, tests/cli/test_cli.py | finalized | D-148 |
+| Tests | Add 75 API tests plus the in-process and loopback-socket integration suites. | tests/api/test_api.py, test_live_server.py | finalized | D-148 |
+| Smoke | Add the API smoke and its exact match against the orchestration API. | tests/api/smoke.py | finalized | D-148 |
+| Audit | Assert no network, process or dynamic-execution primitive exists in the package. | tests/test_architecture.py | finalized | D-148 |
 
 Gate: api75/full918 tests OK/skipped7; Ruff lint/193-file format, strict mypy104, compileall,
 pip check and architecture5 pass.
@@ -1553,10 +1553,10 @@ performance claim can be verified or refuted without making the suite flaky.
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Scale fixtures | Add a deterministic generator for large, ambiguous, cyclic and high-degree repositories. | tests/scale/fixtures.py | uncommitted | D-149 |
-| Scale contracts | Assert traversal limits, retrieval budgets, response bounds, determinism and stable errors. | tests/scale/test_scale.py | uncommitted | D-149 |
-| Benchmarks | Report measured environment, corpus size and seconds with no asserted threshold. | tests/scale/bench.py | uncommitted | D-149 |
-| Architecture audit | Assert no network, process or dynamic-execution primitive exists in the package. | tests/test_architecture.py | uncommitted | D-148 |
+| Scale fixtures | Add a deterministic generator for large, ambiguous, cyclic and high-degree repositories. | tests/scale/fixtures.py | finalized | D-149 |
+| Scale contracts | Assert traversal limits, retrieval budgets, response bounds, determinism and stable errors. | tests/scale/test_scale.py | finalized | D-149 |
+| Benchmarks | Report measured environment, corpus size and seconds with no asserted threshold. | tests/scale/bench.py | finalized | D-149 |
+| Architecture audit | Assert no network, process or dynamic-execution primitive exists in the package. | tests/test_architecture.py | finalized | D-148 |
 
 Measured on Windows 11 with Python 3.13.14, from `.venv\Scripts\python.exe -m tests.scale.bench`:
 
