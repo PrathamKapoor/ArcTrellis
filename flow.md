@@ -1606,7 +1606,7 @@ uses a separate clone so the published state is checked independently of the loc
 
 | Area | Change | Files | Commit | Decision |
 |---|---|---|---|---|
-| Publication | Audit history and content, rename master to main, push the complete history once, verify independently. | .git/config, decisions.md, flow.md, handoff.md | finalized below | D-150 |
+| Publication | Audit history and content, rename master to main, push the complete history once, verify independently. | .git/config, decisions.md, flow.md, handoff.md | 23355cf | D-150 |
 
 Result: `main` published at `bd478c421fb79772c3c7c41f9b7bc3ca08766293`, 67 commits, 203 tracked
 files, one author and committer identity, no trailers, no force push, no license file.
