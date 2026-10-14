@@ -7,9 +7,11 @@ untrusted static text and are never executed, imported or installed.
 
 from __future__ import annotations
 
+import http.client
 import io
 import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -593,6 +595,82 @@ class SafetyTests(CliTestCase):
         self.assertIsNone(payload["selected_entity"])
         self.assertEqual(len(payload["candidate_entities"]), 2)
         self.assertIn("ambiguous selection:", plain[2])
+
+
+class ServeCommandTests(CliTestCase):
+    def test_serve_refuses_a_non_loopback_bind(self) -> None:
+        for host in ("0.0.0.0", "192.168.1.10", "example.com"):
+            with self.subTest(host=host):
+                status, out, err = run_cli("serve", self.root_text(), "--host", host, "--port", "0")
+                self.assertEqual(status, EXIT_USAGE)
+                self.assertEqual(out, "")
+                self.assertIn("loopback-only", err)
+
+    def test_serve_refuses_an_invalid_port(self) -> None:
+        status, out, _ = run_cli("serve", self.root_text(), "--port", "70000")
+        self.assertEqual(status, EXIT_ANALYSIS_FAILURE)
+        self.assertEqual(out, "")
+
+    def test_serve_reports_an_analysis_failure_for_a_missing_root(self) -> None:
+        status, out, err = run_cli("serve", str(self.root / "absent"), "--port", "0")
+        self.assertEqual(status, EXIT_ANALYSIS_FAILURE)
+        self.assertEqual(out, "")
+        self.assertIn("error:", err)
+
+    def test_serve_binds_and_serves_then_shuts_down(self) -> None:
+        import threading
+        from unittest import mock
+
+        import arctrellis.api as api_module
+
+        captured: dict[str, object] = {}
+        real_create = api_module.create_server
+
+        def capture(root, **kwargs):
+            server = real_create(root, **kwargs)
+            captured["server"] = server
+            return server
+
+        out, err = io.StringIO(), io.StringIO()
+        result: dict[str, int] = {}
+
+        def serve() -> None:
+            result["status"] = main(["serve", self.root_text(), "--port", "0"], stdout=out, stderr=err)
+
+        with mock.patch.object(api_module, "create_server", capture):
+            thread = threading.Thread(target=serve, daemon=True)
+            thread.start()
+            server = _await_server(captured)
+            host, port = server.server_address[0], server.server_address[1]
+            connection = http.client.HTTPConnection(host, port, timeout=30)
+            try:
+                connection.request("GET", "/api/v1/health")
+                response = connection.getresponse()
+                status, body = response.status, response.read()
+            finally:
+                connection.close()
+            server.shutdown()
+            thread.join(timeout=30)
+
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(result["status"], EXIT_SUCCESS)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)["status"], "ok")
+        self.assertIn("loopback only", out.getvalue())
+        self.assertIn("press Ctrl+C", err.getvalue())
+        self.assertIn("stopped", err.getvalue())
+        self.assertNotIn(str(self.root), out.getvalue() + err.getvalue())
+
+
+def _await_server(captured: dict[str, object], timeout: float = 60.0):
+    """Wait until the serve command has constructed and bound its listener."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        server = captured.get("server")
+        if server is not None:
+            return server
+        time.sleep(0.01)
+    raise AssertionError("the serve command did not bind a listener")
 
 
 class HelpTests(unittest.TestCase):

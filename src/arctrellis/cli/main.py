@@ -244,6 +244,25 @@ def _parser() -> argparse.ArgumentParser:
         _add_json(wrapper)
         del intent
 
+    serve = subparsers.add_parser(
+        "serve",
+        help="serve the read-only local HTTP API on a loopback address",
+        description=(
+            "Analyze the root once and serve the read-only API on loopback. "
+            "There is no authentication, so a non-loopback bind is refused."
+        ),
+    )
+    _add_root(serve)
+    serve.add_argument("--host", default="127.0.0.1", metavar="ADDR", help="loopback address (default: %(default)s)")
+    serve.add_argument("--port", type=int, default=8756, metavar="N", help="TCP port (default: %(default)s)")
+    serve.add_argument(
+        "--max-source-bytes",
+        type=int,
+        default=DEFAULT_MAX_SOURCE_BYTES,
+        metavar="N",
+        help="per-file read bound in bytes (default: %(default)s)",
+    )
+
     return parser
 
 
@@ -435,11 +454,51 @@ def _search_request(args: argparse.Namespace) -> QueryRequest:
         raise CliUsageError(str(error)) from error
 
 
+def _serve(args: argparse.Namespace, stdout: TextIO, stderr: TextIO) -> int:
+    """Analyze once and serve the read-only API until interrupted.
+
+    Binding is validated by create_server, which refuses any non-loopback address.
+    The analyzed root is never printed; only the loopback listener is reported.
+    """
+    from arctrellis.api import API_PREFIX, UnsafeBindError, create_server, server_banner
+
+    try:
+        server = create_server(
+            args.root,
+            host=args.host,
+            port=args.port,
+            max_source_bytes=args.max_source_bytes,
+        )
+    except UnsafeBindError as error:
+        raise CliUsageError(str(error)) from error
+    except (OSError, ValueError, TypeError, OrchestrationError, IngestionError) as error:
+        raise CliAnalysisError(f"{type(error).__name__}: {error}") from error
+    banner = server_banner(server)
+    print(
+        f"{PROGRAM}: read-only API on http://{banner['host']}:{banner['port']}{API_PREFIX} "
+        "(loopback only, no authentication)",
+        file=stdout,
+    )
+    print(f"{PROGRAM}: press Ctrl+C to stop", file=stderr)
+    try:
+        server.serve_forever(poll_interval=0.2)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.shutdown()
+        server.server_close()
+    print(f"{PROGRAM}: stopped", file=stderr)
+    return EXIT_SUCCESS
+
+
 def _run(args: argparse.Namespace, stdout: TextIO, stderr: TextIO) -> int:
     if args.command == "analyze":
         snapshot = _analyze(args)
         _emit(snapshot.to_dict(), render_snapshot(snapshot), args.json, stdout)
         return EXIT_SUCCESS
+
+    if args.command == "serve":
+        return _serve(args, stdout, stderr)
 
     snapshot = _analyze(args)
     request = _search_request(args) if args.command == "search" else _request(args)
