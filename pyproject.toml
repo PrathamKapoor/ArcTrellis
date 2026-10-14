@@ -18,6 +18,9 @@ dependencies = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[project.scripts]
+arctrellis = "arctrellis.cli.main:entry_point"
+
 [project.optional-dependencies]
 dev = ["ruff==0.16.10", "mypy==2.4.0"]
 
