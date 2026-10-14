@@ -1520,3 +1520,52 @@ Measured API statuses on the mixed fixture: health 200, summary 200, endpoints 2
 exact-ID query 200, ambiguous selector 409 with the full bundle, unknown entity 404, unsupported
 intent 501, oversized body 413, unknown route 404. The API payload for one endpoint trace is byte
 equal to the orchestration bundle.
+
+## Bounded behaviour at scale (Phase 2.4 hardening)
+
+Input: a generated repository whose size is a parameter rather than a constant.
+
+```text
+tests/scale/fixtures.py
+  build_python_sources(count, per_module)  the same function names in every module
+  build_endpoint_sources(count)             many registrations of POST /payments
+  build_high_degree_sources(degree)         one hub with `degree` incoming CALLS
+  build_cycle_sources(length)               one call cycle of `length` nodes
+  build_large_repository(...)               all four composed into one repository
+
+tests/scale/test_scale.py                  contracts, never sizes
+  |- budgets truncate and name their reason
+  |- candidate output stays bounded and reports truncation
+  |- cycles terminate inside the depth budget
+  |- bundles stay bounded in serialized size
+  |- repeated runs are byte identical and the snapshot is unchanged
+  `- invalid requests fail identically at scale
+
+tests/scale/bench.py                        prints environment, size and observed seconds
+```
+
+Why each step exists: the generator makes corpus size a parameter so the same contracts can be
+re-checked on a larger repository; the tests assert bounds and statuses rather than counts so a
+bigger fixture cannot break them; the benchmark prints measurements without asserting them so a
+performance claim can be verified or refuted without making the suite flaky.
+
+## Changes in this session (hardening)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Scale fixtures | Add a deterministic generator for large, ambiguous, cyclic and high-degree repositories. | tests/scale/fixtures.py | uncommitted | D-149 |
+| Scale contracts | Assert traversal limits, retrieval budgets, response bounds, determinism and stable errors. | tests/scale/test_scale.py | uncommitted | D-149 |
+| Benchmarks | Report measured environment, corpus size and seconds with no asserted threshold. | tests/scale/bench.py | uncommitted | D-149 |
+| Architecture audit | Assert no network, process or dynamic-execution primitive exists in the package. | tests/test_architecture.py | uncommitted | D-148 |
+
+Measured on Windows 11 with Python 3.13.14, from `.venv\Scripts\python.exe -m tests.scale.bench`:
+
+| Profile | Files | Bytes | Entities | Relationships | Terms | Analyze (s) | Search (s) |
+|---|---|---|---|---|---|---|---|
+| small | 13 | 7296 | 170 | 275 | 90 | 0.5522 | 0.0021 |
+| medium | 63 | 53689 | 1140 | 1965 | 264 | 2.3700 | 0.0267 |
+| large | 153 | 164678 | 3350 | 5935 | 523 | 10.9255 | 0.1126 |
+
+These are observations on one machine and one synthetic corpus, not throughput guarantees.
+Analysis cost grows faster than entity count because every stage re-reads the graph; no index,
+cache or incremental update exists.

@@ -1370,3 +1370,34 @@ Verified local commands:
 .venv\Scripts\python.exe -m unittest discover -s tests/api -t . -q
 .venv\Scripts\python.exe -m tests.api.smoke
 ```
+
+## Bounded behaviour at scale
+
+Every bound above is a contract, and contracts are verified on a generated repository whose size is
+a parameter rather than a constant. `tests/scale/fixtures.py` composes one repository that is
+simultaneously large, name-ambiguous, cyclic, high-degree and endpoint-ambiguous. The tests assert
+budgets, truncation reasons, bounded candidate output, cycle termination, bounded serialized size,
+byte-identical reruns, an unchanged snapshot and identical errors for invalid requests. They assert
+contracts, not counts, so a larger fixture cannot break them.
+
+Performance is reported, not asserted. `.venv\Scripts\python.exe -m tests.scale.bench` prints the
+actual environment, the corpus size and the observed seconds. No test contains a wall-clock
+threshold, so the suite cannot become flaky and no measurement can be mistaken for a guarantee.
+
+Measured on Windows 11 with Python 3.13.14:
+
+| Profile | Files | Bytes | Entities | Relationships | Terms | Analyze (s) | Search (s) |
+|---|---|---|---|---|---|---|---|
+| small | 13 | 7296 | 170 | 275 | 90 | 0.5522 | 0.0021 |
+| medium | 63 | 53689 | 1140 | 1965 | 264 | 2.3700 | 0.0267 |
+| large | 153 | 164678 | 3350 | 5935 | 523 | 10.9255 | 0.1126 |
+
+Analysis cost grows faster than entity count because every stage re-reads the graph. There is no
+index, cache or incremental update, and no memory cap is claimed.
+
+Verified local commands:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/scale -t . -q
+.venv\Scripts\python.exe -m tests.scale.bench
+```
