@@ -1569,3 +1569,44 @@ Measured on Windows 11 with Python 3.13.14, from `.venv\Scripts\python.exe -m te
 These are observations on one machine and one synthetic corpus, not throughput guarantees.
 Analysis cost grows faster than entity count because every stage re-reads the graph; no index,
 cache or incremental update exists.
+
+## Publication (Phase 2.4-2.6 release to the public repository)
+
+Input: one explicit user authorization for a single first push of the existing local history.
+Output: one published `main` branch whose history is byte-identical to the local history.
+
+```text
+audit (read-only)
+  git status --short --branch; git rev-parse --show-toplevel; git branch -avv; git remote -v
+  git log --all --format="%an <%ae> | %cn <%ce> | %s"     one unique identity, no trailers
+  high-risk secret patterns over the tree and over all 67 commits   0 matches
+  distinct paths ever tracked == paths currently tracked      203 == 203, nothing deleted
+  paper/ research/ *.tex .env .venv node_modules artifacts   none present, none ever
+  full quality gates: 933 tests OK/skipped7, Ruff, format, mypy, compileall, pip check
+
+publish
+  git ls-remote --heads origin                                reachable, public, zero refs
+  git remote add origin https://github.com/PrathamKapoor/ArcTrellis.git
+  git branch -M main                                          HEAD unchanged, one branch only
+  git push -u origin main                                     no force, no tags, no mirror
+
+verify
+  git ls-remote --heads origin main                           bd478c421fb79772c3c7c41f9b7bc3ca08766293
+  git rev-parse main                                          bd478c421fb79772c3c7c41f9b7bc3ca08766293
+  git clone into a separate directory                        67 commits, 203 files, one identity
+```
+
+Why each step exists: the audit precedes the push because a secret, a collaborator attribution or a
+rewritten commit cannot be removed from public history afterwards; `ls-remote` precedes the push
+because an unexpected non-empty remote would mean overwriting someone else's work; the branch is
+renamed rather than duplicated so exactly the authorized branch name is published; and verification
+uses a separate clone so the published state is checked independently of the local working copy.
+
+## Changes in this session (publication)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| Publication | Audit history and content, rename master to main, push the complete history once, verify independently. | .git/config, decisions.md, flow.md, handoff.md | finalized below | D-150 |
+
+Result: `main` published at `bd478c421fb79772c3c7c41f9b7bc3ca08766293`, 67 commits, 203 tracked
+files, one author and committer identity, no trailers, no force push, no license file.

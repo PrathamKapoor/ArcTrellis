@@ -3,9 +3,12 @@
 ## 1. Current Phase
 
 Phases 2.4, 2.5 and 2.6 complete and verified: typed structural query orchestration, an installed
-offline CLI, and a loopback-only read-only HTTP API, plus authorized scale hardening. Repository
-C:/Projects/ArcTrellis, Python 3.13.14, required Git identity, no remotes, nothing pushed. There is
-no further authorized phase; the next step is a deliberate product phase that has not begun.
+offline CLI, and a loopback-only read-only HTTP API, plus authorized scale hardening. The complete
+local history was then published once to https://github.com/PrathamKapoor/ArcTrellis.git on branch
+`main` under explicit user authorization, with no history rewrite and no attribution change.
+Repository C:/Projects/ArcTrellis, Python 3.13.14, required Git identity, remote `origin` tracking
+`main`. There is no further authorized phase; the next step is a deliberate product phase that has
+not begun.
 
 ## 2. Work Completed
 
@@ -132,12 +135,16 @@ rewritten.
 
 ## 6. Requirements and Constraints
 
-Local only: no GitHub API, remote changes, push, upload, publication, packages or releases. All
-commits are authored and committed solely by PrathamKapoor <prathamkapoor027@gmail.com>. No
-attribution lines, no secrets, no paper/research/tex files. Target repositories are untrusted: no
-execution, imports, test runs, Node, dependency installation, database connections or SQL. No
-outbound network request. No source symlink is followed intentionally. The HTTP interface is
-loopback-only and accepts no filesystem root from a request.
+Local first, then published once under explicit authorization. Every commit is authored and
+committed solely by PrathamKapoor <prathamkapoor027@gmail.com>; no attribution lines, no
+co-authored-by or generated-with trailers, no collaborators, no secrets, no paper/research/tex
+files. The only remote is `origin` at https://github.com/PrathamKapoor/ArcTrellis.git, `main`
+tracks it, and the 67 commits were published without rewriting, squashing or force-pushing. Target
+repositories are untrusted: no execution, imports, test runs, Node, dependency installation,
+database connections or SQL. No outbound network request during analysis. No source symlink is
+followed intentionally. The HTTP interface is loopback-only and accepts no filesystem root from a
+request. The repository has no LICENSE file, so default copyright applies and no permission to
+reuse is granted; choosing a license is the user's decision and has not been made.
 
 No runtime dependency was added in this session: the CLI is argparse and the API is http.server.
 Ruff and mypy configuration and every existing parsing, semantic, query and retrieval algorithm are
@@ -273,5 +280,6 @@ invent measured output. Report measured numbers as observations with their envir
 guarantees, and never add a wall-clock assertion to a test. Validate file outcome counts before
 interpreting empty semantics. Keep target input strictly as untrusted static data: no execution,
 imports, test runs, Node, dependency installation, database connections, SQL or outbound network
-access. Check author, committer and remotes at every boundary. Stop here: no push, no remote, no
-publication, no deployment, no public binding.
+access. Check author, committer and remotes at every boundary. Stop here: no further push without a
+new explicit authorization, no force push, no history rewrite, no squashing, no release, no
+deployment, no public binding.
