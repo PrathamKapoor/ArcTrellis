@@ -1404,3 +1404,56 @@ subset; the fixture therefore routes its traced endpoint through an imported
 module function. Selection scans the snapshot exact-name and route lookups, which
 is exhaustive for exact selectors and therefore never truncated; only the lexical
 path is bounded by a posting budget.
+
+## 31. Offline command-line interface (Phase 2.5)
+
+Input: process argv. Output: one process exit status, one stdout stream, one stderr stream.
+
+```text
+arctrellis <command> ...              installed console script -> arctrellis.cli.main:entry_point
+ └─ main(argv, stdout, stderr)        src/arctrellis/cli/main.py; the only exit-code boundary
+     ├─ _parser()                     argparse; analyze, search, query, endpoints, database,
+     │                                trace, impact, tests
+     ├─ redirect_stdout/stderr        argparse help and usage errors follow the injected streams
+     ├─ _intent()                     INTENT_ALIASES maps a dashed name to a QueryIntent
+     ├─ _entity_kind/_language/_operations   validated option values before any request is built
+     ├─ _request(args)                one QueryRequest; --limit becomes top_k or max_paths
+     │                                according to the intent's own option contract
+     ├─ _search_request(args)         the same contract for the search subcommand
+     ├─ _analyze(args)                analyze_repository(); ingestion, pipeline, OS and value
+     │                                failures become CliAnalysisError with exit code 4
+     ├─ run_query(snapshot, request)  existing orchestration runner; no second engine
+     ├─ _emit(payload, lines, json)   one json.dump to stdout, or the text report
+     └─ _explain_selection(bundle, stderr)
+                                      ambiguity, not found, invalid and no-known-path explanations
+```
+
+Output: the bundle's own `to_dict()` in JSON mode, the rendered report in text mode, and an
+exit status of 0 success, 2 invalid arguments or unresolvable request, 3 ambiguous selection,
+4 analysis failure, 5 unsupported operation or internal failure.
+
+Failures: argparse usage errors exit 2 by convention. Any unexpected exception is reported as a
+one-line `internal error:` message on stderr with exit 5; a traceback is never printed and never
+reaches stdout.
+
+Why each step exists: validating option values before building a request keeps the CLI from
+inventing CLI-only meaning; reusing the per-intent option contract means `--limit` cannot mean
+something the library would reject; the separate stderr channel is what lets a JSON consumer
+receive the bundle while a human still reads why a selector was ambiguous.
+
+## Changes in this session (Phase 2.5)
+
+| Area | Change | Files | Commit | Decision |
+|---|---|---|---|---|
+| CLI adapter | Add the argparse CLI, exit-code policy and console entry point. | src/arctrellis/cli/main.py, errors.py, __init__.py, pyproject.toml | uncommitted | D-146 |
+| Rendering | Add the human-readable report and the JSON/stderr split. | src/arctrellis/cli/render.py | uncommitted | D-147 |
+| Tests | Add CLI behaviour, stream separation, determinism, safety and exit-code tests. | tests/cli/test_cli.py | uncommitted | D-146 |
+| Entry point | Assert the declaration, the installed script and subprocess exit codes. | tests/cli/test_entry_point.py | uncommitted | D-146 |
+| Smoke | Add the full-product smoke and the CLI/API canonical-evidence comparison. | tests/cli/smoke.py | uncommitted | D-147 |
+
+Gate: cli62/full836 tests OK/skipped7; Ruff lint/183-file format, strict mypy99, compileall,
+pip check and architecture3 pass.
+
+Measured exit codes from the installed script on the mixed fixture: analyze 0, search 0,
+exact-ID trace 0, ambiguous POST /payments 3, unknown entity ID 2, unsupported intent 5,
+missing repository 4, invalid limit 2.

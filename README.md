@@ -58,10 +58,11 @@ Current capabilities:
 - Typed structured query intents, deterministic plans and conservative canonical entity selection.
 - JSON-compatible evidence bundles that preserve stored relationships, confidence and truncation reasons.
 - One programmatic `analyze_repository` entry point producing a snapshot aligned with the final graph.
+- An installed `arctrellis` CLI with text and JSON output, explicit ambiguity reporting and stable exit codes.
 - Optional pinned lint/format/type tooling and a native import boundary regression.
 
-Planned capabilities: an offline command-line interface; a loopback-only read-only HTTP API; architecture
-questions; source evidence inspection; retrieval and evidence quality evaluation.
+Planned capabilities: a loopback-only read-only HTTP API; architecture questions; source evidence
+inspection; retrieval and evidence quality evaluation.
 
 ## Development
 
@@ -1190,4 +1191,104 @@ Verified local commands:
 
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests/orchestration -t . -q
+```
+
+## Offline CLI (Phase 2.5)
+
+The CLI is a thin adapter over the orchestration API. It implements no analysis and no query
+logic: every subcommand builds the same validated `QueryRequest` and calls the same `run_query`,
+so the command line cannot answer differently from the Python API.
+
+```powershell
+.venv\Scripts\python.exe -m pip install -e .
+.venv\Scripts\arctrellis.exe analyze C:\Projects\SampleRepo
+.venv\Scripts\arctrellis.exe search C:\Projects\SampleRepo "list payments"
+.venv\Scripts\arctrellis.exe query C:\Projects\SampleRepo --intent trace-endpoint-to-database --method POST --path /payments
+```
+
+If `arctrellis.exe` is not on PATH, the equivalent form is:
+
+```powershell
+.venv\Scripts\python.exe -c "import sys; from arctrellis.cli.main import main; sys.exit(main(sys.argv[1:]))" analyze C:\Projects\SampleRepo
+```
+
+### Commands
+
+| Command | Intent | Purpose |
+|---|---|---|
+| `analyze ROOT` | none | measured counts, completeness and snapshot identity |
+| `search ROOT TEXT` | `search-entities` | ranked candidates; selects nothing |
+| `query ROOT --intent I [selector]` | any | one structured intent and its evidence bundle |
+| `endpoints ROOT` | `list-endpoints` | endpoint registration inventory |
+| `database ROOT` | `list-database-callers` | direct database-operation owners |
+| `trace ROOT` | `trace-endpoint-to-database` | endpoint to database trace |
+| `impact ROOT` | `find-affected-endpoints` | candidate endpoints for a callable |
+| `tests ROOT` | `find-direct-tests` | direct static tests for a callable |
+
+Exactly one selector form may be supplied: `--entity-id`, `--qualified-name`, `--method` with
+`--path`, or `TEXT` for `search-entities`. `--limit` becomes `top_k` for a retrieval intent and
+`max_paths` for a traversal intent, matching the library's own option contract, so an impossible
+combination is rejected by the same rule the API applies.
+
+### Ambiguity
+
+An ambiguous selector prints every candidate and exits 3. It never selects rank 1:
+
+```text
+$ arctrellis query . --intent trace-endpoint-to-database --method POST --path /payments
+status: AMBIGUOUS_SOURCE (ambiguous source selection; no entity selected)
+selection: ambiguous (2 endpoint registrations share this method and path; supply an exact entity ID)
+  1. d7315561-...  API_ENDPOINT POST /payments [js/app.js] basis=EXACT_ENDPOINT_METHOD_PATH
+  2. ed8c6277-...  API_ENDPOINT POST /payments [app.py] basis=EXACT_ENDPOINT_METHOD_PATH
+$ echo $LASTEXITCODE
+3
+```
+
+### Output modes
+
+`--json` writes exactly one JSON document to stdout and nothing else. The payload is the bundle's
+own `to_dict()` unchanged, so it matches the public contract, and diagnostics go to stderr. Text
+mode prints a stable report:
+
+```text
+status: EVIDENCE_PATHS (structural evidence paths found)
+selection: resolved (resolved by unique endpoint method and path)
+selected entity: API_ENDPOINT POST /payments [app.py:5]
+evidence paths: 1
+path 1 of 3 hop(s), direction=forward, weakest-edge confidence=LIKELY (0.75)
+  API_ENDPOINT POST /payments [app.py:5]
+  EXPOSES #1: confidence=PROVEN score=1.0
+    evidence fastapi_decorated_handler app.py:5
+  FUNCTION createPaymentRoute [app.py:6]
+  CALLS #2: confidence=LIKELY score=0.75
+    evidence python_imported_symbol_call_resolution app.py:7
+  FUNCTION createPayment [payments.py:4]
+  WRITES_DATABASE #3: confidence=LIKELY score=0.85
+    evidence sqlalchemy_execute_insert payments.py:5
+  DATABASE_OPERATION sqlalchemy:Payment.execute@134 [payments.py:5]
+```
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | success |
+| 2 | invalid CLI arguments, or a well-formed request that could not be resolved |
+| 3 | ambiguous entity selection |
+| 4 | analysis failure |
+| 5 | unsupported operation or internal error |
+
+### Safety and limitations
+
+The target root is validated by the existing safe discovery logic. The CLI never executes,
+imports or installs target code, never evaluates target configuration, never connects to a
+database, never makes an outbound network request and never requires or inspects a Git
+repository. No traceback is ever printed. Analysis is rebuilt in memory per invocation: there is
+no cache, index file or daemon, and no timing benchmark is claimed.
+
+Verified local commands:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests/cli -t . -q
+.venv\Scripts\python.exe -m tests.cli.smoke
 ```
